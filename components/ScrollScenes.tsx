@@ -13,6 +13,7 @@ gsap.registerPlugin(ScrollTrigger);
  *
  *  - data-hero: первый экран уходит вглубь — уменьшается и гаснет;
  *  - data-reveal="clip": медиа раскрывается из рамки в полный размер;
+ *  - data-parallax-media: ролик внутри рамки едет медленнее самой рамки;
  *  - data-recede: секция, которую покидают, чуть отступает и тускнеет,
  *    а следующая наезжает поверх — появляется глубина между сценами.
  *
@@ -43,6 +44,19 @@ export default function ScrollScenes() {
               clipPath: 'inset(0% 0% 0% 0% round 0px)',
               ease: 'none',
               scrollTrigger: { trigger: el, start: 'top 96%', end: 'top 48%', scrub: 0.5 }
+            }
+          );
+        });
+
+        // ролик в рамке едет медленнее рамки — глубина внутри окна
+        document.querySelectorAll<HTMLElement>('[data-parallax-media]').forEach((el) => {
+          gsap.fromTo(
+            el,
+            { yPercent: -6 },
+            {
+              yPercent: 6,
+              ease: 'none',
+              scrollTrigger: { trigger: el.parentElement, start: 'top bottom', end: 'bottom top', scrub: true }
             }
           );
         });

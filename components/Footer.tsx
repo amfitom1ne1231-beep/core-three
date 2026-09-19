@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import LeadForm from './LeadForm';
 import Mark from './Mark';
+import VideoFrame from './VideoFrame';
 import { SITE } from '@/content/site';
 
 /**
@@ -56,10 +57,13 @@ export default function Footer({ cta = true }: { cta?: boolean }) {
                     {SITE.email}
                   </a>
                 </div>
+
+                {/* живая вставка финала: капля — с неё начинается любой запуск */}
+                <VideoFrame clip={SITE.media.drop} aspect="16 / 9" className="mt-12 max-w-[560px]" />
               </div>
 
               {/* форма на стекле: видео под ней остаётся, текст читается */}
-              <div data-reveal="clip" className="border border-line bg-bg/55 p-[clamp(20px,3vw,44px)] backdrop-blur-md">
+              <div data-reveal="clip" className="self-start border border-line bg-bg/55 p-[clamp(20px,3vw,44px)] backdrop-blur-md">
                 <LeadForm />
               </div>
             </div>

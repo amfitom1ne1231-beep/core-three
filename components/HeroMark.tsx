@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { MARK_ARMS } from './mark-geometry';
+import { MARK_ARMS, MARK_CENTER } from './mark-geometry';
 import { isRevealed, preloaderLeaving } from '@/lib/boot';
 import { CORE_PHASE, CORE_SPEED, silkClock } from '@/lib/silk';
 
@@ -19,12 +19,23 @@ const OUT = [
   [-0.87, 0.5]
 ];
 
+/**
+ * Цвета граней — как в логотипе: синий и серебро, свет сверху. Синие
+ * темнеют книзу, серебро темнеет к внутренним углам. Ключ — грань
+ * элемента, для нижней балки свои (верх и перед).
+ */
 const FACET_FILL: Record<string, [string, string]> = {
-  // освещённая грань — светлая сталь, теневая — глубокий синий знака
-  right: ['#eef4fb', '#9db8d6'],
-  cap: ['#d5e2ef', '#7f9bbd'],
-  left: ['#5d7fa6', '#15335a']
+  cap: ['#4a78b8', '#2a5796'],
+  column: ['#2c5ea6', '#123463'],
+  inner: ['#23508f', '#0f2a55'],
+  front: ['#244f8e', '#102d5a'],
+  ell: ['#c3c8ce', '#737980'],
+  beam: ['#b4bac1', '#636970'],
+  top: ['#aab0b7', '#6c7279']
 };
+/** Светлая металлическая кромка в зазорах между гранями — фаски логотипа. */
+const BEVEL = '#d7dbe0';
+const ORIGIN = `50% ${MARK_CENTER.y}%`;
 
 /**
  * Знак-объект первого экрана. Три луча — три ядра, как на знаке, но теперь
@@ -39,6 +50,7 @@ export default function HeroMark() {
   const tilt = useRef<HTMLDivElement>(null);
   const layers = useRef<HTMLDivElement[]>([]);
   const halos = useRef<HTMLDivElement[]>([]);
+  const bloom = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const w = wrap.current;
@@ -106,12 +118,27 @@ export default function HeroMark() {
       const hero = w.closest('section');
       if (hero) {
         const size = () => sc.offsetWidth;
+        // шкала таймлайна 0..1 = весь уход первого экрана; у каждого твина
+        // явная длительность, иначе пропорции скраба плывут
         const st = gsap.timeline({
+          defaults: { duration: 1 },
           scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom top', scrub: 0.8, invalidateOnRefresh: true }
         });
         layers.current.forEach((el, i) => {
           st.to(el, { x: () => OUT[i][0] * size() * 0.7, y: () => OUT[i][1] * size() * 0.7, ease: 'power1.in' }, 0);
         });
+        // смаз в полёте: лучи уходят на скорости
+        st.fromTo(layers.current, { filter: 'blur(0px)' }, { filter: 'blur(7px)', ease: 'power2.in' }, 0);
+        // вспышка ядер в момент прохода сквозь центр
+        if (bloom.current) {
+          st.fromTo(
+            bloom.current,
+            { opacity: 0, scale: 0.4, xPercent: -50, yPercent: -50 },
+            { opacity: 1, scale: 1.3, ease: 'power2.in', duration: 0.3 },
+            0.42
+          )
+            .to(bloom.current, { opacity: 0, scale: 1.8, ease: 'power1.out', duration: 0.26 }, 0.72);
+        }
         st.to(
           sc,
           {
@@ -157,8 +184,19 @@ export default function HeroMark() {
         ref={scene}
         className="relative aspect-square w-full"
         // точка схода — центр знака: иначе слои разной глубины в покое не совпадут
-        style={{ perspective: PERSPECTIVE, perspectiveOrigin: '50% 59.44%' }}
+        style={{ perspective: PERSPECTIVE, perspectiveOrigin: ORIGIN }}
       >
+        {/* свет ядер: вспыхивает, когда камера проходит сквозь центр знака */}
+        <div
+          ref={bloom}
+          // центрирование — через xPercent/yPercent в таймлайне: трансформы здесь ведёт GSAP
+          className="pointer-events-none absolute left-1/2 aspect-square w-[90%] rounded-full opacity-0"
+          style={{
+            top: `${MARK_CENTER.y}%`,
+            background:
+              'radial-gradient(circle, rgba(236,243,252,0.95) 0%, rgba(160,195,235,0.55) 22%, rgba(110,155,204,0.18) 48%, rgba(110,155,204,0) 70%)'
+          }}
+        />
         <div ref={tilt} className="absolute inset-0" style={{ transformStyle: 'preserve-3d' }}>
           {MARK_ARMS.map((arm, i) => (
             <div
@@ -167,7 +205,7 @@ export default function HeroMark() {
                 if (el) layers.current[i] = el;
               }}
               className="absolute inset-0"
-              style={{ transformOrigin: '50% 59.44%' }}
+              style={{ transformOrigin: ORIGIN }}
             >
               {/* свечение ядра: размытый силуэт луча, дышит прозрачностью */}
               <div
@@ -185,22 +223,24 @@ export default function HeroMark() {
               </div>
               <svg viewBox="0 0 100 100" className="relative h-full w-full overflow-visible">
                 <defs>
-                  {Object.entries(FACET_FILL).map(([facet, [a, b]]) => (
-                    <linearGradient key={facet} id={`hm-${arm.arm}-${facet}`} x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0" stopColor={a} />
-                      <stop offset="1" stopColor={b} />
-                    </linearGradient>
-                  ))}
+                  {arm.facets.map((f) => {
+                    const [a, b] = FACET_FILL[f.facet] ?? FACET_FILL.column;
+                    return (
+                      <linearGradient key={f.facet} id={`hm-${arm.arm}-${f.facet}`} x1="0" y1="0" x2="0.35" y2="1">
+                        <stop offset="0" stopColor={a} />
+                        <stop offset="1" stopColor={b} />
+                      </linearGradient>
+                    );
+                  })}
                 </defs>
+                {/* кромка: светлый контур под гранями заполняет зазоры, как фаски логотипа */}
+                <g fill="none" stroke={BEVEL} strokeWidth="1.6" strokeLinejoin="round">
+                  {arm.facets.map((f) => (
+                    <path key={f.facet} d={f.d} />
+                  ))}
+                </g>
                 {arm.facets.map((f) => (
-                  <path
-                    key={f.facet}
-                    d={f.d}
-                    fill={`url(#hm-${arm.arm}-${f.facet})`}
-                    stroke="rgba(255,255,255,0.35)"
-                    strokeWidth="0.18"
-                    strokeLinejoin="round"
-                  />
+                  <path key={f.facet} d={f.d} fill={`url(#hm-${arm.arm}-${f.facet})`} />
                 ))}
               </svg>
             </div>

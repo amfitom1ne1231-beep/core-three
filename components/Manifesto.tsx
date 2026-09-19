@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import VideoFrame from './VideoFrame';
 import { SITE } from '@/content/site';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -109,6 +110,23 @@ export default function Manifesto() {
         });
       });
 
+      // Вход из глубины: после вспышки на первом экране текст проявляется
+      // из лёгкого увеличения и размытия — камера «прошла сквозь» знак.
+      mm.add('(prefers-reduced-motion: no-preference)', () => {
+        gsap.fromTo(
+          el.querySelectorAll('[data-emerge]'),
+          { scale: 1.12, filter: 'blur(10px)', opacity: 0.25 },
+          {
+            scale: 1,
+            filter: 'blur(0px)',
+            opacity: 1,
+            ease: 'power2.out',
+            stagger: 0.06,
+            scrollTrigger: { trigger: el, start: 'top 85%', end: 'top 5%', scrub: 0.6 }
+          }
+        );
+      });
+
       // Без анимации: текст сразу в конечном состоянии.
       mm.add('(prefers-reduced-motion: reduce)', () => {
         wordEls.forEach((w) => gsap.set(w, { opacity: bright(w) }));
@@ -140,7 +158,10 @@ export default function Manifesto() {
           aria-hidden
         />
 
-        <div className="mb-[clamp(28px,6vh,72px)] flex flex-wrap items-center gap-x-[clamp(12px,3vw,40px)] gap-y-2">
+        {/* текст слева, ролик справа; на телефоне ролик под текстом */}
+        <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(220px,23vw)] lg:gap-[clamp(40px,5vw,96px)]">
+        <div>
+        <div data-emerge className="mb-[clamp(28px,6vh,72px)] flex flex-wrap items-center gap-x-[clamp(12px,3vw,40px)] gap-y-2">
           <span className="rail-label">{SITE.manifesto.label}</span>
           {SITE.cores.map((core) => (
             <span key={core.n} data-core-label className="rail-label">
@@ -150,7 +171,8 @@ export default function Manifesto() {
         </div>
 
         <p
-          className="display m-0 max-w-[30ch] text-[clamp(26px,4.4vw,72px)] leading-[1.06]"
+          data-emerge
+          className="display m-0 max-w-[30ch] origin-left text-[clamp(26px,4.4vw,72px)] leading-[1.06] lg:text-[clamp(30px,3.6vw,62px)]"
           aria-label={SITE.manifesto.text.replace(/\*\*/g, '')}
         >
           {units.map((unit, i) => (
@@ -173,6 +195,11 @@ export default function Manifesto() {
             </Fragment>
           ))}
         </p>
+        </div>
+
+        {/* живая вставка: чернила в воде — скорость, которая держит форму */}
+        <VideoFrame clip={SITE.media.ink} aspect="4 / 5" className="max-w-[420px] md:hidden lg:block lg:max-w-none" />
+        </div>
       </div>
     </section>
   );

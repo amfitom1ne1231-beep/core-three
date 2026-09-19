@@ -76,9 +76,13 @@ function frameAt(table: Record<number, Frame>, d: number): Frame | null {
  * не сливаются в один тон. Играет только активная.
  *
  * Управление: перетаскивание мышью и пальцем, горизонтальный жест тачпада,
- * стрелки клавиатуры, кнопки, рельс и автопрокрутка с паузой. Автопрокрутка
- * встаёт при наведении, фокусе, уходе с экрана и на скрытой вкладке,
- * а при prefers-reduced-motion не включается вовсе.
+ * стрелки клавиатуры, кнопки, рельс и автопрокрутка с паузой.
+ *
+ * Автопрокрутка идёт и под курсором: мышь почти всегда лежит на карусели,
+ * пока её смотрят, и пауза по наведению выглядела как «переходов нет».
+ * Встаёт она по кнопке, при фокусе с клавиатуры, при перетаскивании,
+ * вне экрана и на скрытой вкладке; при prefers-reduced-motion не
+ * включается вовсе.
  */
 export default function Atlas() {
   const root = useRef<HTMLElement>(null);
@@ -96,7 +100,7 @@ export default function Atlas() {
   const geom = useRef({ A: 600, H: 400, g: 28, table: frames(600, 28) });
   const move = useRef<gsap.core.Tween | null>(null);
   const timer = useRef<gsap.core.Tween | null>(null);
-  const hold = useRef({ hover: false, focus: false, drag: false, hidden: false, view: false, reduced: false });
+  const hold = useRef({ focus: false, drag: false, hidden: false, view: false, reduced: false });
 
   const [index, setIndex] = useState(0);
   const [inView, setInView] = useState(false);
@@ -146,7 +150,7 @@ export default function Atlas() {
 
   const canPlay = () => {
     const h = hold.current;
-    return autoRef.current && h.view && !h.hover && !h.focus && !h.drag && !h.hidden && !h.reduced;
+    return autoRef.current && h.view && !h.focus && !h.drag && !h.hidden && !h.reduced;
   };
 
   const syncTimer = useCallback(() => {
@@ -299,18 +303,19 @@ export default function Atlas() {
     };
     document.addEventListener('visibilitychange', onVis);
 
-    const setHold = (k: 'hover' | 'focus', v: boolean) => () => {
-      hold.current[k] = v;
+    // фокус с клавиатуры держит слайд; клик мышью фокус тоже ставит,
+    // поэтому учитываем только :focus-visible
+    const fin = (e: FocusEvent) => {
+      if ((e.target as HTMLElement).matches?.(':focus-visible')) {
+        hold.current.focus = true;
+        syncTimer();
+      }
+    };
+    const fout = (e: FocusEvent) => {
+      if (sh.contains(e.relatedTarget as Node)) return;
+      hold.current.focus = false;
       syncTimer();
     };
-    const enter = setHold('hover', true);
-    const leave = setHold('hover', false);
-    const fin = setHold('focus', true);
-    const fout = (e: FocusEvent) => {
-      if (!sh.contains(e.relatedTarget as Node)) setHold('focus', false)();
-    };
-    sh.addEventListener('pointerenter', enter);
-    sh.addEventListener('pointerleave', leave);
     sh.addEventListener('focusin', fin);
     sh.addEventListener('focusout', fout);
 
@@ -417,8 +422,6 @@ export default function Atlas() {
       ro.disconnect();
       io.disconnect();
       document.removeEventListener('visibilitychange', onVis);
-      sh.removeEventListener('pointerenter', enter);
-      sh.removeEventListener('pointerleave', leave);
       sh.removeEventListener('focusin', fin);
       sh.removeEventListener('focusout', fout);
       st.removeEventListener('pointerdown', down);

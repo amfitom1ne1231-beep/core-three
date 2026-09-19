@@ -103,6 +103,23 @@ export default function HeroSilk({ params }: { params?: Partial<SilkParams> }) {
       if (total <= 0) return;
       const patch: Partial<SilkParams> = { accent: hex(accent.map((x) => x / total)) };
       KEYS.forEach((k) => ((patch as Record<string, number>)[k] = acc[k] / total));
+
+      // Вспышка на переходе с первого экрана: когда камера проходит сквозь
+      // знак, материал на мгновение ловит свет — блик и все три ядра.
+      const hero = document.querySelector<HTMLElement>('[data-chapter="hero"]');
+      if (hero) {
+        const r = hero.getBoundingClientRect();
+        const p = -r.top / Math.max(r.height, 1);
+        // пик совпадает со вспышкой знака (0.72 хода первого экрана)
+        const flash = Math.exp(-(((p - 0.72) / 0.13) ** 2));
+        if (flash > 0.01) {
+          patch.exposure = (patch.exposure ?? base.exposure) + 0.4 * flash;
+          patch.glint = (patch.glint ?? base.glint) + 0.6 * flash;
+          patch.sheen = (patch.sheen ?? base.sheen) + 0.35 * flash;
+          patch.core2 = (patch.core2 ?? base.core2) + 0.4 * flash;
+          patch.core3 = (patch.core3 ?? base.core3) + 0.5 * flash;
+        }
+      }
       silk.setParams(patch);
       if (veil.current) veil.current.style.opacity = (v / total).toFixed(3);
     };
