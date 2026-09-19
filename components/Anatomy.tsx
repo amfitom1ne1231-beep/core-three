@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Glyph from './anatomy-glyphs';
+import Material from './Material';
 import { SITE } from '@/content/site';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -41,10 +42,15 @@ function Ticks({ n, len = 8 }: { n: Node; len?: number }) {
   );
 }
 
+/** Сколько держится один шаг, пока схема проигрывается сама. */
+const STEP_MS = 3800;
+
 export default function Anatomy() {
   const section = useRef<HTMLElement>(null);
   const [step, setStep] = useState(0);
   const [hovered, setHovered] = useState<string | null>(null);
+  const [inView, setInView] = useState(false);
+  const [held, setHeld] = useState(false);
 
   const { nodes, links, steps, panel } = SITE.anatomy;
   const byId = useMemo(() => new Map<string, Node>(nodes.map((n) => [n.id, n])), [nodes]);
@@ -67,46 +73,33 @@ export default function Anatomy() {
 
   const inspected = hovered ? byId.get(hovered) : null;
 
+  // Секция больше не занимает два экрана скролла: шаги проигрываются сами,
+  // пока схема на экране, и замирают, когда её рассматривают.
   useEffect(() => {
     const el = section.current;
     if (!el) return;
+    const trigger = ScrollTrigger.create({
+      trigger: el,
+      start: 'top 70%',
+      end: 'bottom 30%',
+      onToggle: (self) => setInView(self.isActive)
+    });
+    return () => trigger.kill();
+  }, []);
 
-    const ctx = gsap.context(() => {
-      const mm = gsap.matchMedia();
-
-      mm.add('(min-width: 1280px) and (prefers-reduced-motion: no-preference)', () => {
-        const trigger = ScrollTrigger.create({
-          trigger: el,
-          start: 'top top',
-          end: 'bottom bottom',
-          onUpdate: (self) => {
-            setStep(Math.min(steps.length - 1, Math.floor(self.progress * steps.length)));
-          }
-        });
-        return () => trigger.kill();
-      });
-
-      mm.add('(max-width: 1279px)', () => {
-        const triggers = steps.map((_, i) =>
-          ScrollTrigger.create({
-            trigger: el.querySelectorAll('[data-step]')[i],
-            start: 'top 70%',
-            end: 'bottom 30%',
-            onEnter: () => setStep(i),
-            onEnterBack: () => setStep(i)
-          })
-        );
-        return () => triggers.forEach((t) => t.kill());
-      });
-    }, el);
-
-    return () => ctx.revert();
-  }, [steps]);
+  useEffect(() => {
+    if (!inView || held || hovered) return;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const id = window.setInterval(() => {
+      setStep((prev) => (prev + 1) % steps.length);
+    }, STEP_MS);
+    return () => window.clearInterval(id);
+  }, [inView, held, hovered, steps.length]);
 
   return (
     <section
       ref={section}
-      className="relative z-10 w-full bg-bg xl:h-[240svh]"
+      className="relative z-10 w-full bg-bg"
       aria-label="Анатомия проекта"
     >
       <div
@@ -118,10 +111,12 @@ export default function Anatomy() {
         aria-hidden
       />
 
-      <div className="flex min-h-[100svh] flex-col justify-center gap-[clamp(24px,5vh,56px)] px-4 py-[14vh] sm:px-8 xl:sticky xl:top-0 lg:px-[56px] xl:py-[12vh]">
+      <div className="flex flex-col justify-center gap-[clamp(24px,5vh,56px)] px-4 py-[12vh] sm:px-8 lg:px-[56px]">
         <div>
           <span className="rail-label">{SITE.anatomy.label}</span>
-          <h2 className="display m-0 mt-4 text-[clamp(28px,5vw,76px)]">{SITE.anatomy.title}</h2>
+          <h2 className="display m-0 mt-4 text-[clamp(28px,5vw,76px)]">
+            {SITE.anatomy.title} <span className="accent-serif">{SITE.anatomy.titleAccent}</span>
+          </h2>
         </div>
 
         <div className="grid gap-[clamp(20px,4vh,44px)] xl:grid-cols-[minmax(200px,264px)_1fr] xl:items-center xl:gap-10">
@@ -129,12 +124,17 @@ export default function Anatomy() {
             {steps.map((s, i) => {
               const on = i === step;
               return (
-                <li
-                  key={s.n}
-                  data-step
-                  className="border-l pl-4 transition-colors duration-500"
-                  style={{ borderColor: on ? 'var(--accent)' : 'var(--line)' }}
-                >
+                <li key={s.n} data-step className="relative">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStep(i);
+                      setHeld(true);
+                    }}
+                    className="block w-full border-l pl-4 text-left transition-colors duration-500"
+                    style={{ borderColor: on ? 'var(--accent)' : 'var(--line)' }}
+                    aria-current={on || undefined}
+                  >
                   <div className="flex items-baseline gap-3">
                     <span
                       className="font-mono text-[10px] tracking-rail transition-colors duration-500"
@@ -155,13 +155,33 @@ export default function Anatomy() {
                   >
                     {s.text}
                   </p>
+                  {/* полоса таймера: видно, что шаг сменится сам */}
+                  <span
+                    className="mt-3 block h-px w-full origin-left bg-accent"
+                    style={{
+                      transform: `scaleX(${on ? 1 : 0})`,
+                      opacity: on ? 0.8 : 0,
+                      transition: on && !held && !hovered
+                        ? `transform ${STEP_MS}ms linear, opacity .3s`
+                        : 'transform .3s, opacity .3s'
+                    }}
+                    aria-hidden
+                  />
+                  </button>
                 </li>
               );
             })}
           </ol>
 
           {/* Панель-прибор: рамка, шапка с плоскостями, поле схемы, строка осмотра */}
-          <div className="min-w-0 border border-line bg-elev/40">
+          <div className="relative min-w-0 overflow-hidden rounded-lg border border-line">
+            <Material preset="deep" opacity={0.75} />
+            <div
+              className="pointer-events-none absolute inset-0"
+              style={{ background: 'linear-gradient(180deg, rgb(5 6 8 / 0.66) 0%, rgb(5 6 8 / 0.84) 100%)' }}
+              aria-hidden
+            />
+            <div className="relative">
             <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-b border-line px-4 py-3 sm:px-5">
               <span className="font-mono text-[10px] uppercase tracking-rail text-fg">
                 {panel.title}
@@ -388,6 +408,7 @@ export default function Anatomy() {
               ) : (
                 <span className="rail-label">{SITE.anatomy.hint}</span>
               )}
+            </div>
             </div>
           </div>
         </div>

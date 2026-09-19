@@ -23,8 +23,8 @@ export default function Footer() {
         <span className="rail-label">{footer.label}</span>
 
         <div className="mt-6 grid gap-[clamp(28px,5vh,60px)] lg:grid-cols-[1.2fr_1fr] lg:items-end">
-          <h2 className="display m-0 whitespace-pre-line text-[clamp(32px,6.4vw,104px)]">
-            {footer.title}
+          <h2 className="display m-0 text-[clamp(32px,6.4vw,104px)]">
+            {footer.title} <span className="accent-serif">{footer.titleAccent}</span>
           </h2>
 
           <div>

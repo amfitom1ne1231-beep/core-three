@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Onest, JetBrains_Mono } from 'next/font/google';
+import { Onest, JetBrains_Mono, Playfair_Display } from 'next/font/google';
 import Header from '@/components/Header';
 import Preloader from '@/components/Preloader';
 import SmoothScroll from '@/components/SmoothScroll';
@@ -10,6 +10,16 @@ const onest = Onest({
   subsets: ['latin', 'cyrillic'],
   weight: ['300', '400', '500', '700'],
   variable: '--font-onest',
+  display: 'swap'
+});
+
+// Курсивная антиква — только на акцентные слова в заголовках.
+// Один файл, кириллица, вес 500: типографический контраст без раздувания.
+const serif = Playfair_Display({
+  subsets: ['latin', 'cyrillic'],
+  weight: ['500'],
+  style: ['italic'],
+  variable: '--font-serif',
   display: 'swap'
 });
 
@@ -46,7 +56,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ru" data-theme="dark" className={`${onest.variable} ${mono.variable}`}>
+    <html lang="ru" data-theme="dark" className={`${onest.variable} ${serif.variable} ${mono.variable}`}>
       <body>
         <a className="skip-link" href="#content">
           К содержанию

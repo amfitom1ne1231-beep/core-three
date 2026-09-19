@@ -122,7 +122,7 @@ export default function Manifesto() {
   return (
     <section
       ref={section}
-      className="relative z-10 w-full md:h-[260svh]"
+      className="relative z-10 w-full md:h-[180svh]"
       aria-label="Манифест"
     >
       {/* содержимое липнет к экрану, материал продолжает жить за текстом */}

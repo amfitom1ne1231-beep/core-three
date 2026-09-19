@@ -62,8 +62,8 @@ export default function Concepts() {
       <div className="relative px-4 py-[14vh] sm:px-8 lg:px-[72px]">
         <span className="rail-label">{SITE.concepts.label}</span>
         <div className="mt-4 grid gap-[clamp(20px,4vh,40px)] lg:grid-cols-[1.1fr_1fr] lg:items-end">
-          <h2 className="display m-0 whitespace-pre-line text-[clamp(28px,5.2vw,80px)]">
-            {SITE.concepts.title}
+          <h2 className="display m-0 text-[clamp(28px,5.2vw,80px)]">
+            {SITE.concepts.title} <span className="accent-serif">{SITE.concepts.titleAccent}</span>
           </h2>
           <p className="m-0 max-w-[46ch] text-[clamp(13px,1.1vw,16px)] leading-relaxed text-dim">
             {SITE.concepts.lead}

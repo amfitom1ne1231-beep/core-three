@@ -1,151 +1,131 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { scrollToY } from '@/lib/scroll';
+import Material from './Material';
 import { SITE } from '@/content/site';
 
 gsap.registerPlugin(ScrollTrigger);
 
 /**
- * Атлас возможностей: шесть направлений едут по горизонтали, пока секция
- * закреплена. Группировка функциональная — «Сайты и магазины», «Боты и
- * автоматизация», «Поддержка и мониторинг», — чтобы на сайте не возникло
- * второй триады помимо трёх ядер.
+ * Атлас направлений полосами: медиа с одной стороны, текст с другой,
+ * стороны чередуются. У каждого направления свой материал — общая природа,
+ * разная фактура.
+ *
+ * Горизонтальная каретка на закреплённой секции отсюда убрана: она стоила
+ * четыре экрана скролла и всё равно показывала бледные карточки. Полоса
+ * отдаёт больше за меньшую длину.
  */
 export default function Atlas() {
-  const section = useRef<HTMLElement>(null);
-  const track = useRef<HTMLDivElement>(null);
-  const [active, setActive] = useState(0);
-
-  const { services, groups } = SITE;
-  const groupLabel = (id: string) => groups.find((g) => g.id === id)?.label ?? '';
+  const root = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    const sec = section.current;
-    const tr = track.current;
-    if (!sec || !tr) return;
+    const el = root.current;
+    if (!el) return;
 
     const ctx = gsap.context(() => {
       const mm = gsap.matchMedia();
 
-      // Десктоп: скролл превращается в горизонтальный ход каретки.
-      mm.add('(min-width: 1024px) and (prefers-reduced-motion: no-preference)', () => {
-        // запас справа, чтобы последняя карточка не липла к краю
-        const distance = () => Math.max(0, tr.scrollWidth - innerWidth + 72);
+      mm.add('(prefers-reduced-motion: no-preference)', () => {
+        el.querySelectorAll<HTMLElement>('[data-band]').forEach((band) => {
+          const media = band.querySelector<HTMLElement>('[data-media]');
+          const copy = band.querySelector<HTMLElement>('[data-copy]');
 
-        const tween = gsap.fromTo(
-          tr,
-          { x: 0 },
-          {
-            x: () => -distance(),
-            ease: 'none',
-            scrollTrigger: {
-              trigger: sec,
-              start: 'top top',
-              end: 'bottom bottom',
-              scrub: 0.7,
-              invalidateOnRefresh: true,
-              onUpdate: (self) => {
-                setActive(Math.round(self.progress * (services.length - 1)));
+          gsap.from([copy, media], {
+            opacity: 0,
+            y: 34,
+            duration: 0.9,
+            ease: 'power3.out',
+            stagger: 0.12,
+            scrollTrigger: { trigger: band, start: 'top 78%', once: true }
+          });
+
+          // материал внутри рамки едет медленнее полосы
+          if (media) {
+            gsap.fromTo(
+              media.querySelector('[data-parallax]'),
+              { yPercent: -7 },
+              {
+                yPercent: 7,
+                ease: 'none',
+                scrollTrigger: { trigger: band, start: 'top bottom', end: 'bottom top', scrub: true }
               }
-            }
+            );
           }
-        );
-        return () => {
-          tween.scrollTrigger?.kill();
-          tween.kill();
-          gsap.set(tr, { x: 0 });
-        };
+        });
       });
-
-      // Мобильный: обычная свайп-карусель, активную карточку определяем по скроллу каретки.
-      mm.add('(max-width: 1023px)', () => {
-        const onScroll = () => {
-          const i = Math.round((tr.scrollLeft / Math.max(tr.scrollWidth - tr.clientWidth, 1)) * (services.length - 1));
-          setActive(i);
-        };
-        tr.addEventListener('scroll', onScroll, { passive: true });
-        return () => tr.removeEventListener('scroll', onScroll);
-      });
-    }, sec);
+    }, el);
 
     return () => ctx.revert();
-  }, [services.length]);
+  }, []);
 
-  /** Клик по рельсу: прокручиваем страницу к нужному положению каретки. */
-  const goTo = (i: number) => {
-    const sec = section.current;
-    const tr = track.current;
-    if (!sec) return;
-
-    if (innerWidth < 1024 && tr) {
-      const card = tr.children[i] as HTMLElement | undefined;
-      card?.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
-      return;
-    }
-    const total = sec.offsetHeight - innerHeight;
-    const y = sec.offsetTop + (total * i) / (services.length - 1);
-    scrollToY(y);
-  };
+  const groupLabel = (id: string) => SITE.groups.find((g) => g.id === id)?.label ?? '';
 
   return (
     <section
-      ref={section}
-      className="relative z-10 w-full border-t border-line bg-bg lg:h-[420svh]"
-      aria-label="Атлас возможностей"
+      ref={root}
+      className="relative z-10 w-full border-t border-line bg-bg"
+      aria-label="Направления"
     >
-      <div className="flex min-h-[100svh] flex-col justify-center gap-[clamp(24px,5vh,56px)] overflow-hidden py-[14vh] lg:sticky lg:top-0 lg:py-[12vh]">
-        <div className="px-4 sm:px-8 lg:px-[72px]">
-          <span className="rail-label">04 / Что мы делаем</span>
-          <h2 className="display m-0 mt-4 text-[clamp(28px,5vw,76px)]">
-            Шесть направлений.
+      <div className="px-4 pt-[11vh] sm:px-8 lg:px-[72px]">
+        <span className="rail-label">{SITE.atlas.label}</span>
+        <div className="mt-4 grid gap-[clamp(16px,3vh,32px)] lg:grid-cols-[1.15fr_1fr] lg:items-end">
+          <h2 className="display m-0 text-[clamp(28px,5.2vw,80px)]">
+            {SITE.atlas.title} <span className="accent-serif">{SITE.atlas.titleAccent}</span>
           </h2>
+          <p className="m-0 max-w-[46ch] text-[clamp(13px,1.1vw,16px)] leading-relaxed text-dim">
+            {SITE.atlas.lead}
+          </p>
         </div>
+      </div>
 
-        {/* каретка: на десктопе её двигает скролл, на мобильном — палец */}
-        {/* data-lenis-prevent обязателен: иначе Lenis перехватывает жест
-            над вложенным скроллером и карусель не листается пальцем */}
-        <div
-          ref={track}
-          data-lenis-prevent
-          className="flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 sm:px-8 lg:snap-none lg:overflow-visible lg:px-[72px]"
-        >
-          {services.map((s, i) => {
-            const on = i === active;
-            return (
-              <article
-                key={s.n}
-                className="relative flex w-[86vw] shrink-0 snap-start flex-col justify-between border bg-elev p-6 transition-colors duration-500 sm:w-[70vw] sm:p-8 lg:w-[clamp(420px,32vw,560px)]"
-                style={{ borderColor: on ? 'var(--line-strong)' : 'var(--line)' }}
+      <div className="mt-[clamp(24px,5vh,64px)] flex flex-col">
+        {SITE.services.map((s, i) => {
+          const flip = i % 2 === 1;
+          return (
+            <article
+              key={s.n}
+              data-band
+              className="border-t border-line px-4 py-[clamp(20px,4.5vh,52px)] sm:px-8 lg:px-[72px]"
+            >
+              <div
+                className={`grid items-center gap-[clamp(20px,4vh,44px)] lg:grid-cols-2 lg:gap-14 ${
+                  flip ? 'lg:[&>*:first-child]:order-2' : ''
+                }`}
               >
-                <div>
-                  <div className="flex items-baseline justify-between gap-4">
-                    <span className="rail-label">{groupLabel(s.group)}</span>
-                    <span
-                      className="font-mono text-[clamp(28px,3vw,44px)] leading-none transition-colors duration-500"
-                      style={{ color: on ? 'var(--accent)' : 'var(--fg-faint)', opacity: on ? 0.9 : 0.35 }}
-                    >
-                      {s.n}
-                    </span>
+                {/* медиа-анкор: материал в рамке с плавающим чипом */}
+                <div
+                  data-media
+                  className="relative aspect-[16/9] max-h-[48vh] overflow-hidden rounded-lg border border-line bg-elev lg:aspect-[16/10] lg:max-h-none"
+                >
+                  <div data-parallax className="absolute -inset-y-[8%] inset-x-0">
+                    <Material preset={s.material} opacity={0.95} />
                   </div>
-
-                  <h3
-                    className="m-0 mt-6 text-[clamp(22px,2.3vw,34px)] font-medium leading-tight transition-colors duration-500"
-                    style={{ color: on ? 'var(--fg)' : 'var(--fg-dim)' }}
-                  >
-                    {s.title}
-                  </h3>
-
-                  <p className="m-0 mt-4 max-w-[44ch] text-[clamp(13px,1.05vw,15px)] leading-relaxed text-dim">
-                    {s.summary}
-                  </p>
+                  <div
+                    className="pointer-events-none absolute inset-0"
+                    style={{
+                      background:
+                        'radial-gradient(120% 95% at 28% 8%, rgb(5 6 8 / 0) 0%, rgb(5 6 8 / 0.28) 62%, rgb(5 6 8 / 0.64) 100%)'
+                    }}
+                  />
+                  <span className="absolute left-4 top-4 font-mono text-[clamp(30px,3.4vw,52px)] leading-none text-fg/85">
+                    {s.n}
+                  </span>
+                  <span className="absolute bottom-4 left-4 right-4 border border-line bg-bg/70 px-3 py-2 font-mono text-[9px] uppercase tracking-rail text-dim backdrop-blur-sm">
+                    {groupLabel(s.group)}
+                  </span>
                 </div>
 
-                <div className="mt-8">
-                  <ul className="m-0 flex list-none flex-wrap gap-1.5 p-0">
+                <div data-copy>
+                  <h3 className="display m-0 text-[clamp(26px,3.6vw,54px)]">
+                    {s.title} <span className="accent-serif">{s.titleAccent}</span>
+                  </h3>
+                  <p className="m-0 mt-4 max-w-[46ch] text-[clamp(13px,1.05vw,16px)] leading-relaxed text-dim">
+                    {s.summary}
+                  </p>
+                  <ul className="m-0 mt-6 flex list-none flex-wrap gap-1.5 p-0">
                     {s.stack.map((tech) => (
                       <li
                         key={tech}
@@ -155,52 +135,18 @@ export default function Atlas() {
                       </li>
                     ))}
                   </ul>
-
                   <Link
                     href={s.href}
-                    className="mt-6 inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-rail text-fg transition-colors duration-300 hover:text-accent"
+                    className="mt-7 inline-flex items-center gap-2 rounded-full border border-line px-5 py-2.5 font-mono text-[10px] uppercase tracking-rail text-fg transition-colors duration-300 hover:border-accent hover:text-accent"
                   >
                     Смотреть
                     <span aria-hidden>→</span>
                   </Link>
                 </div>
-              </article>
-            );
-          })}
-        </div>
-
-        {/* рельс прогресса: кликабельный, показывает все шесть направлений */}
-        <div className="px-4 sm:px-8 lg:px-[72px]">
-          <ol className="m-0 flex list-none gap-0 border-t border-line p-0">
-            {services.map((s, i) => {
-              const on = i === active;
-              return (
-                <li key={s.n} className="min-w-0 flex-1">
-                  <button
-                    type="button"
-                    onClick={() => goTo(i)}
-                    aria-current={on || undefined}
-                    className="group flex w-full items-baseline gap-2 border-t-2 pt-3 text-left transition-colors duration-500"
-                    style={{ borderColor: on ? 'var(--accent)' : 'transparent', marginTop: -1 }}
-                  >
-                    <span
-                      className="font-mono text-[9px] tracking-rail transition-colors duration-500"
-                      style={{ color: on ? 'var(--accent)' : 'var(--fg-faint)' }}
-                    >
-                      {s.n}
-                    </span>
-                    <span
-                      className="hidden truncate font-mono text-[9px] uppercase tracking-rail transition-colors duration-500 group-hover:text-fg lg:block"
-                      style={{ color: on ? 'var(--fg)' : 'var(--fg-faint)' }}
-                    >
-                      {s.title}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ol>
-        </div>
+              </div>
+            </article>
+          );
+        })}
       </div>
     </section>
   );
