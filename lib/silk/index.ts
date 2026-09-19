@@ -61,6 +61,8 @@ type Prog = { program: WebGLProgram; loc: (name: string) => WebGLUniformLocation
 
 export type SilkOptions = {
   params?: Partial<SilkParams>;
+  /** Зовётся один раз, после первого отрисованного кадра. */
+  onFirstFrame?: () => void;
   /**
    * Рисовать даже когда страница скрыта. В обычной жизни не нужно — пауза
    * на скрытой вкладке экономит батарею. Включается ключом ?silkdebug,
@@ -81,6 +83,7 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
   if (!gl) {
     // Без WebGL остаётся фон из токенов темы — первый экран не ломается.
     canvas.style.display = 'none';
+    opts.onFirstFrame?.();
     return { destroy: () => {}, setParams: () => {}, setTheme: () => {} };
   }
 
@@ -149,6 +152,7 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
   const sim = build(`#define OCT 3\n${SIM_FRAG}`);
   if (!silk || !sim) {
     canvas.style.display = 'none';
+    opts.onFirstFrame?.();
     return { destroy: () => {}, setParams: () => {}, setTheme: () => {} };
   }
 
@@ -250,6 +254,7 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
   let frames = 0;
   let acc = 0;
   let raf = 0;
+  let announced = false;
   const still = reduced || isMobile;
 
   const frame = (now: number) => {
@@ -330,6 +335,11 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
     gl.uniform3f(silk.loc('uCoreW'), P.core1, P.core2, P.core3);
     gl.uniform1f(silk.loc('uMode'), mode);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+    if (!announced) {
+      announced = true;
+      opts.onFirstFrame?.();
+    }
 
     // 3. разрешение подстраивается под живые кадры
     acc += dt;

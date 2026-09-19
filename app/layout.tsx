@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Onest, JetBrains_Mono } from 'next/font/google';
+import Header from '@/components/Header';
+import Preloader from '@/components/Preloader';
 import SmoothScroll from '@/components/SmoothScroll';
 import { SITE } from '@/content/site';
 import './globals.css';
@@ -50,6 +52,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           К содержанию
         </a>
         <SmoothScroll />
+        <Preloader />
+        <Header />
         {children}
         <div className="grain" aria-hidden />
       </body>
