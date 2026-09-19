@@ -70,9 +70,13 @@ export default function Concepts() {
           </p>
         </div>
 
-        <ul className="m-0 mt-[clamp(32px,7vh,80px)] grid list-none gap-4 p-0 sm:grid-cols-2 xl:grid-cols-4">
+        {/* до 640px — свайп-ряд: четыре карточки столбиком стоили телефону два с половиной экрана */}
+        <ul
+          data-lenis-prevent-horizontal
+          className="-mx-4 m-0 mt-[clamp(32px,7vh,80px)] flex snap-x snap-mandatory scroll-px-4 list-none gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] after:w-px after:shrink-0 after:content-[''] sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:after:hidden xl:grid-cols-4 [&::-webkit-scrollbar]:hidden"
+        >
           {SITE.concepts.items.map((c) => (
-            <li key={c.slug}>
+            <li key={c.slug} className="w-[78vw] max-w-[340px] shrink-0 snap-start sm:w-auto sm:max-w-none">
               <article
                 className="group flex h-full flex-col border border-line bg-elev transition-colors duration-500 hover:border-line-strong"
                 onMouseEnter={() => warp(c.slug, true)}

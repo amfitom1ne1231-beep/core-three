@@ -70,11 +70,11 @@ export default function Footer({ cta = true }: { cta?: boolean }) {
         )}
 
         <div
-          className={`grid gap-10 sm:grid-cols-2 lg:grid-cols-4 ${
+          className={`grid grid-cols-2 gap-x-6 gap-y-10 lg:grid-cols-4 ${
             cta ? 'mt-[clamp(64px,12vh,140px)] border-t border-line pt-10' : ''
           }`}
         >
-          <div>
+          <div className="col-span-2 lg:col-span-1">
             <Link href="/" className="flex items-center gap-2.5 text-fg transition-colors duration-300 hover:text-accent">
               <Mark className="h-8 w-8" />
               <span className="font-mono text-[11px] uppercase tracking-rail">{SITE.name}</span>

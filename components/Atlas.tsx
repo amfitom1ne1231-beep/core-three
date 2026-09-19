@@ -17,9 +17,26 @@ gsap.registerPlugin(ScrollTrigger);
  * Горизонтальная каретка на закреплённой секции отсюда убрана: она стоила
  * четыре экрана скролла и всё равно показывала бледные карточки. Полоса
  * отдаёт больше за меньшую длину.
+ *
+ * До 1024px полосы становятся свайп-каруселью со снаппингом: шесть полос
+ * подряд занимали на телефоне четыре с лишним экрана.
  */
 export default function Atlas() {
   const root = useRef<HTMLElement>(null);
+  const track = useRef<HTMLDivElement>(null);
+  const bar = useRef<HTMLDivElement>(null);
+  const counter = useRef<HTMLSpanElement>(null);
+
+  // Прогресс карусели пишется прямо в DOM: перерисовывать шесть карточек
+  // на каждый кадр свайпа незачем.
+  const onTrackScroll = () => {
+    const t = track.current;
+    if (!t || !bar.current || !counter.current) return;
+    const max = t.scrollWidth - t.clientWidth;
+    const p = max > 0 ? t.scrollLeft / max : 0;
+    bar.current.style.transform = `scaleX(${(1 + p * (SITE.services.length - 1)) / SITE.services.length})`;
+    counter.current.textContent = String(Math.round(p * (SITE.services.length - 1)) + 1).padStart(2, '0');
+  };
 
   useEffect(() => {
     const el = root.current;
@@ -28,7 +45,9 @@ export default function Atlas() {
     const ctx = gsap.context(() => {
       const mm = gsap.matchMedia();
 
-      mm.add('(prefers-reduced-motion: no-preference)', () => {
+      // на телефоне карточки стоят в одну строку — проявление и параллакс
+      // там ничего не добавляют, кроме дёрганья при свайпе
+      mm.add('(min-width: 1024px) and (prefers-reduced-motion: no-preference)', () => {
         el.querySelectorAll<HTMLElement>('[data-band]').forEach((band) => {
           const media = band.querySelector<HTMLElement>('[data-media]');
           const copy = band.querySelector<HTMLElement>('[data-copy]');
@@ -81,24 +100,30 @@ export default function Atlas() {
         </div>
       </div>
 
-      <div className="mt-[clamp(24px,5vh,64px)] flex flex-col">
+      <div
+        ref={track}
+        onScroll={onTrackScroll}
+        // горизонтальный свайп — нативный, вертикальный скролл остаётся за Lenis
+        data-lenis-prevent-horizontal
+        className="mt-[clamp(28px,5vh,64px)] flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto px-4 [scrollbar-width:none] sm:scroll-px-8 sm:px-8 lg:flex-col lg:gap-0 lg:overflow-visible lg:px-0 [&::-webkit-scrollbar]:hidden after:w-px after:shrink-0 after:content-[''] lg:after:hidden"
+      >
         {SITE.services.map((s, i) => {
           const flip = i % 2 === 1;
           return (
             <article
               key={s.n}
               data-band
-              className="border-t border-line px-4 py-[clamp(20px,4.5vh,52px)] sm:px-8 lg:px-[72px]"
+              className="w-[82vw] max-w-[440px] shrink-0 snap-start lg:w-auto lg:max-w-none lg:border-t lg:border-line lg:px-[72px] lg:py-[clamp(20px,4.5vh,52px)]"
             >
               <div
-                className={`grid items-center gap-[clamp(20px,4vh,44px)] lg:grid-cols-2 lg:gap-14 ${
+                className={`grid items-center gap-5 lg:grid-cols-2 lg:gap-14 ${
                   flip ? 'lg:[&>*:first-child]:order-2' : ''
                 }`}
               >
                 {/* медиа-анкор: материал в рамке с плавающим чипом */}
                 <div
                   data-media
-                  className="relative aspect-[16/9] max-h-[48vh] overflow-hidden rounded-lg border border-line bg-elev lg:aspect-[16/10] lg:max-h-none"
+                  className="relative aspect-[16/10] overflow-hidden rounded-lg border border-line bg-elev"
                 >
                   <div data-parallax className="absolute -inset-y-[8%] inset-x-0">
                     <Material preset={s.material} opacity={0.95} />
@@ -147,6 +172,23 @@ export default function Atlas() {
             </article>
           );
         })}
+      </div>
+
+      {/* прогресс карусели: только там, где она есть */}
+      <div className="flex items-center gap-4 px-4 pb-[10vh] pt-8 sm:px-8 lg:hidden" aria-hidden>
+        <span ref={counter} className="font-mono text-[10px] tracking-rail text-fg">
+          01
+        </span>
+        <div className="relative h-px flex-1 bg-line">
+          <div
+            ref={bar}
+            className="absolute inset-0 origin-left bg-accent transition-transform duration-150"
+            style={{ transform: `scaleX(${1 / SITE.services.length})` }}
+          />
+        </div>
+        <span className="font-mono text-[10px] tracking-rail text-faint">
+          {String(SITE.services.length).padStart(2, '0')}
+        </span>
       </div>
     </section>
   );

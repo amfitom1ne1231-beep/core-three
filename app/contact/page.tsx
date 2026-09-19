@@ -29,8 +29,10 @@ export default function ContactPage() {
             aria-hidden
           />
 
-          <div className="relative grid gap-[clamp(48px,8vh,88px)] px-4 pb-[12vh] pt-[clamp(112px,18vh,196px)] sm:px-8 lg:grid-cols-[1fr_minmax(0,1.05fr)] lg:gap-[clamp(48px,6vw,112px)] lg:px-[72px]">
-            <div>
+          {/* Три блока в сетке: на телефоне форма идёт сразу за заголовком,
+              на десктопе она справа, а шаги — под заголовком слева. */}
+          <div className="relative grid gap-[clamp(40px,7vh,72px)] px-4 pb-[12vh] pt-[clamp(112px,18vh,196px)] sm:px-8 lg:grid-cols-[1fr_minmax(0,1.05fr)] lg:grid-rows-[auto_1fr] lg:gap-x-[clamp(48px,6vw,112px)] lg:px-[72px]">
+            <div className="lg:col-start-1 lg:row-start-1">
               <span className="rail-label">{contact.label}</span>
               <h1
                 className="display m-0 mt-6 text-[clamp(40px,6.6vw,108px)]"
@@ -48,9 +50,15 @@ export default function ContactPage() {
               <p className="m-0 mt-8 max-w-[42ch] text-[clamp(14px,1.15vw,17px)] leading-relaxed text-dim">
                 {contact.lead}
               </p>
+            </div>
 
+            <div className="self-start border border-line bg-bg/55 p-[clamp(20px,3vw,44px)] backdrop-blur-md lg:sticky lg:top-28 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+              <LeadForm />
+            </div>
+
+            <div className="lg:col-start-1 lg:row-start-2">
               {/* что будет после заявки — честность в первом касании */}
-              <ol className="m-0 mt-[clamp(40px,7vh,72px)] list-none p-0">
+              <ol className="m-0 list-none p-0">
                 {contact.steps.map((s) => (
                   <li
                     key={s.n}
@@ -82,10 +90,6 @@ export default function ContactPage() {
                   {SITE.email}
                 </a>
               </div>
-            </div>
-
-            <div className="self-start border border-line bg-bg/55 p-[clamp(20px,3vw,44px)] backdrop-blur-md lg:sticky lg:top-28">
-              <LeadForm />
             </div>
           </div>
         </section>

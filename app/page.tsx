@@ -55,7 +55,7 @@ export default function Home() {
 
           {/* заголовок озвучивается целиком, посимвольная разбивка скрыта от читалок */}
           <h1
-            className="display m-0 text-[clamp(38px,8.4vw,132px)]"
+            className="display m-0 text-[clamp(52px,8.4vw,132px)]"
             aria-label={`${SITE.hero.title} ${SITE.hero.titleStrong}`}
           >
             <RevealText text={SITE.hero.title} as="span" className="block" decorative />
