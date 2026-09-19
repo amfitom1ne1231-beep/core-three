@@ -150,6 +150,75 @@ body {
 }
 
 /* ============================================================
+   Курсор. Позицию ведёт GSAP через transform, поэтому размер
+   меняется отдельным свойством scale — они не спорят.
+   ============================================================ */
+html.has-cursor,
+html.has-cursor * {
+  cursor: none !important;
+}
+html.has-cursor :is(input:not([type='checkbox']):not([type='radio']):not([type='submit']), textarea, [contenteditable]) {
+  cursor: text !important;
+}
+
+.cursor-dot,
+.cursor-ring {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 250;
+  pointer-events: none;
+  border-radius: 50%;
+  --s: 1;
+  scale: calc(var(--s) * var(--p, 1));
+  transition:
+    opacity 0.3s ease,
+    scale 0.4s cubic-bezier(0.2, 0.7, 0.2, 1),
+    background-color 0.3s ease,
+    border-color 0.3s ease;
+}
+
+.cursor-dot {
+  width: 8px;
+  height: 8px;
+  background: #fff;
+  mix-blend-mode: difference;
+}
+
+.cursor-ring {
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgb(255 255 255 / 0.5);
+  opacity: 0;
+  --s: 0.4;
+}
+.cursor-ring.is-down { --p: 0.82; }
+
+/* над кнопкой и ссылкой — сплошной круг, инвертирующий то, что под ним */
+.cursor-ring[data-mode='hover'] {
+  opacity: 1;
+  --s: 1;
+  background: #fff;
+  border-color: transparent;
+  mix-blend-mode: difference;
+}
+.cursor-dot[data-mode='hover'] { --s: 0; }
+
+/* над материалом — тонкое кольцо без смешения: difference на синем даёт кислоту */
+.cursor-ring[data-mode='ring'] { opacity: 1; --s: 0.7; }
+.cursor-dot[data-mode='ring'] { opacity: 0; }
+.cursor-ring[data-mode='ring-hover'] { opacity: 1; --s: 1.2; border-color: rgb(255 255 255 / 0.85); }
+.cursor-dot[data-mode='ring-hover'] { opacity: 0; }
+
+.cursor-dot[data-mode='gone'],
+.cursor-ring[data-mode='gone'],
+.cursor-dot[data-mode='field'],
+.cursor-ring[data-mode='field'] { opacity: 0; }
+
+/* Цели скоса по скорости: свой слой заранее, чтобы скос не перерисовывал страницу */
+[data-skew] { will-change: transform; }
+
+/* ============================================================
    Схема «Анатомия проекта» — плотность и глубина делают её прибором,
    а не блок-схемой: сетка на фоне, градиентные заливки, внутренняя
    кромка, угловые засечки, стрелки направления и пакеты со шлейфом.

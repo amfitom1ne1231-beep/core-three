@@ -76,6 +76,7 @@ export default function ContactPage() {
               <div className="mt-9 flex flex-wrap items-center gap-x-5 gap-y-3">
                 <span className="rail-label">{contact.direct}</span>
                 <a
+                  data-magnetic
                   href={`https://t.me/${SITE.telegram}`}
                   target="_blank"
                   rel="noreferrer noopener"

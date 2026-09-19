@@ -72,6 +72,7 @@ export default function Header() {
       </nav>
 
       <Link
+        data-magnetic
         href={contactHref(pathname)}
         className="pointer-events-auto border border-line px-4 py-2.5 font-mono text-[10px] uppercase tracking-rail text-fg transition-colors duration-300 hover:border-accent hover:text-accent"
       >

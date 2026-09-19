@@ -8,6 +8,11 @@ import { setLenis } from '@/lib/scroll';
 
 gsap.registerPlugin(ScrollTrigger);
 
+/** Предел скоса, градусы: дальше текст начинает читаться криво. */
+const SKEW_MAX = 2.2;
+/** Градусов на пиксель скорости за кадр. */
+const SKEW_K = 0.06;
+
 /**
  * Плавный скролл и его связка с ScrollTrigger.
  *
@@ -35,9 +40,41 @@ export default function SmoothScroll() {
     gsap.ticker.add(tick);
     gsap.ticker.lagSmoothing(0);
 
+    // Скос и лёгкий блюр по скорости скролла: страница «тянется» за колесом.
+    // Только для мыши — на телефоне скролл нативный, а кадры дороже.
+    // Цели помечены data-skew, значение "blur" добавляет размытие медиа.
+    let skew = 0;
+    let dirty = false;
+    const skewTick = () => {
+      const target = gsap.utils.clamp(-SKEW_MAX, SKEW_MAX, -lenis.velocity * SKEW_K);
+      skew += (target - skew) * 0.12;
+      const els = () => document.querySelectorAll<HTMLElement>('[data-skew]');
+      if (Math.abs(skew) < 0.01 && Math.abs(target) < 0.01) {
+        // в покое стили снимаются целиком, чтобы не держать лишние слои
+        if (dirty) {
+          els().forEach((el) => {
+            el.style.transform = '';
+            el.style.filter = '';
+          });
+          dirty = false;
+        }
+        skew = 0;
+        return;
+      }
+      dirty = true;
+      const blur = Math.min(Math.abs(skew) * 0.45, 1);
+      els().forEach((el) => {
+        el.style.transform = `skewY(${skew.toFixed(3)}deg)`;
+        if (el.dataset.skew === 'blur') el.style.filter = `blur(${blur.toFixed(2)}px)`;
+      });
+    };
+    const fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
+    if (fine) gsap.ticker.add(skewTick);
+
     return () => {
       setLenis(null);
       gsap.ticker.remove(tick);
+      gsap.ticker.remove(skewTick);
       gsap.ticker.lagSmoothing(500, 33);
       lenis.destroy();
     };

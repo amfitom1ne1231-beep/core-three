@@ -36,7 +36,7 @@ export default function Footer({ cta = true }: { cta?: boolean }) {
 
             <div className="mt-6 grid gap-[clamp(40px,7vh,72px)] lg:grid-cols-[1fr_minmax(0,1.05fr)] lg:gap-[clamp(48px,6vw,112px)]">
               <div>
-                <h2 className="display m-0 text-[clamp(32px,6vw,96px)]">
+                <h2 data-skew className="display m-0 text-[clamp(32px,6vw,96px)]">
                   {footer.title} <span className="accent-serif">{footer.titleAccent}</span>
                 </h2>
                 <p className="m-0 mt-7 max-w-[44ch] text-[clamp(13px,1.1vw,16px)] leading-relaxed text-dim">
@@ -45,6 +45,7 @@ export default function Footer({ cta = true }: { cta?: boolean }) {
                 <div className="mt-9 flex flex-wrap items-center gap-x-5 gap-y-3">
                   <span className="rail-label">{SITE.contact.direct}</span>
                   <a
+                    data-magnetic
                     href={`https://t.me/${SITE.telegram}`}
                     target="_blank"
                     rel="noreferrer noopener"

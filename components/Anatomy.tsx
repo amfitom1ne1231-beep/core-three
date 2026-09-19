@@ -114,7 +114,7 @@ export default function Anatomy() {
       <div className="flex flex-col justify-center gap-[clamp(24px,5vh,56px)] px-4 py-[12vh] sm:px-8 lg:px-[56px]">
         <div>
           <span className="rail-label">{SITE.anatomy.label}</span>
-          <h2 className="display m-0 mt-4 text-[clamp(28px,5vw,76px)]">
+          <h2 data-skew className="display m-0 mt-4 text-[clamp(28px,5vw,76px)]">
             {SITE.anatomy.title} <span className="accent-serif">{SITE.anatomy.titleAccent}</span>
           </h2>
         </div>

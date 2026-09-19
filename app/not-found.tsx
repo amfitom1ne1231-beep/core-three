@@ -45,12 +45,14 @@ export default function NotFound() {
             </p>
             <div className="mt-10 flex flex-wrap gap-3.5">
               <Link
+                data-magnetic
                 href="/"
                 className="border border-fg bg-fg px-[22px] py-[13px] font-mono text-[11px] uppercase tracking-label text-bg transition-colors duration-300 hover:border-accent hover:bg-accent hover:text-white"
               >
                 На главную
               </Link>
               <Link
+                data-magnetic
                 href={SITE.hero.primary.href}
                 className="border border-line px-[22px] py-[13px] font-mono text-[11px] uppercase tracking-label text-fg transition-colors duration-300 hover:border-accent hover:text-accent"
               >

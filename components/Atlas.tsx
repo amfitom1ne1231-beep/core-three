@@ -91,7 +91,7 @@ export default function Atlas() {
       <div className="px-4 pt-[11vh] sm:px-8 lg:px-[72px]">
         <span className="rail-label">{SITE.atlas.label}</span>
         <div className="mt-4 grid gap-[clamp(16px,3vh,32px)] lg:grid-cols-[1.15fr_1fr] lg:items-end">
-          <h2 className="display m-0 text-[clamp(28px,5.2vw,80px)]">
+          <h2 data-skew className="display m-0 text-[clamp(28px,5.2vw,80px)]">
             {SITE.atlas.title} <span className="accent-serif">{SITE.atlas.titleAccent}</span>
           </h2>
           <p className="m-0 max-w-[46ch] text-[clamp(13px,1.1vw,16px)] leading-relaxed text-dim">
@@ -126,7 +126,9 @@ export default function Atlas() {
                   className="relative aspect-[16/10] overflow-hidden rounded-lg border border-line bg-elev"
                 >
                   <div data-parallax className="absolute -inset-y-[8%] inset-x-0">
-                    <Material preset={s.material} opacity={0.95} />
+                    <div data-skew="blur" className="absolute inset-0">
+                      <Material preset={s.material} opacity={0.95} />
+                    </div>
                   </div>
                   <div
                     className="pointer-events-none absolute inset-0"
@@ -161,6 +163,7 @@ export default function Atlas() {
                     ))}
                   </ul>
                   <Link
+                    data-magnetic
                     href={s.href}
                     className="mt-7 inline-flex items-center gap-2 rounded-full border border-line px-5 py-2.5 font-mono text-[10px] uppercase tracking-rail text-fg transition-colors duration-300 hover:border-accent hover:text-accent"
                   >

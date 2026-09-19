@@ -122,6 +122,7 @@ export default function Manifesto() {
   return (
     <section
       ref={section}
+      data-cursor="ring"
       className="relative z-10 w-full md:h-[180svh]"
       aria-label="Манифест"
     >
