@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import Mark from './Mark';
 import { MARK_CENTER } from './mark-geometry';
-import { fontsReady, markRevealed, silkReady, withTimeout } from '@/lib/boot';
+import { fontsReady, markLeaving, markRevealed, silkReady, withTimeout } from '@/lib/boot';
 
 /**
  * Прелоадер. Знак собирается из трёх лучей — ровно из тех, что составляют
@@ -37,6 +37,7 @@ export default function Preloader() {
     const finish = () => {
       if (finished) return;
       finished = true;
+      markLeaving(null);
       clearTimeout(watchdog);
       document.documentElement.style.overflow = prevOverflow;
       markRevealed();
@@ -108,7 +109,9 @@ export default function Preloader() {
       gsap
         .timeline({ onComplete: finish })
         .to(box, { scale: 1.06, duration: 0.5, ease: 'power2.inOut' })
-        .to(el, { opacity: 0, duration: 0.6, ease: 'power2.inOut' }, '-=0.25');
+        .to(el, { opacity: 0, duration: 0.6, ease: 'power2.inOut' }, '-=0.25')
+        // вместе с началом затухания: знак первого экрана подхватывает полёт из этой точки
+        .call(() => markLeaving(box.getBoundingClientRect()), undefined, '<');
     });
 
     return () => {

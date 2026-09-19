@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Footer from '@/components/Footer';
 import LeadForm from '@/components/LeadForm';
 import RevealText from '@/components/RevealText';
-import VideoBackdrop from '@/components/VideoBackdrop';
+import HeroSilk from '@/components/HeroSilk';
 import { SITE } from '@/content/site';
 
 export const metadata: Metadata = {
@@ -16,18 +16,10 @@ export default function ContactPage() {
 
   return (
     <>
+      {/* тот же материал, что на главной: заявка — продолжение того же мира */}
+      <HeroSilk />
       <main id="content" className="relative z-10 w-full">
-        <section className="relative min-h-[100svh] overflow-hidden bg-bg">
-          {/* медиа-анкор страницы: те же чернила, что в финале главной */}
-          <VideoBackdrop src="/video/ink.mp4" poster="/video/ink-poster.jpg" opacity={0.5} />
-          <div
-            className="pointer-events-none absolute inset-0"
-            style={{
-              background:
-                'linear-gradient(180deg, rgb(var(--bg-rgb) / 0.7) 0%, rgb(var(--bg-rgb) / 0.5) 40%, rgb(var(--bg-rgb) / 0.85) 82%, var(--bg) 100%)'
-            }}
-            aria-hidden
-          />
+        <section data-chapter="contact" className="relative min-h-[100svh] overflow-hidden">
 
           {/* Три блока в сетке: на телефоне форма идёт сразу за заголовком,
               на десктопе она справа, а шаги — под заголовком слева. */}

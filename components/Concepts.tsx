@@ -3,7 +3,6 @@
 import { useRef } from 'react';
 import gsap from 'gsap';
 import ConceptPreview from './concept-previews';
-import VideoBackdrop from './VideoBackdrop';
 import { SITE } from '@/content/site';
 
 /**
@@ -40,24 +39,10 @@ export default function Concepts() {
   return (
     <section
       ref={root}
-      className="relative z-10 w-full overflow-hidden border-t border-line bg-bg"
+      data-chapter="concepts"
+      className="relative z-10 w-full overflow-hidden border-t border-line"
       aria-label="Концепты"
     >
-      {/* капля на тёмной поверхности: движение только в верхней полосе */}
-      <VideoBackdrop
-        src="/video/drop.mp4"
-        poster="/video/drop-poster.jpg"
-        className="h-[46vh]"
-        opacity={0.3}
-      />
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-[46vh]"
-        style={{
-          background:
-            'linear-gradient(180deg, rgb(var(--bg-rgb) / 0.55) 0%, rgb(var(--bg-rgb) / 0.78) 60%, var(--bg) 100%)'
-        }}
-        aria-hidden
-      />
 
       <div data-recede className="relative px-4 py-[14vh] sm:px-8 lg:px-[72px]">
         <span className="rail-label">{SITE.concepts.label}</span>

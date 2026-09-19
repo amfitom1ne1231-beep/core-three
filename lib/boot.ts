@@ -61,3 +61,24 @@ export function withTimeout(p: Promise<unknown>, ms: number): Promise<void> {
     new Promise<void>((resolve) => setTimeout(resolve, ms))
   ]);
 }
+
+/* ------------------------------------------------------------------ */
+
+let resolveLeave: ((rect: DOMRect | null) => void) | null = null;
+
+/**
+ * Прелоадер уходит: отдаёт прямоугольник своего знака, чтобы знак
+ * первого экрана мог «перелететь» из этой точки. null — прелоадера
+ * не было или он снят без анимации.
+ */
+export const preloaderLeaving: Promise<DOMRect | null> =
+  typeof window === 'undefined'
+    ? Promise.resolve(null)
+    : new Promise((resolve) => {
+        resolveLeave = resolve;
+      });
+
+export function markLeaving(rect: DOMRect | null) {
+  resolveLeave?.(rect);
+  resolveLeave = null;
+}

@@ -122,18 +122,20 @@ export default function Manifesto() {
   return (
     <section
       ref={section}
+      data-chapter="manifesto"
       data-cursor="ring"
       className="relative z-10 w-full md:h-[180svh]"
       aria-label="Манифест"
     >
       {/* содержимое липнет к экрану, материал продолжает жить за текстом */}
       <div className="md:sticky md:top-0 flex min-h-[100svh] flex-col justify-center overflow-hidden px-4 py-[16vh] sm:px-8 md:py-0 lg:px-[72px]">
-        {/* завеса под текстом: материал остаётся видим, но контраст держится */}
+        {/* завеса под текстом: материал остаётся видим, но контраст держится.
+            Края с нуля — материал сквозной, и ступенька на стыке секций была бы видна */}
         <div
           className="pointer-events-none absolute inset-0 -z-10"
           style={{
             background:
-              'linear-gradient(180deg, rgb(var(--bg-rgb) / 0.35) 0%, rgb(var(--bg-rgb) / 0.72) 38%, rgb(var(--bg-rgb) / 0.72) 62%, rgb(var(--bg-rgb) / 0.35) 100%)'
+              'linear-gradient(180deg, rgb(var(--bg-rgb) / 0) 0%, rgb(var(--bg-rgb) / 0.72) 34%, rgb(var(--bg-rgb) / 0.72) 66%, rgb(var(--bg-rgb) / 0) 100%)'
           }}
           aria-hidden
         />

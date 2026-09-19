@@ -45,6 +45,16 @@ export const SILK_DEFAULTS: SilkParams = {
   accent: '#55769a'
 };
 
+/**
+ * Часы материала и веса ядер. Рантайм обновляет их каждый кадр, чтобы
+ * DOM-элементы (знак на первом экране) могли дышать в такт свету ядер.
+ */
+export const silkClock = { t: 0, w: [1, 0.74, 0.52] as [number, number, number], live: false };
+
+/** Скорости и фазы трёх ядер — те же числа, что в шейдере (addCore). */
+export const CORE_SPEED = [0.11, 0.07, 0.05] as const;
+export const CORE_PHASE = [0, 2.09, 4.18] as const;
+
 export type SilkHandle = {
   destroy: () => void;
   setParams: (patch: Partial<SilkParams>) => void;
@@ -264,6 +274,9 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
     const dt = Math.min((now - last) / 1000, 0.05);
     last = now;
     const time = (now - t0) / 1000;
+    silkClock.t = (reduced ? 12 : time) * 0.15 * P.speed;
+    silkClock.w = [P.core1, P.core2, P.core3];
+    silkClock.live = true;
 
     const dx = pointer.uv[0] - pointer.prev[0];
     const dy = pointer.uv[1] - pointer.prev[1];

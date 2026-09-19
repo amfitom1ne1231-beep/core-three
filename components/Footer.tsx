@@ -1,11 +1,11 @@
 import Link from 'next/link';
 import LeadForm from './LeadForm';
 import Mark from './Mark';
-import VideoBackdrop from './VideoBackdrop';
 import { SITE } from '@/content/site';
 
 /**
  * Футер. На всех страницах, кроме самой заявки, он же финальный CTA:
+ * финальная глава материала — свет, с которого страница начиналась.
  * форма прямо здесь, чтобы решившемуся не нужно было никуда переходить.
  * На /contact форма уже на экране, поэтому там футер только с навигацией.
  */
@@ -13,21 +13,17 @@ export default function Footer({ cta = true }: { cta?: boolean }) {
   const { footer } = SITE;
 
   return (
-    <footer className="relative z-10 w-full overflow-hidden border-t border-line bg-bg text-fg">
-      {cta && (
-        <>
-          {/* чернила в воде: единственное место, где движение уместно рядом с текстом */}
-          <VideoBackdrop src="/video/ink.mp4" poster="/video/ink-poster.jpg" opacity={0.62} />
-          <div
-            className="pointer-events-none absolute inset-0"
-            style={{
-              background:
-                'linear-gradient(180deg, var(--bg) 0%, rgb(var(--bg-rgb) / 0.55) 26%, rgb(var(--bg-rgb) / 0.62) 62%, rgb(var(--bg-rgb) / 0.9) 100%)'
-            }}
-            aria-hidden
-          />
-        </>
-      )}
+    <footer
+      data-chapter={cta ? 'finale' : undefined}
+      className="relative z-10 w-full overflow-hidden border-t border-line text-fg"
+    >
+      {/* финал на том же материале, что и первый экран: свет возвращается.
+          Внизу — подложка под навигацию, чтобы ссылки читались на ярком */}
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-[55%]"
+        style={{ background: 'linear-gradient(180deg, rgb(var(--bg-rgb) / 0) 0%, rgb(var(--bg-rgb) / 0.85) 55%, var(--bg) 100%)' }}
+        aria-hidden
+      />
 
       <div className={`relative px-4 sm:px-8 lg:px-[72px] ${cta ? 'pb-12 pt-[14vh]' : 'py-12'}`}>
         {cta && (

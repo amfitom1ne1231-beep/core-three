@@ -449,7 +449,8 @@ export default function Atlas() {
     <section
       ref={root}
       data-recede
-      className="relative z-10 w-full overflow-hidden border-t border-line bg-bg"
+      data-chapter="atlas"
+      className="relative z-10 w-full overflow-hidden border-t border-line"
       // значения до первого замера, чтобы сцена не схлопнулась при загрузке
       style={{ '--A': '600px', '--H': '408px', '--live-k': 600 / LIVE_W } as React.CSSProperties}
       aria-roledescription="карусель"

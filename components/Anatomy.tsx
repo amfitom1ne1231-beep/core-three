@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Glyph from './anatomy-glyphs';
-import Material from './Material';
 import { SITE } from '@/content/site';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -99,17 +98,10 @@ export default function Anatomy() {
   return (
     <section
       ref={section}
-      className="relative z-10 w-full bg-bg"
+      data-chapter="anatomy"
+      className="relative z-10 w-full"
       aria-label="Анатомия проекта"
     >
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-[22vh] -translate-y-full"
-        style={{
-          background:
-            'linear-gradient(180deg, rgb(var(--bg-rgb) / 0) 0%, rgb(var(--bg-rgb) / 0.65) 55%, var(--bg) 100%)'
-        }}
-        aria-hidden
-      />
 
       <div data-recede className="flex flex-col justify-center gap-[clamp(24px,5vh,56px)] px-4 py-[12vh] sm:px-8 lg:px-[56px]">
         <div>
@@ -174,13 +166,11 @@ export default function Anatomy() {
           </ol>
 
           {/* Панель-прибор: рамка, шапка с плоскостями, поле схемы, строка осмотра */}
-          <div data-reveal="clip" className="relative min-w-0 overflow-hidden rounded-lg border border-line">
-            <Material preset="deep" opacity={0.75} />
-            <div
-              className="pointer-events-none absolute inset-0"
-              style={{ background: 'linear-gradient(180deg, rgb(var(--bg-rgb) / 0.66) 0%, rgb(var(--bg-rgb) / 0.84) 100%)' }}
-              aria-hidden
-            />
+          {/* стекло: сквозь панель виден тот же материал, что под всей страницей */}
+          <div
+            data-reveal="clip"
+            className="relative min-w-0 overflow-hidden rounded-lg border border-line bg-bg/60 backdrop-blur-xl"
+          >
             <div className="relative">
             <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-b border-line px-4 py-3 sm:px-5">
               <span className="font-mono text-[10px] uppercase tracking-rail text-fg">
