@@ -121,66 +121,143 @@ body {
 }
 
 /* ============================================================
-   Схема «Анатомия проекта»
+   Схема «Анатомия проекта» — плотность и глубина делают её прибором,
+   а не блок-схемой: сетка на фоне, градиентные заливки, внутренняя
+   кромка, угловые засечки, стрелки направления и пакеты со шлейфом.
    ============================================================ */
-.plane-label {
-  fill: var(--fg-faint);
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 11px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-}
+.grid-dot { fill: var(--fg); opacity: 0.055; }
+
+.node { cursor: pointer; outline: none; }
 
 .node .node-box {
   fill: var(--bg-elev);
   stroke: var(--line);
   stroke-width: 1;
-  transition: stroke 0.45s ease, fill 0.45s ease;
+  /* штрих не масштабируется вместе с viewBox: иначе на узкой колонке
+     все линии превращаются в невидимую волосинку */
+  vector-effect: non-scaling-stroke;
+  transition: stroke 0.45s ease;
+}
+.node .node-inner {
+  fill: url(#ct-node);
+  stroke: var(--fg);
+  stroke-opacity: 0.04;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  transition: stroke-opacity 0.45s ease;
+}
+.node .node-ticks path {
+  fill: none;
+  stroke: var(--fg-faint);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.35;
+  transition: stroke 0.45s ease, opacity 0.45s ease;
+}
+.node .node-glyph {
+  fill: none;
+  stroke: var(--fg-faint);
+  stroke-width: 1.3;
+  vector-effect: non-scaling-stroke;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  opacity: 0.75;
+  transition: stroke 0.45s ease, opacity 0.45s ease;
+}
+.node .node-id {
+  fill: var(--fg-faint);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-anchor: end;
+  opacity: 0.6;
+  transition: fill 0.45s ease, opacity 0.45s ease;
 }
 .node .node-title {
   fill: var(--fg-faint);
   font-family: var(--font-onest), system-ui, sans-serif;
-  font-size: 20px;
+  font-size: 17px;
   font-weight: 500;
   transition: fill 0.45s ease;
+}
+.node .node-div {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  transition: stroke 0.45s ease;
 }
 .node .node-tech {
   fill: var(--fg-faint);
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10.5px;
+  font-size: 9.5px;
   letter-spacing: 0.14em;
-  transition: fill 0.45s ease;
   opacity: 0.7;
+  transition: fill 0.45s ease, opacity 0.45s ease;
 }
-.node { cursor: pointer; outline: none; }
-.node[data-on] .node-box { stroke: var(--accent); fill: var(--bg-elev); }
+
+.node[data-on] .node-box { stroke: var(--accent); }
+.node[data-on] .node-inner { stroke-opacity: 0.07; }
+.node[data-on] .node-ticks path { stroke: var(--accent); opacity: 0.9; }
+.node[data-on] .node-glyph { stroke: var(--accent); opacity: 1; }
+.node[data-on] .node-id { fill: var(--accent); opacity: 1; }
 .node[data-on] .node-title { fill: var(--fg); }
+.node[data-on] .node-div { stroke: var(--line-strong); }
 .node[data-on] .node-tech { fill: var(--accent); opacity: 1; }
 .node:focus-visible .node-box { stroke: var(--fg); stroke-width: 1.5; }
+
+.arrow-idle { fill: var(--line-strong); }
+.arrow-on { fill: var(--accent); }
 
 .link-base {
   fill: none;
   stroke: var(--line);
   stroke-width: 1;
+  vector-effect: non-scaling-stroke;
   transition: stroke 0.45s ease;
 }
 .link-base[data-on] { stroke: var(--line-strong); }
 
-/* импульс: короткий штрих бежит по дорожке, длину пути знать не нужно */
-.link-pulse {
+.link-label {
+  fill: var(--fg-faint);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-anchor: middle;
+  opacity: 0.45;
+  transition: fill 0.45s ease, opacity 0.45s ease;
+}
+.link-label[data-on] { fill: var(--accent); opacity: 1; }
+
+/* пакет: ядро плюс размытый шлейф под ним. Длину пути знать не нужно —
+   работает бегущий штрих, поэтому JS не тратится ни на кадр. */
+.link-pulse,
+.link-trail {
   fill: none;
-  stroke: var(--brand-steel);
-  stroke-width: 1.5;
   stroke-linecap: round;
-  stroke-dasharray: 26 1400;
-  stroke-dashoffset: 1426;
-  opacity: 0.35;
+  stroke-dasharray: 22 1400;
+  stroke-dashoffset: 1422;
   animation: ct-flow 3.4s linear infinite;
   transition: opacity 0.45s ease, stroke 0.45s ease;
+}
+.link-pulse {
+  stroke: var(--brand-steel);
+  stroke-width: 1.6;
+  opacity: 0.4;
+}
+.link-trail {
+  stroke: var(--brand-steel);
+  stroke-width: 3.5;
+  opacity: 0.18;
 }
 .link-pulse[data-on] {
   stroke: var(--accent);
   opacity: 1;
+  animation-duration: 1.9s;
+}
+.link-trail[data-on] {
+  stroke: var(--accent);
+  opacity: 0.5;
   animation-duration: 1.9s;
 }
 
@@ -192,11 +269,13 @@ body {
   fill: none;
   stroke: var(--line);
   stroke-width: 1;
+  vector-effect: non-scaling-stroke;
   stroke-dasharray: 3 7;
   transition: stroke 0.45s ease;
 }
 .watch-line[data-on] { stroke: var(--accent); }
 
 @media (prefers-reduced-motion: reduce) {
-  .link-pulse { animation: none; stroke-dashoffset: 700; }
+  .link-pulse,
+  .link-trail { animation: none; stroke-dashoffset: 700; }
 }

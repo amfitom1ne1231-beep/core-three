@@ -1,5 +1,7 @@
 import Anatomy from '@/components/Anatomy';
 import Atlas from '@/components/Atlas';
+import Concepts from '@/components/Concepts';
+import Footer from '@/components/Footer';
 import HeroSilk from '@/components/HeroSilk';
 import Manifesto from '@/components/Manifesto';
 import RevealText from '@/components/RevealText';
@@ -66,7 +68,9 @@ export default function Home() {
         <Manifesto />
         <Anatomy />
         <Atlas />
+        <Concepts />
       </main>
+      <Footer />
     </>
   );
 }

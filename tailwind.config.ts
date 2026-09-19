@@ -12,6 +12,7 @@ export default {
         dim: 'var(--fg-dim)',
         faint: 'var(--fg-faint)',
         line: 'var(--line)',
+        'line-strong': 'var(--line-strong)',
         accent: 'var(--accent)',
         brand: {
           deep: 'var(--brand-deep)',
