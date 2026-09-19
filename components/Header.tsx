@@ -15,6 +15,7 @@ import { SITE } from '@/content/site';
  */
 export default function Header() {
   const ref = useRef<HTMLElement>(null);
+  const scrim = useRef<HTMLDivElement>(null);
   const pinned = useRef(false);
   const hidden = useRef(false);
   const pathname = usePathname();
@@ -31,14 +32,34 @@ export default function Header() {
 
   useEffect(() => {
     const el = ref.current;
+    const veil = scrim.current;
     if (!el) return;
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     let last = scrollY;
+    let veiled = false;
 
     const onScroll = () => {
-      if (pinned.current) return;
       const y = scrollY;
+
+      /**
+       * Подложка. Шапка плавающая и прозрачная: стоит ей вернуться при
+       * движении вверх, она ложится прямо на содержимое — над сценой
+       * атласа знак и «Обсудить проект» попадали на гигантский номер и
+       * верхнюю кромку живой вставки. Ниже первого экрана под шапку
+       * подводится мягкая завеса — читаются и она, и то, что под ней.
+       *
+       * Это не анимация, а разборчивость, поэтому работает и при
+       * prefers-reduced-motion — там завеса просто появляется сразу.
+       */
+      const needVeil = y > innerHeight * 0.6;
+      if (veil && needVeil !== veiled) {
+        veiled = needVeil;
+        gsap.to(veil, { opacity: needVeil ? 1 : 0, duration: reduced ? 0 : 0.35, ease: 'none' });
+      }
+
+      if (reduced || pinned.current) return;
+
       const delta = y - last;
       // мелкие подёргивания игнорируем, иначе шапка дрожит
       if (Math.abs(delta) < 6) return;
@@ -55,6 +76,7 @@ export default function Header() {
       });
     };
 
+    onScroll();
     addEventListener('scroll', onScroll, { passive: true });
     return () => removeEventListener('scroll', onScroll);
   }, []);
@@ -64,6 +86,17 @@ export default function Header() {
       ref={ref}
       className="pointer-events-none fixed inset-x-0 top-0 z-[100] flex items-center justify-between px-4 py-4 sm:px-8 lg:px-[72px]"
     >
+      {/* завеса: растворяется книзу, поэтому кромки у неё не видно */}
+      <div
+        ref={scrim}
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[180%] opacity-0"
+        style={{
+          background:
+            'linear-gradient(180deg, rgb(var(--bg-rgb) / 0.92) 0%, rgb(var(--bg-rgb) / 0.72) 45%, rgb(var(--bg-rgb) / 0) 100%)'
+        }}
+      />
+
       <Link
         href="/"
         className="pointer-events-auto flex items-center gap-2.5 text-fg transition-colors duration-300 hover:text-accent"
