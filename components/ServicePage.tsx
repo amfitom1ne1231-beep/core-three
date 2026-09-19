@@ -35,7 +35,7 @@ const LIVE: Record<string, ComponentType<LiveProps>> = {
  * который человек уже видел в карусели на главной. Играет только пока
  * секция на экране.
  */
-export default function ServicePage({ page }: { page: Page }) {
+export default function ServicePage({ page, children }: { page: Page; children?: React.ReactNode }) {
   const Live = LIVE[page.live] ?? LiveLanding;
   const stage = useRef<HTMLDivElement>(null);
   const [live, setLive] = useState(false);
@@ -133,6 +133,10 @@ export default function ServicePage({ page }: { page: Page }) {
           </ul>
         </div>
       </section>
+
+      {/* слот под то, что есть не у каждого направления: у ботов здесь
+          живая проба сценария, остальные страницы идут дальше */}
+      {children}
 
       {/* ---------- как идёт работа ---------- */}
       <section data-chapter="atlas" className="relative border-t border-line">

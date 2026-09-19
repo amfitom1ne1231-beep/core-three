@@ -147,6 +147,12 @@ body {
   to { transform: translateX(300%); }
 }
 
+/* «печатает» в эмуляторе Telegram-чата */
+@keyframes ct-blink {
+  0%, 60%, 100% { opacity: 0.35; }
+  30% { opacity: 1; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
