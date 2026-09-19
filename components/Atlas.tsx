@@ -548,7 +548,7 @@ export default function Atlas() {
                     <Link
                       data-magnetic
                       href={s.href}
-                      className="inline-flex items-center gap-2 rounded-full border border-line px-5 py-2.5 font-mono text-[10px] uppercase tracking-rail text-fg transition-colors duration-300 hover:border-accent hover:text-accent"
+                      className="inline-flex items-center gap-2 rounded-full border border-line px-5 py-3.5 font-mono text-[10px] uppercase tracking-rail text-fg sm:py-2.5 transition-colors duration-300 hover:border-accent hover:text-accent"
                     >
                       {SITE.atlas.more}
                       <span aria-hidden>→</span>
@@ -594,7 +594,10 @@ export default function Atlas() {
                   onClick={() => goToIndex(i)}
                   aria-label={`Направление ${s.n}: ${s.title} ${s.titleAccent}`}
                   aria-current={i === index ? 'true' : undefined}
-                  className="group flex flex-1 flex-col gap-2 py-1.5 text-left focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-fg"
+                  /* py-3 на телефоне: кнопка рельса была 52×35, а палец
+                     требует 44 по короткой стороне. Полоска и номер внутри
+                     не двигаются — растёт только область нажатия */
+                  className="group flex flex-1 flex-col gap-2 py-3 text-left focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-fg sm:py-1.5"
                 >
                   <span
                     className={`font-mono text-[9px] tracking-rail transition-colors duration-300 ${

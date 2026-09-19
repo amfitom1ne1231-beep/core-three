@@ -46,13 +46,13 @@ export default function Footer({ cta = true }: { cta?: boolean }) {
                     href={`https://t.me/${SITE.telegram}`}
                     target="_blank"
                     rel="noreferrer noopener"
-                    className="border border-line px-[18px] py-[11px] font-mono text-[10px] uppercase tracking-rail text-fg transition-colors duration-300 hover:border-accent hover:text-accent"
+                    className="border border-line px-[18px] py-[14px] font-mono text-[10px] uppercase tracking-rail text-fg transition-colors duration-300 hover:border-accent hover:text-accent"
                   >
                     Telegram
                   </a>
                   <a
                     href={`mailto:${SITE.email}`}
-                    className="text-[13px] text-dim underline decoration-line-strong underline-offset-4 transition-colors duration-300 hover:text-fg"
+                    className="inline-block py-3 text-[13px] text-dim underline decoration-line-strong underline-offset-4 transition-colors duration-300 hover:text-fg"
                   >
                     {SITE.email}
                   </a>
@@ -76,7 +76,7 @@ export default function Footer({ cta = true }: { cta?: boolean }) {
           }`}
         >
           <div className="col-span-2 lg:col-span-1">
-            <Link href="/" className="flex items-center gap-2.5 text-fg transition-colors duration-300 hover:text-accent">
+            <Link href="/" className="-my-2 flex items-center gap-2.5 py-2 text-fg transition-colors duration-300 hover:text-accent">
               <Mark className="h-8 w-8" />
               <span className="font-mono text-[11px] uppercase tracking-rail">{SITE.name}</span>
             </Link>
@@ -89,12 +89,12 @@ export default function Footer({ cta = true }: { cta?: boolean }) {
           {footer.columns.map((col) => (
             <nav key={col.label} aria-label={col.label}>
               <span className="rail-label">{col.label}</span>
-              <ul className="m-0 mt-4 flex list-none flex-col gap-2.5 p-0">
+              <ul className="m-0 mt-4 flex list-none flex-col gap-0.5 p-0 sm:gap-2.5">
                 {col.links.map((l) => (
                   <li key={l.href}>
                     <Link
                       href={l.href}
-                      className="text-[13px] text-dim transition-colors duration-300 hover:text-fg"
+                      className="block py-3.5 text-[13px] text-dim transition-colors duration-300 hover:text-fg sm:py-0"
                     >
                       {l.label}
                     </Link>
@@ -106,11 +106,11 @@ export default function Footer({ cta = true }: { cta?: boolean }) {
 
           <div>
             <span className="rail-label">Связь</span>
-            <ul className="m-0 mt-4 flex list-none flex-col gap-2.5 p-0">
+            <ul className="m-0 mt-4 flex list-none flex-col gap-0.5 p-0 sm:gap-2.5">
               <li>
                 <a
                   href={`mailto:${SITE.email}`}
-                  className="text-[13px] text-dim transition-colors duration-300 hover:text-fg"
+                  className="block py-3.5 text-[13px] text-dim transition-colors duration-300 hover:text-fg sm:py-0"
                 >
                   {SITE.email}
                 </a>
@@ -120,7 +120,7 @@ export default function Footer({ cta = true }: { cta?: boolean }) {
                   href={`https://t.me/${SITE.telegram}`}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className="text-[13px] text-dim transition-colors duration-300 hover:text-fg"
+                  className="block py-3.5 text-[13px] text-dim transition-colors duration-300 hover:text-fg sm:py-0"
                 >
                   {SITE.telegramLabel}
                 </a>

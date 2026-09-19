@@ -99,7 +99,9 @@ export default function Header() {
 
       <Link
         href="/"
-        className="pointer-events-auto flex items-center gap-2.5 text-fg transition-colors duration-300 hover:text-accent"
+        /* -my-2 py-2: знак в шапке был 28px по высоте — область нажатия
+           доводится до 44, при этом сам знак и строка не сдвигаются */
+        className="pointer-events-auto -my-2 flex items-center gap-2.5 py-2 text-fg transition-colors duration-300 hover:text-accent"
       >
         <Mark className="h-7 w-7" />
         <span className="font-mono text-[11px] uppercase tracking-rail">{SITE.name}</span>
