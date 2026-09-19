@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Onest, JetBrains_Mono, Playfair_Display } from 'next/font/google';
+import CookieConsent from '@/components/CookieConsent';
 import Header from '@/components/Header';
 import Preloader from '@/components/Preloader';
 import SmoothScroll from '@/components/SmoothScroll';
@@ -65,6 +66,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Preloader />
         <Header />
         {children}
+        <CookieConsent />
         <div className="grain" aria-hidden />
       </body>
     </html>
