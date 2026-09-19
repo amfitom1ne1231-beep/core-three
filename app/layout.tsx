@@ -8,9 +8,12 @@ import SmoothScroll from '@/components/SmoothScroll';
 import { SITE } from '@/content/site';
 import './globals.css';
 
+// Onest переменный — так он и был записан в брифе. Без `weight` next/font
+// берёт один файл на подмножество вместо четырёх статических начертаний:
+// четырнадцать woff2 на странице превращаются в шесть, и прелоадер,
+// который ждёт document.fonts.ready, снимается раньше.
 const onest = Onest({
   subsets: ['latin', 'cyrillic'],
-  weight: ['300', '400', '500', '700'],
   variable: '--font-onest',
   display: 'swap'
 });
@@ -25,9 +28,10 @@ const serif = Playfair_Display({
   display: 'swap'
 });
 
+// Playfair оставлен статическим намеренно: одно начертание одного веса
+// легче, чем переменный файл с осью 400–900, из которой нужен только 500.
 const mono = JetBrains_Mono({
   subsets: ['latin', 'cyrillic'],
-  weight: ['400', '500'],
   variable: '--font-mono',
   display: 'swap'
 });

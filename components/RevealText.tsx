@@ -68,9 +68,20 @@ export default function RevealText({
     }
 
     const ctx = gsap.context(() => {
-      gsap.set(chars, { opacity: 0, y: '0.3em', filter: 'blur(10px)' });
+      // will-change назначается здесь, а не в разметке: раньше он стоял
+      // инлайном на каждом знаке и не снимался никогда — сто с лишним
+      // вечных слоёв композитора поверх канваса материала. Теперь слой
+      // живёт ровно столько, сколько идёт проявление знака.
+      gsap.set(chars, { opacity: 0, y: '0.3em', filter: 'blur(10px)', willChange: 'opacity, transform, filter' });
 
-      const showNow = () => gsap.set(chars, { opacity: 1, y: 0, filter: 'none' });
+      const drop = (char: HTMLElement) => {
+        char.style.willChange = '';
+      };
+
+      const showNow = () => {
+        gsap.set(chars, { opacity: 1, y: 0, filter: 'none' });
+        chars.forEach(drop);
+      };
 
       const run = () => {
         // Кадры на скрытой вкладке не идут — текст остался бы невидимым.
@@ -89,7 +100,8 @@ export default function RevealText({
             filter: 'blur(0px)',
             duration: 0.85,
             ease: 'power2.out',
-            delay: delay + n * spread
+            delay: delay + n * spread,
+            onComplete: () => drop(char)
           });
         });
       };
@@ -127,10 +139,7 @@ export default function RevealText({
                     data-col={at}
                     data-row={row}
                     className={charClassName}
-                    style={{
-                      display: 'inline-block',
-                      willChange: 'opacity, transform, filter'
-                    }}
+                    style={{ display: 'inline-block' }}
                   >
                     {ch}
                   </span>

@@ -41,6 +41,30 @@ function Ticks({ n, len = 8 }: { n: Node; len?: number }) {
   );
 }
 
+/**
+ * Тех-строка узла переносится по ширине рамки.
+ *
+ * Подписи набраны моноширинным, поэтому ширину можно считать точно, не
+ * измеряя: при 9.5px с трекингом 0.14em знак занимает ровно 7.05 единицы
+ * viewBox. Раньше строка шла одной линией и вылезала за рамку узла —
+ * «ЭКВАЙРИНГ · CRM · ДОСТАВКА» на 183 единицы при доступных 146, — а у
+ * крайнего справа узла обрезалась ещё и краем схемы. На приборе подпись
+ * не может лежать поверх соседней рамки, иначе это снова блок-схема.
+ */
+const TECH_CH = 7.05;
+const TECH_PAD = 14;
+
+function techLines(tech: string, boxWidth: number): string[] {
+  const budget = Math.floor((boxWidth - TECH_PAD * 2) / TECH_CH);
+  const lines: string[] = [];
+  for (const part of tech.split(' · ')) {
+    const last = lines[lines.length - 1];
+    if (last && last.length + 3 + part.length <= budget) lines[lines.length - 1] = `${last} · ${part}`;
+    else lines.push(part);
+  }
+  return lines;
+}
+
 /** Сколько держится один шаг, пока схема проигрывается сама. */
 const STEP_MS = 3800;
 
@@ -64,6 +88,18 @@ export default function Anatomy() {
     }
     return new Set<string>(steps[step]?.nodes ?? []);
   }, [hovered, step, steps]);
+
+  /**
+   * Узел объявлен кнопкой, значит обязан что-то делать: клик и Enter
+   * переводят схему на шаг, в котором этот слой участвует, и останавливают
+   * автопрокрутку — так же, как клик по шагу слева. Раньше роль обещала
+   * действие, которого не было.
+   */
+  const selectNode = (id: string) => {
+    const i = steps.findIndex((s) => (s.nodes as readonly string[]).includes(id));
+    if (i >= 0) setStep(i);
+    setHeld(true);
+  };
 
   const linkOn = (from: string, to: string) => {
     if (hovered === 'ops') return false;
@@ -349,6 +385,12 @@ export default function Anatomy() {
                         onMouseLeave={() => setHovered((cur) => (cur === n.id ? null : cur))}
                         onFocus={() => setHovered(n.id)}
                         onBlur={() => setHovered((cur) => (cur === n.id ? null : cur))}
+                        onClick={() => selectNode(n.id)}
+                        onKeyDown={(e) => {
+                          if (e.key !== 'Enter' && e.key !== ' ') return;
+                          e.preventDefault();
+                          selectNode(n.id);
+                        }}
                         tabIndex={0}
                         role="button"
                         aria-label={`${n.title}. ${n.desc}`}
@@ -366,17 +408,22 @@ export default function Anatomy() {
                         <text x={n.x + n.w - 14} y={n.y + 28} className="node-id">
                           {wide ? '00' : String(CHAIN.indexOf(n.id) + 1).padStart(2, '0')}
                         </text>
-                        <text x={n.x + 14} y={wide ? n.y + 40 : n.y + 66} className="node-title">
+                        <text x={n.x + 14} y={wide ? n.y + 40 : n.y + 62} className="node-title">
                           {n.title}
                         </text>
-                        {!wide && <path d={`M${n.x + 14} ${n.y + 80} H${n.x + n.w - 14}`} className="node-div" />}
-                        <text
-                          x={wide ? n.x + 168 : n.x + 14}
-                          y={wide ? n.y + 40 : n.y + 100}
-                          className="node-tech"
-                        >
-                          {n.tech}
-                        </text>
+                        {!wide && <path d={`M${n.x + 14} ${n.y + 76} H${n.x + n.w - 14}`} className="node-div" />}
+                        {/* широкому узлу переносить нечего: у него 790 единиц ширины */}
+                        {wide ? (
+                          <text x={n.x + 168} y={n.y + 40} className="node-tech">
+                            {n.tech}
+                          </text>
+                        ) : (
+                          techLines(n.tech, n.w).map((line, i) => (
+                            <text key={line} x={n.x + 14} y={n.y + 94 + i * 13} className="node-tech">
+                              {line}
+                            </text>
+                          ))
+                        )}
                       </g>
                     );
                   })}

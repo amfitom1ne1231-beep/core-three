@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import gsap from 'gsap';
 import Mark from './Mark';
+import MobileMenu from './MobileMenu';
 import { contactHref } from '@/lib/lead';
 import { SITE } from '@/content/site';
 
@@ -14,7 +15,19 @@ import { SITE } from '@/content/site';
  */
 export default function Header() {
   const ref = useRef<HTMLElement>(null);
+  const pinned = useRef(false);
+  const hidden = useRef(false);
   const pathname = usePathname();
+
+  /** Пока открыто меню, шапка держится на месте: в ней кнопка закрытия. */
+  const onMenu = useCallback((open: boolean) => {
+    pinned.current = open;
+    if (!open || !ref.current) return;
+    // состояние сбрасываем вместе с положением, иначе после закрытия меню
+    // шапка считает себя спрятанной и не уезжает на следующем скролле
+    hidden.current = false;
+    gsap.to(ref.current, { yPercent: 0, duration: 0.25, ease: 'power2.out' });
+  }, []);
 
   useEffect(() => {
     const el = ref.current;
@@ -22,9 +35,9 @@ export default function Header() {
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
     let last = scrollY;
-    let hidden = false;
 
     const onScroll = () => {
+      if (pinned.current) return;
       const y = scrollY;
       const delta = y - last;
       // мелкие подёргивания игнорируем, иначе шапка дрожит
@@ -32,11 +45,11 @@ export default function Header() {
       last = y;
 
       const shouldHide = delta > 0 && y > 120;
-      if (shouldHide === hidden) return;
-      hidden = shouldHide;
+      if (shouldHide === hidden.current) return;
+      hidden.current = shouldHide;
 
       gsap.to(el, {
-        yPercent: hidden ? -130 : 0,
+        yPercent: shouldHide ? -130 : 0,
         duration: 0.45,
         ease: 'power3.out'
       });
@@ -71,13 +84,16 @@ export default function Header() {
         ))}
       </nav>
 
+      {/* на узких экранах вместо кнопки — меню: CTA лежит внутри него */}
       <Link
         data-magnetic
         href={contactHref(pathname)}
-        className="pointer-events-auto border border-line px-4 py-2.5 font-mono text-[10px] uppercase tracking-rail text-fg transition-colors duration-300 hover:border-accent hover:text-accent"
+        className="pointer-events-auto hidden border border-line px-4 py-2.5 font-mono text-[10px] uppercase tracking-rail text-fg transition-colors duration-300 hover:border-accent hover:text-accent md:block"
       >
         {SITE.hero.primary.label}
       </Link>
+
+      <MobileMenu onOpenChange={onMenu} />
     </header>
   );
 }
