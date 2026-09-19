@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { Fragment, useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { isRevealed, revealReady } from '@/lib/boot';
 
@@ -110,22 +110,44 @@ export default function RevealText({
       aria-label={decorative ? undefined : text}
       aria-hidden={decorative || undefined}
     >
-      {lines.map((line, row) => (
-        <span key={row} className="inline" aria-hidden>
-          {[...line].map((ch, col) => (
-            <span
-              key={col}
-              data-char
-              data-col={col}
-              data-row={row}
-              className={charClassName}
-              style={{ display: 'inline-block', whiteSpace: 'pre', willChange: 'opacity, transform, filter' }}
-            >
-              {ch}
-            </span>
-          ))}
-        </span>
-      ))}
+      {lines.map((line, row) => {
+        // Знаки — inline-block, поэтому слово обязано быть цельным блоком:
+        // иначе строка рвётся посреди слова.
+        let col = 0;
+        const words = line.split(' ');
+        return (
+          <span key={row} className="inline" aria-hidden>
+            {words.map((word, wi) => {
+              const chars = [...word].map((ch) => {
+                const at = col++;
+                return (
+                  <span
+                    key={at}
+                    data-char
+                    data-col={at}
+                    data-row={row}
+                    className={charClassName}
+                    style={{
+                      display: 'inline-block',
+                      willChange: 'opacity, transform, filter'
+                    }}
+                  >
+                    {ch}
+                  </span>
+                );
+              });
+              col++; // пробел тоже занимает позицию в шумовом поле
+              return (
+                <Fragment key={wi}>
+                  <span style={{ display: 'inline-block', whiteSpace: 'nowrap' }}>{chars}</span>
+                  {/* пробел снаружи обёртки — иначе строка не переносится вовсе */}
+                  {wi < words.length - 1 ? ' ' : null}
+                </Fragment>
+              );
+            })}
+          </span>
+        );
+      })}
     </Tag>
   );
 }

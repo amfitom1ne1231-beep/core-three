@@ -1,4 +1,5 @@
 import HeroSilk from '@/components/HeroSilk';
+import Manifesto from '@/components/Manifesto';
 import RevealText from '@/components/RevealText';
 import { SITE } from '@/content/site';
 
@@ -60,13 +61,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* заглушка следующей секции: проверяем стык шейдера с контентом */}
-        <section className="relative min-h-[80vh] border-t border-line bg-bg px-4 py-[18vh] sm:px-8 lg:px-[72px]">
-          <p className="rail-label mb-8">02 / Манифест — следующий шаг волны 1</p>
-          <p className="display m-0 max-w-[30ch] text-[clamp(26px,4vw,62px)] text-faint">
-            Скорость <strong className="inline text-fg">без потери качества.</strong>
-          </p>
-        </section>
+        <Manifesto />
       </main>
     </>
   );

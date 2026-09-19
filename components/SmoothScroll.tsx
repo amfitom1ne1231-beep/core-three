@@ -1,11 +1,22 @@
 'use client';
 
 import { useEffect } from 'react';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
 
+gsap.registerPlugin(ScrollTrigger);
+
 /**
- * Плавный скролл. При prefers-reduced-motion не включается вовсе —
- * инерция для части людей физически неприятна.
+ * Плавный скролл и его связка с ScrollTrigger.
+ *
+ * Lenis двигает страницу собственным циклом, поэтому ScrollTrigger обязан
+ * обновляться от него, а сам Lenis — тикать из тикера GSAP. Иначе
+ * закреплённые секции отстают от контента на кадр и дрожат.
+ *
+ * При prefers-reduced-motion инерция не включается вовсе: для части людей
+ * она физически неприятна. ScrollTrigger при этом продолжает работать
+ * на нативном скролле.
  */
 export default function SmoothScroll() {
   useEffect(() => {
@@ -17,15 +28,14 @@ export default function SmoothScroll() {
       touchMultiplier: 1.6
     });
 
-    let raf = 0;
-    const loop = (time: number) => {
-      lenis.raf(time);
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = (time: number) => lenis.raf(time * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
 
     return () => {
-      cancelAnimationFrame(raf);
+      gsap.ticker.remove(tick);
+      gsap.ticker.lagSmoothing(500, 33);
       lenis.destroy();
     };
   }, []);
