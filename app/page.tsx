@@ -1,3 +1,4 @@
+import Anatomy from '@/components/Anatomy';
 import HeroSilk from '@/components/HeroSilk';
 import Manifesto from '@/components/Manifesto';
 import RevealText from '@/components/RevealText';
@@ -62,6 +63,7 @@ export default function Home() {
         </section>
 
         <Manifesto />
+        <Anatomy />
       </main>
     </>
   );

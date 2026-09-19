@@ -119,3 +119,84 @@ body {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* ============================================================
+   Схема «Анатомия проекта»
+   ============================================================ */
+.plane-label {
+  fill: var(--fg-faint);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.node .node-box {
+  fill: var(--bg-elev);
+  stroke: var(--line);
+  stroke-width: 1;
+  transition: stroke 0.45s ease, fill 0.45s ease;
+}
+.node .node-title {
+  fill: var(--fg-faint);
+  font-family: var(--font-onest), system-ui, sans-serif;
+  font-size: 20px;
+  font-weight: 500;
+  transition: fill 0.45s ease;
+}
+.node .node-tech {
+  fill: var(--fg-faint);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  transition: fill 0.45s ease;
+  opacity: 0.7;
+}
+.node { cursor: pointer; outline: none; }
+.node[data-on] .node-box { stroke: var(--accent); fill: var(--bg-elev); }
+.node[data-on] .node-title { fill: var(--fg); }
+.node[data-on] .node-tech { fill: var(--accent); opacity: 1; }
+.node:focus-visible .node-box { stroke: var(--fg); stroke-width: 1.5; }
+
+.link-base {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 1;
+  transition: stroke 0.45s ease;
+}
+.link-base[data-on] { stroke: var(--line-strong); }
+
+/* импульс: короткий штрих бежит по дорожке, длину пути знать не нужно */
+.link-pulse {
+  fill: none;
+  stroke: var(--brand-steel);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-dasharray: 26 1400;
+  stroke-dashoffset: 1426;
+  opacity: 0.35;
+  animation: ct-flow 3.4s linear infinite;
+  transition: opacity 0.45s ease, stroke 0.45s ease;
+}
+.link-pulse[data-on] {
+  stroke: var(--accent);
+  opacity: 1;
+  animation-duration: 1.9s;
+}
+
+@keyframes ct-flow {
+  to { stroke-dashoffset: 0; }
+}
+
+.watch-line {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 1;
+  stroke-dasharray: 3 7;
+  transition: stroke 0.45s ease;
+}
+.watch-line[data-on] { stroke: var(--accent); }
+
+@media (prefers-reduced-motion: reduce) {
+  .link-pulse { animation: none; stroke-dashoffset: 700; }
+}
