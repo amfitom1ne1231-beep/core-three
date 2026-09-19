@@ -88,8 +88,19 @@ export default function MobileMenu({ onOpenChange }: { onOpenChange?: (open: boo
     <div
       ref={panel}
       id={panelId}
-      hidden={!open}
-      className="fixed inset-0 z-[95] flex flex-col justify-between overflow-y-auto bg-bg px-4 pb-10 pt-24 md:hidden"
+      aria-hidden={!open}
+      /**
+       * Класс display решает состояние, а не атрибут `hidden`.
+       * `[hidden]` из preflight — селектор по атрибуту, и любой класс
+       * с `display` его перебивает: с `flex` в списке панель оставалась
+       * на экране всегда, хотя `hidden` был выставлен. Спорить порядком
+       * классов тоже нельзя — Tailwind сам решает, что печатать позже.
+       */
+      className={
+        open
+          ? 'fixed inset-0 z-[95] flex flex-col justify-between overflow-y-auto bg-bg px-4 pb-10 pt-24 md:hidden'
+          : 'hidden'
+      }
     >
       <nav>
         <ul className="m-0 flex list-none flex-col gap-1 p-0">

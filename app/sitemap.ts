@@ -1,10 +1,14 @@
 import type { MetadataRoute } from 'next';
+import { SERVICES } from '@/content/services';
 
 const base = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 
 /** Только существующие страницы. Разделы волны 2 добавляются по мере сборки. */
 const routes: Array<{ path: string; priority: number }> = [
   { path: '/', priority: 1 },
+  // направления берутся из того же списка, что и сами страницы:
+  // добавили направление — оно в карте сайта, забыть нечего
+  ...SERVICES.map((s) => ({ path: `/${s.slug}`, priority: 0.9 })),
   { path: '/contact', priority: 0.8 },
   { path: '/privacy', priority: 0.2 },
   { path: '/consent', priority: 0.1 }

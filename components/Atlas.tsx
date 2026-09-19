@@ -451,9 +451,12 @@ export default function Atlas() {
   return (
     <section
       ref={root}
+      /* якорь для ссылок со страниц направлений: «все направления» ведёт
+         в карусель, а не в форму заявки */
+      id="directions"
       data-recede
       data-chapter="atlas"
-      className="relative z-10 w-full overflow-hidden border-t border-line"
+      className="relative z-10 w-full scroll-mt-24 overflow-hidden border-t border-line"
       // значения до первого замера, чтобы сцена не схлопнулась при загрузке
       style={{ '--A': '600px', '--H': '408px', '--live-k': 600 / LIVE_W } as React.CSSProperties}
       aria-roledescription="карусель"
