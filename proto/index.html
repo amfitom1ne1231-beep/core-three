@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CoreThree — прототип hero-шейдера</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #000;
+    --fg: #fff;
+    --fg-dim: rgba(255,255,255,.62);
+    --fg-faint: rgba(255,255,255,.34);
+    --line: rgba(255,255,255,.10);
+    --panel: rgba(10,11,13,.72);
+    --accent: #6a8ba8;
+  }
+  html[data-theme="light"] {
+    --bg: #f4f5f7;
+    --fg: #0b0c0e;
+    --fg-dim: rgba(11,12,14,.66);
+    --fg-faint: rgba(11,12,14,.40);
+    --line: rgba(11,12,14,.12);
+    --panel: rgba(244,245,247,.78);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'Onest', system-ui, sans-serif;
+    min-height: 250vh;
+    transition: background .6s ease, color .6s ease;
+    overflow-x: hidden;
+  }
+  #gl {
+    position: fixed; inset: 0; width: 100%; height: 100%;
+    display: block; z-index: 0; background: var(--bg);
+  }
+  .grain {
+    position: fixed; inset: 0; z-index: 1; pointer-events: none;
+    opacity: .022; mix-blend-mode: screen;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  main { position: relative; z-index: 2; pointer-events: none; }
+  .hero {
+    height: 100svh; display: flex; flex-direction: column; justify-content: center;
+    padding: 0 clamp(16px, 4vw, 72px);
+  }
+  .rail {
+    position: absolute; top: clamp(72px, 12vh, 140px); left: clamp(16px, 4vw, 72px);
+    right: clamp(16px, 4vw, 72px);
+    display: flex; gap: clamp(12px, 3vw, 40px); flex-wrap: wrap;
+    font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .18em;
+    color: var(--fg-faint); text-transform: uppercase;
+  }
+  .rail b { color: var(--fg); font-weight: 500; }
+  h1 {
+    margin: 0; font-weight: 300; letter-spacing: -.02em;
+    font-size: clamp(38px, 8.4vw, 132px); line-height: .96;
+  }
+  h1 em { font-style: normal; font-weight: 700; display: block; letter-spacing: -.035em; }
+  .sub {
+    margin: clamp(20px, 3vh, 38px) 0 0; max-width: 46ch;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: clamp(11px, 1.05vw, 13px); line-height: 1.75;
+    letter-spacing: .06em; text-transform: uppercase; color: var(--fg-dim);
+  }
+  .cta {
+    margin-top: clamp(28px, 4vh, 52px); display: flex; gap: 14px; flex-wrap: wrap;
+    pointer-events: auto;
+  }
+  .btn {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .14em;
+    text-transform: uppercase; padding: 13px 22px; border: 1px solid var(--line);
+    background: transparent; color: var(--fg); cursor: pointer; border-radius: 2px;
+    transition: border-color .25s, background .25s, color .25s;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.solid { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  .btn.solid:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .scrollnote {
+    position: absolute; bottom: clamp(20px, 5vh, 54px); left: clamp(16px, 4vw, 72px);
+    font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .2em;
+    color: var(--fg-faint); text-transform: uppercase;
+  }
+  .below {
+    min-height: 150vh; padding: 18vh clamp(16px, 4vw, 72px);
+    display: flex; flex-direction: column; gap: 4vh;
+  }
+  .below p {
+    margin: 0; max-width: 30ch; font-size: clamp(26px, 4vw, 62px);
+    font-weight: 300; line-height: 1.08; letter-spacing: -.02em; color: var(--fg-faint);
+  }
+  .below p b { color: var(--fg); font-weight: 700; }
+
+  /* панель управления */
+  #panel {
+    position: fixed; z-index: 10; top: 12px; right: 12px; width: 268px;
+    max-height: calc(100vh - 24px); overflow-y: auto;
+    background: var(--panel); backdrop-filter: blur(14px);
+    border: 1px solid var(--line); border-radius: 6px;
+    padding: 12px 13px 14px; color: var(--fg);
+    font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .04em;
+  }
+  #panel.hidden { transform: translateX(calc(100% + 16px)); }
+  #panel { transition: transform .35s cubic-bezier(.4,0,.2,1); }
+  #panel h2 {
+    margin: 0 0 10px; font-size: 10px; letter-spacing: .18em; text-transform: uppercase;
+    display: flex; justify-content: space-between; align-items: center; font-weight: 500;
+  }
+  #panel h2 span { color: var(--fg-faint); font-weight: 400; }
+  .row { margin: 0 0 7px; }
+  .row label { display: flex; justify-content: space-between; margin-bottom: 3px; color: var(--fg-dim); }
+  .row label i { font-style: normal; color: var(--fg); }
+  input[type=range] {
+    width: 100%; height: 14px; margin: 0; background: none; -webkit-appearance: none; appearance: none;
+  }
+  input[type=range]::-webkit-slider-runnable-track {
+    height: 1px; background: var(--line);
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 9px; height: 9px; border-radius: 50%;
+    background: var(--fg); margin-top: -4px; cursor: pointer;
+  }
+  input[type=range]:hover::-webkit-slider-thumb { background: var(--accent); }
+  .group {
+    margin: 12px 0 8px; padding-top: 9px; border-top: 1px solid var(--line);
+    color: var(--fg-faint); letter-spacing: .18em; text-transform: uppercase;
+  }
+  .presets, .acts { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 8px; }
+  .presets button, .acts button {
+    flex: 1 1 auto; font-family: inherit; font-size: 9px; letter-spacing: .1em;
+    text-transform: uppercase; padding: 7px 8px; cursor: pointer; border-radius: 2px;
+    border: 1px solid var(--line); background: transparent; color: var(--fg-dim);
+    transition: border-color .2s, color .2s;
+  }
+  .presets button:hover, .acts button:hover { border-color: var(--accent); color: var(--accent); }
+  .presets button.on { border-color: var(--fg); color: var(--fg); }
+  input[type=color] {
+    width: 100%; height: 22px; padding: 0; border: 1px solid var(--line);
+    background: transparent; cursor: pointer; border-radius: 2px;
+  }
+  #hint {
+    position: fixed; z-index: 10; left: 12px; bottom: 12px;
+    font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: .12em;
+    color: var(--fg-faint); text-transform: uppercase; pointer-events: none;
+  }
+  #toggle {
+    position: fixed; z-index: 11; top: 12px; right: 12px; display: none;
+    font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: .12em;
+    padding: 8px 11px; border: 1px solid var(--line); background: var(--panel);
+    color: var(--fg); cursor: pointer; border-radius: 3px; text-transform: uppercase;
+  }
+  #panel.hidden ~ #toggle { display: block; }
+  #err {
+    position: fixed; inset: auto 12px 12px; z-index: 20; display: none;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.6;
+    padding: 12px; border: 1px solid #c33; background: rgba(40,0,0,.85); color: #fbb;
+    white-space: pre-wrap; max-height: 40vh; overflow: auto;
+  }
+  @media (max-width: 720px) {
+    #panel { width: calc(100vw - 24px); max-height: 46vh; }
+  }
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div class="grain"></div>
+
+<main>
+  <section class="hero">
+    <div class="rail">
+      <span><b>01</b> / ЧЕСТНОСТЬ</span>
+      <span><b>02</b> / СКОРОСТЬ</span>
+      <span><b>03</b> / ПРОФЕССИОНАЛИЗМ</span>
+      <span style="margin-left:auto">CORETHREE — ПРОТОТИП ШЕЙДЕРА</span>
+    </div>
+    <h1>От идеи<em>до запуска.</em></h1>
+    <p class="sub">Сайты, магазины, боты и Telegram-приложения. Проектируем, собираем и держим в работе то, что запускается быстро и не падает.</p>
+    <div class="cta">
+      <button class="btn solid">Обсудить проект</button>
+      <button class="btn">Смотреть концепты</button>
+    </div>
+    <div class="scrollnote">Прокрути — шёлк реагирует на скролл · Веди курсором — остаётся след</div>
+  </section>
+  <section class="below">
+    <p>Проверка читаемости: <b>крупный заголовок</b> поверх шейдера.</p>
+    <p>И мелкий текст в три строки, чтобы увидеть, не съедает ли его блик на складке.</p>
+  </section>
+</main>
+
+<div id="panel">
+  <h2>Шёлк · три ядра <span id="stat">—</span></h2>
+  <div id="controls"></div>
+  <div class="group">Пресеты</div>
+  <div class="presets" id="presets"></div>
+  <div class="acts">
+    <button id="theme">Тема</button>
+    <button id="copy">Скопировать JSON</button>
+    <button id="hide">Скрыть</button>
+  </div>
+</div>
+<button id="toggle">Панель</button>
+<div id="hint">H — панель · T — тема · R — сброс</div>
+<pre id="err"></pre>
+
+<script type="module">
+import { VERT, SIM_FRAG, SILK_FRAG } from './shaders.js';
+
+const canvas = document.getElementById('gl');
+const errBox = document.getElementById('err');
+const fail = (msg) => { errBox.style.display = 'block'; errBox.textContent += msg + '\n'; console.error(msg); };
+
+const gl = canvas.getContext('webgl', {
+  alpha: false, antialias: false, depth: false, stencil: false,
+  powerPreference: 'high-performance', preserveDrawingBuffer: false
+});
+if (!gl) fail('WebGL недоступен в этом браузере.');
+
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- параметры ---------- */
+const DEFAULTS = {
+  scale: 1.10, warp: 1.08, speed: 0.90, flow: 0.80,
+  core1: 1.00, core2: 0.74, core3: 0.52,
+  exposure: 0.98, sheen: 0.95, glint: 0.52, fresnel: 0.85, film: 0.30,
+  edge: 0.85, vignette: 1.00, grain: 1.25,
+  decay: 0.85, curl: 3.20, octaves: 3,
+  accent: '#55769a', mode: 0
+};
+const isMobile = innerWidth < 768 || matchMedia('(pointer: coarse)').matches;
+const P = { ...DEFAULTS };
+if (isMobile) {
+  // упрощённый шейдер на телефоне: полное число октав (иначе шёлк выглядит резиной),
+  // но ниже разрешение и без флюид-прохода — курсора там всё равно нет
+  P.scale = 0.92;
+  P.flow = 0;
+}
+
+const SLIDERS = [
+  ['ГЕОМЕТРИЯ ПОЛОТНА', null, null, null],
+  ['Масштаб складок', 'scale', 0.4, 2.4],
+  ['Сила искажения', 'warp', 0.0, 2.0],
+  ['Скорость', 'speed', 0.0, 2.5],
+  ['Октавы шума', 'octaves', 2, 5, 1],
+  ['ТРИ ЯДРА', null, null, null],
+  ['Ядро 1 · честность', 'core1', 0.0, 1.6],
+  ['Ядро 2 · скорость', 'core2', 0.0, 1.6],
+  ['Ядро 3 · профессионализм', 'core3', 0.0, 1.6],
+  ['СВЕТ И МАТЕРИАЛ', null, null, null],
+  ['Экспозиция', 'exposure', 0.5, 1.8],
+  ['Мягкий блеск', 'sheen', 0.0, 2.0],
+  ['Искра на гребнях', 'glint', 0.0, 2.0],
+  ['Свечение по краю', 'fresnel', 0.0, 2.0],
+  ['Тонкая плёнка', 'film', 0.0, 2.0],
+  ['Линии сгиба', 'edge', 0.0, 2.0],
+  ['Виньетка', 'vignette', 0.0, 1.0],
+  ['Дизеринг', 'grain', 0.0, 3.0],
+  ['СЛЕД КУРСОРА', null, null, null],
+  ['Перенос складок потоком', 'flow', 0.0, 2.0],
+  ['Оседание следа', 'decay', 0.2, 3.0],
+  ['Завихрение', 'curl', 0.0, 8.0]
+];
+
+const PRESETS = {
+  'CoreThree': {},
+  'Лаковый': { exposure: 1.04, sheen: 1.0, glint: 1.0, fresnel: 1.0, film: 1.0, edge: 1.0, scale: 1.0, warp: 1.0, speed: 1.0 },
+  'Глубокий': { exposure: 0.86, glint: 0.7, film: 0.75, scale: 1.25, warp: 1.15, edge: 0.6, core2: 0.55, core3: 0.3 },
+  'Ясный': { exposure: 1.16, glint: 1.35, sheen: 1.25, film: 1.2, scale: 0.85, edge: 1.3 },
+  'Ртуть': { exposure: 1.05, glint: 1.8, sheen: 1.7, fresnel: 1.6, film: 0.5, warp: 0.7, scale: 1.05, curl: 5.5 },
+  'Спокойный': { speed: 0.45, warp: 0.8, glint: 0.6, film: 0.6, flow: 0.4, core2: 0.5, core3: 0.25 }
+};
+
+/* ---------- сборка программ ---------- */
+function compile(type, src) {
+  const sh = gl.createShader(type);
+  gl.shaderSource(sh, src);
+  gl.compileShader(sh);
+  if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+    fail(gl.getShaderInfoLog(sh) || 'ошибка компиляции шейдера');
+    gl.deleteShader(sh);
+    return null;
+  }
+  return sh;
+}
+function program(fragSrc) {
+  const vs = compile(gl.VERTEX_SHADER, VERT);
+  const fs = compile(gl.FRAGMENT_SHADER, fragSrc);
+  if (!vs || !fs) return null;
+  const pr = gl.createProgram();
+  gl.attachShader(pr, vs); gl.attachShader(pr, fs); gl.linkProgram(pr);
+  if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) { fail(gl.getProgramInfoLog(pr) || 'ошибка линковки'); return null; }
+  gl.deleteShader(vs); gl.deleteShader(fs);
+  const loc = new Proxy({}, { get: (c, k) => (k in c ? c[k] : (c[k] = gl.getUniformLocation(pr, k))) });
+  return { pr, loc };
+}
+
+const quad = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+
+let silk = null;
+function buildSilk() {
+  if (silk) gl.deleteProgram(silk.pr);
+  silk = program('#define OCT ' + (P.octaves | 0) + '\n' + SILK_FRAG);
+  if (silk) bindQuad(silk.pr);
+}
+const sim = program('#define OCT 3\n' + SIM_FRAG);
+
+function bindQuad(pr) {
+  gl.useProgram(pr);
+  const a = gl.getAttribLocation(pr, 'position');
+  gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+  gl.enableVertexAttribArray(a);
+  gl.vertexAttribPointer(a, 2, gl.FLOAT, false, 0, 0);
+}
+buildSilk();
+if (sim) bindQuad(sim.pr);
+
+/* ---------- поле следа (ping-pong, RGBA8) ---------- */
+let FW = 256, FH = 144;
+const targets = [0, 1].map(() => {
+  const tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  const fbo = gl.createFramebuffer();
+  return { tex, fbo };
+});
+function sizeField(w, h) {
+  FW = w; FH = h;
+  for (const t of targets) {
+    gl.bindTexture(gl.TEXTURE_2D, t.tex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, FW, FH, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, t.fbo);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t.tex, 0);
+    gl.clearColor(0.5, 0.5, 0.0, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+  }
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+}
+let src = 0;
+
+/* ---------- размеры и адаптивное разрешение ---------- */
+let renderScale = isMobile ? 0.7 : 1, dpr = 1, W = 1, H = 1;
+function resize() {
+  dpr = Math.min(devicePixelRatio || 1, 2);
+  const cssW = innerWidth, cssH = innerHeight;
+  W = Math.max(1, Math.round(cssW * dpr * renderScale));
+  H = Math.max(1, Math.round(cssH * dpr * renderScale));
+  canvas.width = W; canvas.height = H;
+  canvas.style.width = cssW + 'px'; canvas.style.height = cssH + 'px';
+  const aspect = cssW / cssH;
+  sizeField(256, Math.max(64, Math.round(256 / Math.max(aspect, 0.3))));
+}
+addEventListener('resize', resize, { passive: true });
+
+/* ---------- ввод ---------- */
+const pointer = { uv: [0.5, 0.55], prev: [0.5, 0.55], vel: [0, 0], speed: 0, inject: 0, seen: false };
+addEventListener('pointermove', (e) => {
+  pointer.uv = [e.clientX / innerWidth, 1 - e.clientY / innerHeight];
+  pointer.seen = true;
+}, { passive: true });
+addEventListener('pointerleave', () => { pointer.seen = false; });
+
+let scrollNorm = 0, scrollVel = 0, lastScroll = scrollY;
+addEventListener('scroll', () => {
+  scrollNorm = scrollY / Math.max(innerHeight, 1);
+  scrollVel += Math.abs(scrollY - lastScroll) * 0.06;
+  lastScroll = scrollY;
+}, { passive: true });
+
+/* ---------- панель ---------- */
+const controls = document.getElementById('controls');
+const inputs = {};
+for (const [label, key, min, max, step] of SLIDERS) {
+  if (!key) {
+    const g = document.createElement('div');
+    g.className = 'group'; g.textContent = label;
+    controls.appendChild(g);
+    continue;
+  }
+  const row = document.createElement('div');
+  row.className = 'row';
+  row.innerHTML = '<label>' + label + '<i></i></label>';
+  const inp = document.createElement('input');
+  inp.type = 'range'; inp.min = min; inp.max = max;
+  inp.step = step || 0.01; inp.value = P[key];
+  const out = row.querySelector('i');
+  const show = () => { out.textContent = (step === 1 ? P[key] : Number(P[key]).toFixed(2)); };
+  inp.addEventListener('input', () => {
+    P[key] = step === 1 ? parseInt(inp.value, 10) : parseFloat(inp.value);
+    show();
+    if (key === 'octaves') buildSilk();
+    markPreset(null);
+  });
+  show();
+  row.appendChild(inp);
+  controls.appendChild(row);
+  inputs[key] = { inp, show };
+}
+const accRow = document.createElement('div');
+accRow.className = 'row';
+accRow.innerHTML = '<label>Акцент<i>' + P.accent + '</i></label>';
+const accInp = document.createElement('input');
+accInp.type = 'color'; accInp.value = P.accent;
+accInp.addEventListener('input', () => {
+  P.accent = accInp.value;
+  accRow.querySelector('i').textContent = P.accent;
+  document.documentElement.style.setProperty('--accent', P.accent);
+});
+accRow.appendChild(accInp);
+controls.appendChild(accRow);
+document.documentElement.style.setProperty('--accent', P.accent);
+
+const presetBox = document.getElementById('presets');
+function markPreset(name) {
+  [...presetBox.children].forEach(b => b.classList.toggle('on', b.textContent === name));
+}
+for (const name of Object.keys(PRESETS)) {
+  const b = document.createElement('button');
+  b.textContent = name;
+  b.addEventListener('click', () => {
+    Object.assign(P, DEFAULTS, PRESETS[name]);
+    syncInputs();
+    buildSilk();
+    markPreset(name);
+  });
+  presetBox.appendChild(b);
+}
+markPreset('CoreThree');
+if (isMobile) document.getElementById('panel').classList.add('hidden');
+
+function syncInputs() {
+  for (const k in inputs) { inputs[k].inp.value = P[k]; inputs[k].show(); }
+  accInp.value = P.accent;
+  accRow.querySelector('i').textContent = P.accent;
+  document.documentElement.style.setProperty('--accent', P.accent);
+}
+
+const panel = document.getElementById('panel');
+document.getElementById('hide').addEventListener('click', () => panel.classList.add('hidden'));
+document.getElementById('toggle').addEventListener('click', () => panel.classList.remove('hidden'));
+
+let modeTarget = 0;
+function toggleTheme() {
+  modeTarget = modeTarget > 0.5 ? 0 : 1;
+  document.documentElement.dataset.theme = modeTarget > 0.5 ? 'light' : 'dark';
+}
+document.getElementById('theme').addEventListener('click', toggleTheme);
+
+document.getElementById('copy').addEventListener('click', async (e) => {
+  const json = JSON.stringify({ ...P, mode: modeTarget }, null, 2);
+  try { await navigator.clipboard.writeText(json); e.target.textContent = 'Скопировано'; }
+  catch { e.target.textContent = 'см. консоль'; console.log(json); }
+  setTimeout(() => { e.target.textContent = 'Скопировать JSON'; }, 1400);
+});
+
+addEventListener('keydown', (e) => {
+  const k = e.key.toLowerCase();
+  if (k === 'h') panel.classList.toggle('hidden');
+  if (k === 't') toggleTheme();
+  if (k === 'r') { Object.assign(P, DEFAULTS); syncInputs(); buildSilk(); markPreset('CoreThree'); }
+});
+
+/* ---------- цикл ---------- */
+const hex2rgb = (h) => {
+  const n = parseInt(h.slice(1), 16);
+  return [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255];
+};
+
+/* отладка из консоли: __ct.fieldStats() показывает, живёт ли след */
+window.__ct = {
+  P, pointer, syncInputs, buildSilk,
+  get mode() { return modeTarget; },
+  set mode(v) { modeTarget = v; document.documentElement.dataset.theme = v > 0.5 ? 'light' : 'dark'; },
+  fieldStats() {
+    const t = targets[src];
+    gl.bindFramebuffer(gl.FRAMEBUFFER, t.fbo);
+    const px = new Uint8Array(FW * FH * 4);
+    gl.readPixels(0, 0, FW, FH, gl.RGBA, gl.UNSIGNED_BYTE, px);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    let maxInk = 0, sumInk = 0, cells = 0, maxVel = 0;
+    for (let i = 0; i < px.length; i += 4) {
+      const ink = px[i + 2];
+      const v = Math.hypot(px[i] - 128, px[i + 1] - 128);
+      if (ink > maxInk) maxInk = ink;
+      if (v > maxVel) maxVel = v;
+      sumInk += ink;
+      if (ink > 2) cells++;
+    }
+    return { maxInk, maxVel, avgInk: +(sumInk / (px.length / 4)).toFixed(2), stirredCells: cells, field: FW + 'x' + FH };
+  }
+};
+
+let t0 = performance.now(), last = t0, mode = 0;
+let frames = 0, acc = 0, fps = 0, paused = false;
+document.addEventListener('visibilitychange', () => { paused = document.hidden; });
+
+resize();
+
+function frame(now) {
+  requestAnimationFrame(frame);
+  if (paused || !silk || !sim) return;
+
+  const dt = Math.min((now - last) / 1000, 0.05);
+  last = now;
+  const time = (now - t0) / 1000;
+
+  // затухание ввода
+  const dx = pointer.uv[0] - pointer.prev[0], dy = pointer.uv[1] - pointer.prev[1];
+  const inst = Math.hypot(dx, dy) / Math.max(dt, 0.001);
+  pointer.vel[0] += (dx / Math.max(dt, 0.001) - pointer.vel[0]) * 0.35;
+  pointer.vel[1] += (dy / Math.max(dt, 0.001) - pointer.vel[1]) * 0.35;
+  pointer.speed += (Math.min(inst, 3) - pointer.speed) * 0.12;
+  pointer.inject += ((inst > 0.02 && pointer.seen ? 1 : 0) - pointer.inject) * 0.25;
+  pointer.prev = [...pointer.uv];
+  scrollVel *= 0.92;
+  mode += (modeTarget - mode) * Math.min(dt * 3.2, 1);
+
+  const aspect = canvas.width / canvas.height;
+  const still = reduced || isMobile;
+
+  // 1. поле следа
+  if (!still) {
+    const dst = targets[1 - src], s = targets[src];
+    gl.bindFramebuffer(gl.FRAMEBUFFER, dst.fbo);
+    gl.viewport(0, 0, FW, FH);
+    bindQuad(sim.pr);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, s.tex);
+    gl.uniform1i(sim.loc.uPrev, 0);
+    gl.uniform2f(sim.loc.uPointer, pointer.uv[0], pointer.uv[1]);
+    gl.uniform2f(sim.loc.uPointerVel,
+      Math.max(-2, Math.min(2, pointer.vel[0] * 0.35)),
+      Math.max(-2, Math.min(2, pointer.vel[1] * 0.35)));
+    gl.uniform1f(sim.loc.uInject, pointer.inject);
+    gl.uniform1f(sim.loc.uDt, dt);
+    gl.uniform2f(sim.loc.uTexel, 1 / FW, 1 / FH);
+    gl.uniform1f(sim.loc.uAspect, FW / FH);
+    gl.uniform1f(sim.loc.uDecay, P.decay);
+    gl.uniform1f(sim.loc.uCurl, P.curl);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    src = 1 - src;
+  }
+
+  // 2. шёлк
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.viewport(0, 0, canvas.width, canvas.height);
+  bindQuad(silk.pr);
+  const L = silk.loc;
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, targets[src].tex);
+  gl.uniform1i(L.uField, 0);
+  gl.uniform2f(L.uResolution, canvas.width, canvas.height);
+  gl.uniform1f(L.uTime, reduced ? 12.0 : time);
+  gl.uniform2f(L.uMouse,
+    (pointer.uv[0] * 2 - 1) * aspect * P.scale,
+    (pointer.uv[1] * 2 - 1) * P.scale);
+  gl.uniform1f(L.uPointerVel, still ? 0.0 : pointer.speed);
+  gl.uniform1f(L.uScroll, scrollNorm);
+  gl.uniform1f(L.uVelocity, reduced ? 0 : Math.min(scrollVel, 6));
+  gl.uniform1f(L.uScale, P.scale);
+  gl.uniform1f(L.uWarp, P.warp);
+  gl.uniform1f(L.uFlow, still ? 0 : P.flow);
+  gl.uniform1f(L.uExposure, P.exposure);
+  gl.uniform1f(L.uSheen, P.sheen);
+  gl.uniform1f(L.uGlint, P.glint);
+  gl.uniform1f(L.uFresnel, P.fresnel);
+  gl.uniform1f(L.uFilm, P.film);
+  gl.uniform1f(L.uEdge, P.edge);
+  gl.uniform1f(L.uGrain, P.grain);
+  gl.uniform1f(L.uVignette, P.vignette);
+  gl.uniform1f(L.uSpeed, P.speed);
+  gl.uniform3fv(L.uAccent, hex2rgb(P.accent));
+  gl.uniform3f(L.uCoreW, P.core1, P.core2, P.core3);
+  gl.uniform1f(L.uMode, mode);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+  // 3. телеметрия и адаптация разрешения
+  acc += dt; frames++;
+  if (acc >= 0.5) {
+    fps = Math.round(frames / acc);
+    document.getElementById('stat').textContent =
+      fps + ' fps · ' + Math.round(renderScale * 100) + '%';
+    if (fps < 45 && renderScale > 0.55) { renderScale = Math.max(0.55, renderScale - 0.15); resize(); }
+    else if (fps > 58 && renderScale < 1) { renderScale = Math.min(1, renderScale + 0.1); resize(); }
+    acc = 0; frames = 0;
+  }
+  if (still) { /* один кадр достаточно, но цикл дешёвый и не мешает */ }
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

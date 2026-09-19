@@ -1,0 +1,121 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   Токены тем. Светлая тема наполняется в волне 2, но объявлена
+   сразу: вся вёрстка ссылается только на переменные.
+   ============================================================ */
+:root {
+  --bg: #050608;
+  --bg-elev: #0a0b0e;
+  --fg: #ffffff;
+  --fg-dim: rgba(255, 255, 255, 0.62);
+  --fg-faint: rgba(255, 255, 255, 0.34);
+  --line: rgba(255, 255, 255, 0.10);
+  --line-strong: rgba(255, 255, 255, 0.22);
+
+  --brand-deep: #0b2c56;
+  --brand-core: #143968;
+  --brand-steel: #55769a;
+  --accent: #6e9bcc;
+
+  --grain-opacity: 0.022;
+  --grain-blend: screen;
+}
+
+:root[data-theme='light'] {
+  --bg: #f4f5f7;
+  --bg-elev: #ffffff;
+  --fg: #0b0c0e;
+  --fg-dim: rgba(11, 12, 14, 0.66);
+  --fg-faint: rgba(11, 12, 14, 0.40);
+  --line: rgba(11, 12, 14, 0.12);
+  --line-strong: rgba(11, 12, 14, 0.26);
+
+  --accent: #1d4e86;
+
+  --grain-opacity: 0.030;
+  --grain-blend: multiply;
+}
+
+* { box-sizing: border-box; }
+
+html {
+  /* плавный скролл ведёт Lenis; нативный отключаем, чтобы не спорили */
+  scroll-behavior: auto;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-onest), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+  transition: background 0.6s var(--ease, cubic-bezier(0.4, 0, 0.2, 1)), color 0.6s ease;
+}
+
+::selection {
+  background: var(--fg);
+  color: var(--bg);
+}
+
+/* Русский капс шире английского и читается как крик:
+   оставляем его только микро-лейблам с широким трекингом. */
+.rail-label {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+}
+
+.rail-label b { color: var(--fg); font-weight: 500; }
+
+/* Заголовки — смешанный регистр, отрицательный трекинг на крупных кеглях. */
+.display {
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  line-height: 0.96;
+}
+
+.display strong {
+  display: block;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+}
+
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  opacity: var(--grain-opacity);
+  mix-blend-mode: var(--grain-blend);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+}
+.skip-link:focus {
+  left: 1rem;
+  top: 1rem;
+  z-index: 200;
+  padding: 0.75rem 1rem;
+  background: var(--fg);
+  color: var(--bg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
