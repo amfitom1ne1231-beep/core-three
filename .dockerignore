@@ -1,0 +1,13 @@
+node_modules
+.next
+.next-check
+.git
+.claude
+.env*.local
+.DS_Store
+*.tsbuildinfo
+# исходники бренда и видео-мастера сборке не нужны
+brand
+proto
+supabase
+BRIEF.md

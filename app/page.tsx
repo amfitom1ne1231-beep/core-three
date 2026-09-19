@@ -7,9 +7,40 @@ import Manifesto from '@/components/Manifesto';
 import RevealText from '@/components/RevealText';
 import { SITE } from '@/content/site';
 
+const url = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+
+/** Разметка для поисковиков: кто мы, чем занимаемся, как связаться. */
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'ProfessionalService',
+  name: SITE.name,
+  url,
+  logo: new URL('/icon.svg', url).toString(),
+  image: new URL('/opengraph-image', url).toString(),
+  email: SITE.email,
+  description: SITE.hero.lead,
+  slogan: `${SITE.hero.title} ${SITE.hero.titleStrong}`,
+  areaServed: 'RU',
+  knowsLanguage: 'ru',
+  sameAs: [`https://t.me/${SITE.telegram}`],
+  hasOfferCatalog: {
+    '@type': 'OfferCatalog',
+    name: 'Направления',
+    itemListElement: SITE.services.map((s) => ({
+      '@type': 'Offer',
+      itemOffered: { '@type': 'Service', name: `${s.title} ${s.titleAccent}`, description: s.summary }
+    }))
+  }
+};
+
 export default function Home() {
   return (
     <>
+      <script
+        type="application/ld+json"
+        // данные свои и статичные, экранирование < — от закрытия тега внутри строки
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
+      />
       <HeroSilk />
       <main id="content" className="relative z-10 w-full">
         <section className="relative flex h-[100svh] select-none flex-col justify-center px-4 sm:px-8 lg:px-[72px]">

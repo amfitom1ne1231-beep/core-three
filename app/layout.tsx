@@ -47,6 +47,8 @@ export const metadata: Metadata = {
     title: 'CoreThree — от идеи до запуска',
     description: SITE.hero.lead
   },
+  twitter: { card: 'summary_large_image' },
+  alternates: { canonical: '/' },
   robots: { index: true, follow: true }
 };
 
