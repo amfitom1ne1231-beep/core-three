@@ -210,6 +210,32 @@ html.has-cursor :is(input:not([type='checkbox']):not([type='radio']):not([type='
 .cursor-ring[data-mode='ring-hover'] { opacity: 1; --s: 1.2; border-color: rgb(255 255 255 / 0.85); }
 .cursor-dot[data-mode='ring-hover'] { opacity: 0; }
 
+/* над сценой атласа: большое кольцо с подписью жеста */
+.cursor-ring {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cursor-ring span {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 5.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.cursor-ring[data-mode='drag'] {
+  opacity: 1;
+  --s: 1.9;
+  background: rgb(255 255 255 / 0.1);
+  border-color: rgb(255 255 255 / 0.55);
+  backdrop-filter: blur(3px);
+}
+.cursor-ring[data-mode='drag'] span { opacity: 1; }
+.cursor-dot[data-mode='drag'] { opacity: 0; }
+.cursor-ring.is-down[data-mode='drag'] { --p: 0.85; }
+
 .cursor-dot[data-mode='gone'],
 .cursor-ring[data-mode='gone'],
 .cursor-dot[data-mode='field'],

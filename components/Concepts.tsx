@@ -59,7 +59,7 @@ export default function Concepts() {
         aria-hidden
       />
 
-      <div className="relative px-4 py-[14vh] sm:px-8 lg:px-[72px]">
+      <div data-recede className="relative px-4 py-[14vh] sm:px-8 lg:px-[72px]">
         <span className="rail-label">{SITE.concepts.label}</span>
         <div className="mt-4 grid gap-[clamp(20px,4vh,40px)] lg:grid-cols-[1.1fr_1fr] lg:items-end">
           <h2 data-skew className="display m-0 text-[clamp(28px,5.2vw,80px)]">
@@ -82,7 +82,7 @@ export default function Concepts() {
                 onMouseEnter={() => warp(c.slug, true)}
                 onMouseLeave={() => warp(c.slug, false)}
               >
-                <div className="relative overflow-hidden border-b border-line bg-bg">
+                <div data-reveal="clip" className="relative overflow-hidden border-b border-line bg-bg">
                   <svg data-skew="blur" viewBox="0 0 320 200" className="block h-auto w-full text-fg" aria-hidden>
                     <defs>
                       <filter id={`warp-${c.slug}`} x="-10%" y="-10%" width="120%" height="120%">

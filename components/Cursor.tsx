@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 
-type Mode = 'gone' | 'dot' | 'hover' | 'ring' | 'ring-hover' | 'field';
+type Mode = 'gone' | 'dot' | 'hover' | 'ring' | 'ring-hover' | 'field' | 'drag';
 
 /**
  * Курсор-инверсия и магнитные кнопки.
@@ -12,6 +12,9 @@ type Mode = 'gone' | 'dot' | 'hover' | 'ring' | 'ring-hover' | 'field';
  * кнопками разрастается в круг. Над материалом первого экрана difference
  * дал бы кислотные разводы на синем, поэтому там (data-cursor="ring")
  * остаётся тонкое кольцо без смешения — след курсора уже рисует сам шейдер.
+ *
+ * Над сценой атласа (data-cursor="drag") кольцо раздувается и подписывает
+ * жест: «Листать».
  *
  * Над полями ввода собственный курсор прячется: нужна обычная каретка.
  * Включается только для мыши и без prefers-reduced-motion.
@@ -71,7 +74,10 @@ export default function Cursor() {
       );
       const hot = t?.closest('a, button, [role="button"], label, summary');
       const overSilk = t?.closest('[data-cursor="ring"]');
-      setMode(field ? 'field' : hot ? (overSilk ? 'ring-hover' : 'hover') : overSilk ? 'ring' : 'dot');
+      const drag = t?.closest('[data-cursor="drag"]');
+      setMode(
+        field ? 'field' : drag ? 'drag' : hot ? (overSilk ? 'ring-hover' : 'hover') : overSilk ? 'ring' : 'dot'
+      );
 
       // магнит: элемент тянется к курсору на треть смещения от центра
       const m = t?.closest<HTMLElement>('[data-magnetic]') ?? null;
@@ -121,7 +127,9 @@ export default function Cursor() {
 
   return (
     <>
-      <div ref={ring} className="cursor-ring" data-mode="gone" aria-hidden />
+      <div ref={ring} className="cursor-ring" data-mode="gone" aria-hidden>
+        <span>Листать</span>
+      </div>
       <div ref={dot} className="cursor-dot" data-mode="gone" aria-hidden />
     </>
   );

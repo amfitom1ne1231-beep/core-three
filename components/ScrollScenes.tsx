@@ -1,0 +1,65 @@
+'use client';
+
+import { useEffect } from 'react';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+gsap.registerPlugin(ScrollTrigger);
+
+/**
+ * Переходы между сценами по мотивам Spyker. Всё привязано к скроллу
+ * (scrub), поэтому движение идёт ровно с пальцем или колесом и
+ * откатывается назад при прокрутке вверх.
+ *
+ *  - data-hero: первый экран уходит вглубь — уменьшается и гаснет;
+ *  - data-reveal="clip": медиа раскрывается из рамки в полный размер;
+ *  - data-recede: секция, которую покидают, чуть отступает и тускнеет,
+ *    а следующая наезжает поверх — появляется глубина между сценами.
+ *
+ * При prefers-reduced-motion ничего из этого не включается.
+ */
+export default function ScrollScenes() {
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      const mm = gsap.matchMedia();
+      mm.add('(prefers-reduced-motion: no-preference)', () => {
+        const hero = document.querySelector<HTMLElement>('[data-hero]');
+        if (hero) {
+          gsap.to(hero, {
+            scale: 0.86,
+            yPercent: -4,
+            opacity: 0,
+            ease: 'none',
+            transformOrigin: '50% 35%',
+            scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom top', scrub: true }
+          });
+        }
+
+        document.querySelectorAll<HTMLElement>('[data-reveal="clip"]').forEach((el) => {
+          gsap.fromTo(
+            el,
+            { clipPath: 'inset(9% 7% 9% 7% round 16px)' },
+            {
+              clipPath: 'inset(0% 0% 0% 0% round 0px)',
+              ease: 'none',
+              scrollTrigger: { trigger: el, start: 'top 96%', end: 'top 48%', scrub: 0.5 }
+            }
+          );
+        });
+
+        document.querySelectorAll<HTMLElement>('[data-recede]').forEach((el) => {
+          gsap.to(el, {
+            scale: 0.955,
+            opacity: 0.4,
+            ease: 'none',
+            transformOrigin: '50% 100%',
+            scrollTrigger: { trigger: el, start: 'bottom 55%', end: 'bottom top', scrub: true }
+          });
+        });
+      });
+    });
+    return () => ctx.revert();
+  }, []);
+
+  return null;
+}

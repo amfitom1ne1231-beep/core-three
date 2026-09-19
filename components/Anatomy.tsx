@@ -111,7 +111,7 @@ export default function Anatomy() {
         aria-hidden
       />
 
-      <div className="flex flex-col justify-center gap-[clamp(24px,5vh,56px)] px-4 py-[12vh] sm:px-8 lg:px-[56px]">
+      <div data-recede className="flex flex-col justify-center gap-[clamp(24px,5vh,56px)] px-4 py-[12vh] sm:px-8 lg:px-[56px]">
         <div>
           <span className="rail-label">{SITE.anatomy.label}</span>
           <h2 data-skew className="display m-0 mt-4 text-[clamp(28px,5vw,76px)]">
@@ -174,7 +174,7 @@ export default function Anatomy() {
           </ol>
 
           {/* Панель-прибор: рамка, шапка с плоскостями, поле схемы, строка осмотра */}
-          <div className="relative min-w-0 overflow-hidden rounded-lg border border-line">
+          <div data-reveal="clip" className="relative min-w-0 overflow-hidden rounded-lg border border-line">
             <Material preset="deep" opacity={0.75} />
             <div
               className="pointer-events-none absolute inset-0"

@@ -5,6 +5,7 @@ import Footer from '@/components/Footer';
 import HeroSilk from '@/components/HeroSilk';
 import Manifesto from '@/components/Manifesto';
 import RevealText from '@/components/RevealText';
+import ScrollScenes from '@/components/ScrollScenes';
 import { SITE } from '@/content/site';
 
 const url = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
@@ -43,7 +44,7 @@ export default function Home() {
       />
       <HeroSilk />
       <main id="content" className="relative z-10 w-full">
-        <section data-cursor="ring" className="relative flex h-[100svh] select-none flex-col justify-center px-4 sm:px-8 lg:px-[72px]">
+        <section data-hero data-cursor="ring" className="relative flex h-[100svh] select-none flex-col justify-center px-4 sm:px-8 lg:px-[72px]">
           {/* рельс трёх ядер — имена с дескриптора логотипа */}
           <div className="absolute left-4 right-4 top-[clamp(88px,14vh,150px)] flex flex-wrap gap-x-[clamp(12px,3vw,40px)] gap-y-2 sm:left-8 sm:right-8 lg:left-[72px] lg:right-[72px]">
             {SITE.cores.map((core) => (
@@ -104,6 +105,7 @@ export default function Home() {
         <Concepts />
       </main>
       <Footer />
+      <ScrollScenes />
     </>
   );
 }

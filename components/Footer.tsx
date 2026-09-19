@@ -63,7 +63,7 @@ export default function Footer({ cta = true }: { cta?: boolean }) {
               </div>
 
               {/* форма на стекле: видео под ней остаётся, текст читается */}
-              <div className="border border-line bg-bg/55 p-[clamp(20px,3vw,44px)] backdrop-blur-md">
+              <div data-reveal="clip" className="border border-line bg-bg/55 p-[clamp(20px,3vw,44px)] backdrop-blur-md">
                 <LeadForm />
               </div>
             </div>

@@ -282,6 +282,7 @@ export const SITE = {
   /** Шесть направлений, сгруппированных функционально — без слова «ядро». */
   atlas: {
     label: '04 / Что мы делаем',
+    more: 'Подробнее о направлении',
     title: 'Шесть направлений,',
     titleAccent: 'одна сборка.',
     lead: 'Каждое направление — отдельная работа, но собираются они одной командой и одним стеком. Поэтому сайт, бот и приложение у вас говорят одно и то же.'
@@ -299,7 +300,7 @@ export const SITE = {
       group: 'web',
       title: 'Лендинги',
       titleAccent: 'и промо',
-      material: 'silk',
+      live: 'landing',
       href: '/sites',
       summary: 'Одна страница, которая продаёт: структура под оффер, быстрая загрузка, аналитика с первого дня.',
       stack: ['Next.js', 'Адаптив', 'SEO-база', 'Формы заявок']
@@ -309,7 +310,7 @@ export const SITE = {
       group: 'web',
       title: 'Сайты-визитки',
       titleAccent: 'и блоги',
-      material: 'folded',
+      live: 'blog',
       href: '/sites',
       summary: 'Присутствие в сети с понятной структурой и возможностью публиковать материалы самостоятельно.',
       stack: ['Контент-структура', 'MDX', 'Sitemap', 'Open Graph']
@@ -319,7 +320,7 @@ export const SITE = {
       group: 'web',
       title: 'Магазины',
       titleAccent: 'под ключ',
-      material: 'grain',
+      live: 'shop',
       href: '/ecommerce',
       summary: 'Каталог, корзина, оплата и доставка. Считаем не витрину, а путь до оформленного заказа.',
       stack: ['Каталог', 'Платёжные шлюзы', 'Доставка', 'Админка']
@@ -329,7 +330,7 @@ export const SITE = {
       group: 'auto',
       title: 'Боты',
       titleAccent: 'с интеграциями',
-      material: 'stream',
+      live: 'bot',
       href: '/bots',
       summary: 'От бота-визитки до сценариев с оплатами, записью и выгрузкой в вашу таблицу или CRM.',
       stack: ['Telegram Bot API', 'Сценарии', 'Оплаты', 'CRM']
@@ -339,7 +340,7 @@ export const SITE = {
       group: 'auto',
       title: 'Telegram',
       titleAccent: 'Web App',
-      material: 'crystal',
+      live: 'webapp',
       href: '/bots',
       summary: 'Полноценное приложение внутри Telegram: меню, каталог, запись, личный кабинет.',
       stack: ['TG Web App', 'Авторизация', 'Платежи', 'Supabase']
@@ -349,7 +350,7 @@ export const SITE = {
       group: 'ops',
       title: 'Мониторинг',
       titleAccent: 'и поддержка',
-      material: 'deep',
+      live: 'ops',
       href: '/monitoring',
       summary: 'Проверка работоспособности, бэкапы и контроль хостинга. Узнаёте о падении от нас, а не от клиентов.',
       stack: ['Uptime-проверки', 'Бэкапы', 'Контроль хостинга', 'Отчёты']
