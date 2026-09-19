@@ -54,7 +54,7 @@ export default function Concepts() {
         className="pointer-events-none absolute inset-x-0 top-0 h-[46vh]"
         style={{
           background:
-            'linear-gradient(180deg, rgb(5 6 8 / 0.55) 0%, rgb(5 6 8 / 0.78) 60%, var(--bg) 100%)'
+            'linear-gradient(180deg, rgb(var(--bg-rgb) / 0.55) 0%, rgb(var(--bg-rgb) / 0.78) 60%, var(--bg) 100%)'
         }}
         aria-hidden
       />

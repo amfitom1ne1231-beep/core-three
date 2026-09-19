@@ -6,14 +6,15 @@ export default {
   theme: {
     extend: {
       colors: {
-        bg: 'var(--bg)',
+        bg: 'rgb(var(--bg-rgb) / <alpha-value>)',
         elev: 'var(--bg-elev)',
-        fg: 'var(--fg)',
+        fg: 'rgb(var(--fg-rgb) / <alpha-value>)',
         dim: 'var(--fg-dim)',
         faint: 'var(--fg-faint)',
         line: 'var(--line)',
         'line-strong': 'var(--line-strong)',
         accent: 'var(--accent)',
+        danger: 'var(--danger)',
         brand: {
           deep: 'var(--brand-deep)',
           core: 'var(--brand-core)',

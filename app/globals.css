@@ -7,6 +7,10 @@
    сразу: вся вёрстка ссылается только на переменные.
    ============================================================ */
 :root {
+  /* bg и fg заданы ещё и каналами: из них Tailwind собирает цвета
+     с прозрачностью (bg-bg/70), а вуали поверх медиа — градиенты */
+  --bg-rgb: 5 6 8;
+  --fg-rgb: 255 255 255;
   --bg: #050608;
   --bg-elev: #0a0b0e;
   --fg: #ffffff;
@@ -19,12 +23,16 @@
   --brand-core: #143968;
   --brand-steel: #55769a;
   --accent: #6e9bcc;
+  /* только ошибки формы: вне палитры намеренно, чтобы не спутать с акцентом */
+  --danger: #e48a78;
 
   --grain-opacity: 0.022;
   --grain-blend: screen;
 }
 
 :root[data-theme='light'] {
+  --bg-rgb: 244 245 247;
+  --fg-rgb: 11 12 14;
   --bg: #f4f5f7;
   --bg-elev: #ffffff;
   --fg: #0b0c0e;
@@ -34,6 +42,7 @@
   --line-strong: rgba(11, 12, 14, 0.26);
 
   --accent: #1d4e86;
+  --danger: #b2412c;
 
   --grain-opacity: 0.030;
   --grain-blend: multiply;
@@ -118,6 +127,16 @@ body {
   padding: 0.75rem 1rem;
   background: var(--fg);
   color: var(--bg);
+}
+
+@keyframes ct-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes ct-run {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(300%); }
 }
 
 @media (prefers-reduced-motion: reduce) {

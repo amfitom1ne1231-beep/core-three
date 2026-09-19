@@ -23,6 +23,9 @@ export default function Preloader() {
     if (!el || !box) return;
 
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // Материал живёт только на главной. На остальных страницах его кадр
+    // не придёт никогда, и прелоадер простоял бы до таймаута.
+    const silk = document.querySelector('canvas[data-silk]') ? silkReady : Promise.resolve();
     const arms = box.querySelectorAll<SVGGElement>('[data-arm]');
     const shown = { value: 0 };
 
@@ -57,7 +60,7 @@ export default function Preloader() {
 
     if (reduced) {
       // без анимации: ждём готовности и убираем перекрытие
-      Promise.all([withTimeout(fontsReady(), 3000), withTimeout(silkReady, 3000)]).then(finish);
+      Promise.all([withTimeout(fontsReady(), 3000), withTimeout(silk, 3000)]).then(finish);
       return () => {
         clearTimeout(watchdog);
         document.removeEventListener('visibilitychange', onHide);
@@ -97,7 +100,7 @@ export default function Preloader() {
     const minTime = new Promise<void>((r) => setTimeout(r, 900));
     const steps: Array<Promise<unknown>> = [
       withTimeout(fontsReady(), 4000).then(() => bump(0.4)),
-      withTimeout(silkReady, 4000).then(() => bump(0.4)),
+      withTimeout(silk, 4000).then(() => bump(0.4)),
       minTime.then(() => bump(0.2))
     ];
 

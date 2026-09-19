@@ -132,7 +132,7 @@ export default function Manifesto() {
           className="pointer-events-none absolute inset-0 -z-10"
           style={{
             background:
-              'linear-gradient(180deg, rgb(5 6 8 / 0.35) 0%, rgb(5 6 8 / 0.72) 38%, rgb(5 6 8 / 0.72) 62%, rgb(5 6 8 / 0.35) 100%)'
+              'linear-gradient(180deg, rgb(var(--bg-rgb) / 0.35) 0%, rgb(var(--bg-rgb) / 0.72) 38%, rgb(var(--bg-rgb) / 0.72) 62%, rgb(var(--bg-rgb) / 0.35) 100%)'
           }}
           aria-hidden
         />

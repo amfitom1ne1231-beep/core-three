@@ -22,6 +22,7 @@ export default function HeroSilk({ params }: { params?: Partial<SilkParams> }) {
   return (
     <canvas
       ref={ref}
+      data-silk
       aria-hidden
       className="pointer-events-none fixed inset-0 z-0 block h-full w-full bg-bg"
     />

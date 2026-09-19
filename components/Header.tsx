@@ -2,8 +2,10 @@
 
 import { useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import gsap from 'gsap';
 import Mark from './Mark';
+import { contactHref } from '@/lib/lead';
 import { SITE } from '@/content/site';
 
 /**
@@ -12,6 +14,7 @@ import { SITE } from '@/content/site';
  */
 export default function Header() {
   const ref = useRef<HTMLElement>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
     const el = ref.current;
@@ -69,7 +72,7 @@ export default function Header() {
       </nav>
 
       <Link
-        href={SITE.hero.primary.href}
+        href={contactHref(pathname)}
         className="pointer-events-auto border border-line px-4 py-2.5 font-mono text-[10px] uppercase tracking-rail text-fg transition-colors duration-300 hover:border-accent hover:text-accent"
       >
         {SITE.hero.primary.label}

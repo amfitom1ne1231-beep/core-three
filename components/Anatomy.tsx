@@ -106,7 +106,7 @@ export default function Anatomy() {
         className="pointer-events-none absolute inset-x-0 top-0 h-[22vh] -translate-y-full"
         style={{
           background:
-            'linear-gradient(180deg, rgb(5 6 8 / 0) 0%, rgb(5 6 8 / 0.65) 55%, var(--bg) 100%)'
+            'linear-gradient(180deg, rgb(var(--bg-rgb) / 0) 0%, rgb(var(--bg-rgb) / 0.65) 55%, var(--bg) 100%)'
         }}
         aria-hidden
       />
@@ -178,7 +178,7 @@ export default function Anatomy() {
             <Material preset="deep" opacity={0.75} />
             <div
               className="pointer-events-none absolute inset-0"
-              style={{ background: 'linear-gradient(180deg, rgb(5 6 8 / 0.66) 0%, rgb(5 6 8 / 0.84) 100%)' }}
+              style={{ background: 'linear-gradient(180deg, rgb(var(--bg-rgb) / 0.66) 0%, rgb(var(--bg-rgb) / 0.84) 100%)' }}
               aria-hidden
             />
             <div className="relative">

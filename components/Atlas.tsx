@@ -107,7 +107,7 @@ export default function Atlas() {
                     className="pointer-events-none absolute inset-0"
                     style={{
                       background:
-                        'radial-gradient(120% 95% at 28% 8%, rgb(5 6 8 / 0) 0%, rgb(5 6 8 / 0.28) 62%, rgb(5 6 8 / 0.64) 100%)'
+                        'radial-gradient(120% 95% at 28% 8%, rgb(var(--bg-rgb) / 0) 0%, rgb(var(--bg-rgb) / 0.28) 62%, rgb(var(--bg-rgb) / 0.64) 100%)'
                     }}
                   />
                   <span className="absolute left-4 top-4 font-mono text-[clamp(30px,3.4vw,52px)] leading-none text-fg/85">
