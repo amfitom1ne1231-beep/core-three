@@ -22,6 +22,15 @@ const KEYS: Num[] = ['exposure', 'warp', 'sheen', 'glint', 'fresnel', 'core1', '
 const CHAPTERS: Record<string, Chapter> = {
   hero: { veil: 0 },
   manifesto: { exposure: 0.9, sheen: 0.85, glint: 0.4, core1: 0.75, core2: 1, core3: 0.55, veil: 0 },
+  /**
+   * Схема — единственная глава на плоском фоне.
+   *
+   * Это прибор, а не кадр: под ним материал спорит с тонкими штрихами,
+   * подписями в девять пунктов и бегущими пакетами. Завеса выведена
+   * в единицу — материал уходит целиком, остаётся чистый `--bg`, как
+   * у DAQ под их схемой. Переход к соседним главам всё равно плавный:
+   * завеса смешивается по доле экрана, а не переключается.
+   */
   anatomy: {
     exposure: 0.8,
     warp: 0.96,
@@ -32,7 +41,7 @@ const CHAPTERS: Record<string, Chapter> = {
     core3: 0.95,
     vignette: 1.15,
     accent: '#4b6d96',
-    veil: 0.34
+    veil: 1
   },
   atlas: { exposure: 0.72, warp: 1.14, sheen: 0.7, glint: 0.28, core1: 0.95, core2: 0.45, core3: 0.6, vignette: 1.2, veil: 0.44 },
   concepts: { exposure: 0.82, sheen: 0.85, glint: 0.4, core1: 0.45, core2: 0.6, core3: 1.05, veil: 0.36 },

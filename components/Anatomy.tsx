@@ -325,11 +325,14 @@ export default function Anatomy() {
           </ol>
 
           {/* Панель-прибор: рамка, шапка с плоскостями, поле схемы, строка осмотра */}
-          {/* стекло: сквозь панель виден тот же материал, что под всей страницей */}
+          {/* Корпус прибора. Стекло здесь больше не нужно и вредно: глава
+              идёт на плоском фоне, размывать под панелью нечего, а
+              полупрозрачность только снимала контраст со штрихов схемы.
+              Сплошная подложка на тон выше фона — рамка читается корпусом. */}
           <div
             data-panel
             data-reveal="clip"
-            className="relative min-w-0 overflow-hidden rounded-lg border border-line bg-bg/60 backdrop-blur-xl"
+            className="relative min-w-0 overflow-hidden rounded-lg border border-line bg-elev"
           >
             <div className="relative">
             <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-b border-line px-4 py-3 sm:px-5">
