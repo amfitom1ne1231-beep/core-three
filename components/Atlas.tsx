@@ -477,7 +477,7 @@ export default function Atlas() {
     >
       <div className="px-4 pt-[12vh] sm:px-8 lg:px-[72px]">
         <span className="rail-label">{SITE.atlas.label}</span>
-        <div className="mt-4 grid gap-[clamp(16px,3vh,32px)] lg:grid-cols-[1.15fr_1fr] lg:items-end">
+        <div className="mt-4 grid gap-[clamp(16px,3vh,32px)] lg:grid-cols-[1.7fr_1fr] lg:items-end">
           <h2 data-skew className="display m-0 text-[clamp(28px,5.2vw,80px)]">
             {SITE.atlas.title} <span className="title-accent">{SITE.atlas.titleAccent}</span>
           </h2>
