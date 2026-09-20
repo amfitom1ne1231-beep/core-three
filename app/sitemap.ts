@@ -10,6 +10,7 @@ const routes: Array<{ path: string; priority: number }> = [
   // добавили направление — оно в карте сайта, забыть нечего
   ...SERVICES.map((s) => ({ path: `/${s.slug}`, priority: 0.9 })),
   { path: '/contact', priority: 0.8 },
+  { path: '/concepts', priority: 0.7 },
   { path: '/about', priority: 0.6 },
   { path: '/privacy', priority: 0.2 },
   { path: '/consent', priority: 0.1 }

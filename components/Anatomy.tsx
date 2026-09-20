@@ -210,6 +210,17 @@ export default function Anatomy() {
     return () => trigger.kill();
   }, []);
 
+  /**
+   * Первое наведение на схему останавливает прокрутку шагов насовсем:
+   * человек начал рассматривать — торопить его нечем. Раньше пауза
+   * снималась только кликом по шагу, а уводя курсор, читающий снова
+   * получал смену кадра через 3.8 с.
+   */
+  useEffect(() => {
+    if (!hovered) return;
+    setHeld(true);
+  }, [hovered]);
+
   useEffect(() => {
     if (!inView || held || hovered) return;
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -229,7 +240,29 @@ export default function Anatomy() {
 
       <div data-recede className="flex flex-col justify-center gap-[clamp(24px,5vh,56px)] px-4 py-[12vh] sm:px-8 lg:px-[56px]">
         <div>
-          <span className="rail-label">{SITE.anatomy.label}</span>
+          <div className="flex items-center justify-between gap-4">
+            <span className="rail-label">{SITE.anatomy.label}</span>
+            {/* Пауза тем же приёмом, что в карусели направлений: на сайте
+                две вещи крутятся сами, и останавливаться они должны
+                одинаково. */}
+            <button
+              type="button"
+              onClick={() => setHeld((v) => !v)}
+              aria-label={held ? 'Продолжить показ шагов' : 'Остановить показ шагов'}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line text-fg transition-colors duration-300 hover:border-accent hover:text-accent"
+            >
+              {held ? (
+                <svg viewBox="0 0 12 12" className="h-3 w-3" aria-hidden>
+                  <path d="M3 1.5v9l7.5-4.5z" fill="currentColor" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 12 12" className="h-3 w-3" aria-hidden>
+                  <rect x="2" y="1.5" width="2.6" height="9" fill="currentColor" />
+                  <rect x="7.4" y="1.5" width="2.6" height="9" fill="currentColor" />
+                </svg>
+              )}
+            </button>
+          </div>
           <h2 data-skew className="display m-0 mt-4 text-[clamp(28px,5vw,76px)]">
             {SITE.anatomy.title} <span className="title-accent">{SITE.anatomy.titleAccent}</span>
           </h2>

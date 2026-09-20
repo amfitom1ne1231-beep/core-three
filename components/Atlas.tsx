@@ -449,6 +449,15 @@ export default function Atlas() {
     }
   };
 
+  /**
+   * Подпись кнопки — имя страницы, а не «Подробнее о направлении».
+   * Два направления делят одну страницу («Лендинги» и «Визитки» обе
+   * ведут на /sites), и с общей подписью второй переход выглядел
+   * промахом: кликнул другое, попал туда же.
+   */
+  const pageName = (href: string) =>
+    SITE.pages.find((p) => p.href === href)?.label ?? SITE.atlas.more;
+
   const btn =
     'flex h-11 w-11 items-center justify-center rounded-full border border-line text-fg transition-colors duration-300 hover:border-accent hover:text-accent focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-fg';
 
@@ -554,7 +563,7 @@ export default function Atlas() {
                       href={s.href}
                       className="inline-flex items-center gap-2 rounded-full border border-line px-5 py-3.5 font-mono text-[10px] uppercase tracking-rail text-fg sm:py-2.5 transition-colors duration-300 hover:border-accent hover:text-accent"
                     >
-                      {SITE.atlas.more}
+                      {pageName(s.href)}
                       <span aria-hidden>→</span>
                     </Link>
                   </div>

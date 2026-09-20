@@ -63,8 +63,10 @@ export default function Footer({ cta = true }: { cta?: boolean }) {
                   </a>
                 </div>
 
-                {/* живая вставка финала: капля — с неё начинается любой запуск */}
-                <VideoFrame clip={SITE.media.drop} aspect="16 / 9" className="mt-12 max-w-[560px]" />
+                {/* Живая вставка финала: капля — с неё начинается любой
+                    запуск. Ширина ограничена: в одной строке с формой
+                    ролик на 1280 поджимал поля до неудобного. */}
+                <VideoFrame clip={SITE.media.drop} aspect="16 / 9" className="mt-12 max-w-[420px]" />
               </div>
 
               {/* форма на стекле: видео под ней остаётся, текст читается */}
@@ -131,7 +133,9 @@ export default function Footer({ cta = true }: { cta?: boolean }) {
                 </a>
               </li>
             </ul>
-            <p className="mt-6 font-mono text-[9px] uppercase leading-relaxed tracking-rail text-faint">
+            {/* юридическая строка читается, а не угадывается: 9px в
+                --fg-faint были на грани различимости */}
+            <p className="mt-6 font-mono text-[10px] uppercase leading-relaxed tracking-rail text-faint">
               {SITE.legal} · {new Date().getFullYear()}
             </p>
           </div>

@@ -142,7 +142,9 @@ export default function Manifesto() {
       ref={section}
       data-chapter="manifesto"
       data-cursor="ring"
-      className="relative z-10 w-full md:h-[180svh]"
+      // 180svh давали почти два экрана прокрутки на один абзац: подсветка
+      // успевала отработать задолго до конца, и остаток секции провисал
+      className="relative z-10 w-full md:h-[135svh]"
       aria-label="Манифест"
     >
       {/* содержимое липнет к экрану, материал продолжает жить за текстом */}
