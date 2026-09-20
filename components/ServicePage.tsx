@@ -118,7 +118,7 @@ export default function ServicePage({ page, children }: { page: Page; children?:
 
       {/* ---------- что входит ---------- */}
       <section data-chapter="anatomy" className="relative border-t border-line">
-        <div className="px-4 py-[12vh] sm:px-8 lg:px-[72px]">
+        <div className="px-4 section-y sm:px-8 lg:px-[72px]">
           <span className="rail-label">Состав работы</span>
           <h2 className="display m-0 mt-4 max-w-[18ch] text-[clamp(26px,4.2vw,64px)]">
             Что входит <span className="title-accent">в запуск</span>
@@ -140,7 +140,7 @@ export default function ServicePage({ page, children }: { page: Page; children?:
 
       {/* ---------- как идёт работа ---------- */}
       <section data-chapter="atlas" className="relative border-t border-line">
-        <div className="grid gap-[clamp(32px,6vh,64px)] px-4 py-[12vh] sm:px-8 lg:grid-cols-[minmax(260px,0.8fr)_minmax(0,1.6fr)] lg:gap-[clamp(40px,5vw,96px)] lg:px-[72px]">
+        <div className="grid gap-[clamp(32px,6vh,64px)] px-4 section-y sm:px-8 lg:grid-cols-[minmax(260px,0.8fr)_minmax(0,1.6fr)] lg:gap-[clamp(40px,5vw,96px)] lg:px-[72px]">
           <div>
             <span className="rail-label">Как идёт работа</span>
             <h2 className="display m-0 mt-4 text-[clamp(26px,3.6vw,52px)]">
@@ -163,7 +163,7 @@ export default function ServicePage({ page, children }: { page: Page; children?:
 
       {/* ---------- кому это, стек, сроки ---------- */}
       <section data-chapter="concepts" className="relative border-t border-line">
-        <div className="grid gap-[clamp(36px,6vh,72px)] px-4 py-[12vh] sm:px-8 lg:grid-cols-2 lg:gap-[clamp(40px,5vw,96px)] lg:px-[72px]">
+        <div className="grid gap-[clamp(36px,6vh,72px)] px-4 section-y sm:px-8 lg:grid-cols-2 lg:gap-[clamp(40px,5vw,96px)] lg:px-[72px]">
           <div>
             <span className="rail-label">{page.audience.label}</span>
             <h2 className="display m-0 mt-4 text-[clamp(26px,3.6vw,52px)]">{page.audience.title}</h2>
@@ -203,7 +203,7 @@ export default function ServicePage({ page, children }: { page: Page; children?:
 
       {/* ---------- вопросы ---------- */}
       <section className="relative border-t border-line">
-        <div className="grid gap-[clamp(28px,5vh,56px)] px-4 py-[12vh] sm:px-8 lg:grid-cols-[minmax(260px,0.8fr)_minmax(0,1.6fr)] lg:gap-[clamp(40px,5vw,96px)] lg:px-[72px]">
+        <div className="grid gap-[clamp(28px,5vh,56px)] px-4 section-y sm:px-8 lg:grid-cols-[minmax(260px,0.8fr)_minmax(0,1.6fr)] lg:gap-[clamp(40px,5vw,96px)] lg:px-[72px]">
           <div>
             <span className="rail-label">Вопросы</span>
             <h2 className="display m-0 mt-4 text-[clamp(26px,3.6vw,52px)]">
@@ -231,7 +231,7 @@ export default function ServicePage({ page, children }: { page: Page; children?:
 
       {/* ---------- соседние направления ---------- */}
       <section className="relative border-t border-line">
-        <div className="px-4 py-[10vh] sm:px-8 lg:px-[72px]">
+        <div className="px-4 section-y-tight sm:px-8 lg:px-[72px]">
           <span className="rail-label">Соседние направления</span>
           <ul className="m-0 mt-6 grid list-none gap-px border border-line bg-line p-0 sm:grid-cols-2 lg:grid-cols-3">
             {SITE.services

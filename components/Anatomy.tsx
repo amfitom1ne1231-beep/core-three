@@ -238,7 +238,7 @@ export default function Anatomy() {
       aria-label="Анатомия проекта"
     >
 
-      <div data-recede className="flex flex-col justify-center gap-[clamp(24px,5vh,56px)] px-4 py-[12vh] sm:px-8 lg:px-[56px]">
+      <div data-recede className="flex flex-col justify-center gap-[clamp(24px,5vh,56px)] px-4 section-y sm:px-8 lg:px-[56px]">
         <div>
           <div className="flex items-center justify-between gap-4">
             <span className="rail-label">{SITE.anatomy.label}</span>

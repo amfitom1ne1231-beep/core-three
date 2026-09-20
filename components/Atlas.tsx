@@ -475,7 +475,7 @@ export default function Atlas() {
       aria-roledescription="карусель"
       aria-label="Направления"
     >
-      <div className="px-4 pt-[11vh] sm:px-8 lg:px-[72px]">
+      <div className="px-4 pt-[12vh] sm:px-8 lg:px-[72px]">
         <span className="rail-label">{SITE.atlas.label}</span>
         <div className="mt-4 grid gap-[clamp(16px,3vh,32px)] lg:grid-cols-[1.15fr_1fr] lg:items-end">
           <h2 data-skew className="display m-0 text-[clamp(28px,5.2vw,80px)]">
@@ -488,7 +488,7 @@ export default function Atlas() {
       <div
         ref={shell}
         onKeyDown={onKey}
-        className="mt-[clamp(32px,6vh,72px)] grid gap-8 pb-[11vh] lg:grid-cols-[minmax(300px,0.7fr)_minmax(0,1.7fr)] lg:gap-[clamp(32px,4vw,64px)] lg:pl-[72px]"
+        className="mt-[clamp(32px,6vh,72px)] grid gap-8 pb-[12vh] lg:grid-cols-[minmax(300px,0.7fr)_minmax(0,1.7fr)] lg:gap-[clamp(32px,4vw,64px)] lg:pl-[72px]"
       >
         {/* текст активного направления */}
         <div

@@ -174,7 +174,15 @@ export default function Manifesto() {
 
         <p
           data-emerge
-          className="display m-0 max-w-[30ch] origin-left text-[clamp(26px,4.4vw,72px)] leading-[1.06] lg:text-[clamp(30px,3.6vw,62px)]"
+          /**
+           * Манифест — второй по громкости экран после первого, и кегль
+           * должен это говорить. Было 52px на широком экране: тише, чем
+           * заголовок схемы (72) и втрое тише первого экрана (135) —
+           * то есть главное сообщение сайта звучало самым тихим из
+           * крупной типографики. Ограничение по 30ch снято: колонку уже
+           * держит сетка, второй ограничитель просто отнимал строку.
+           */
+          className="display m-0 origin-left text-[clamp(26px,4.4vw,72px)] leading-[1.06] lg:text-[clamp(34px,4.7vw,80px)]"
           aria-label={SITE.manifesto.text.replace(/\*\*/g, '')}
         >
           {units.map((unit, i) => (

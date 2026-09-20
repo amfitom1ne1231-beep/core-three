@@ -23,7 +23,7 @@ export default function ContactPage() {
 
           {/* Три блока в сетке: на телефоне форма идёт сразу за заголовком,
               на десктопе она справа, а шаги — под заголовком слева. */}
-          <div className="relative grid gap-[clamp(40px,7vh,72px)] px-4 pb-[12vh] pt-[clamp(112px,18vh,196px)] sm:px-8 lg:grid-cols-[1fr_minmax(0,1.05fr)] lg:grid-rows-[auto_1fr] lg:gap-x-[clamp(48px,6vw,112px)] lg:px-[72px]">
+          <div className="relative grid gap-[clamp(40px,7vh,72px)] px-4 pb-[10vh] pt-[clamp(112px,18vh,196px)] sm:px-8 lg:grid-cols-[1fr_minmax(0,1.05fr)] lg:grid-rows-[auto_1fr] lg:gap-x-[clamp(48px,6vw,112px)] lg:px-[72px]">
             <div className="lg:col-start-1 lg:row-start-1">
               <span className="rail-label">{contact.label}</span>
               <h1

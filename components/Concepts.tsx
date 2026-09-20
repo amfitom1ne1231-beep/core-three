@@ -47,7 +47,7 @@ export default function Concepts() {
       className="relative z-10 w-full overflow-hidden border-t border-line"
       aria-label="Концепты"
     >
-      <div data-recede className="relative px-4 py-[14vh] sm:px-8 lg:px-[72px]">
+      <div data-recede className="relative px-4 section-y sm:px-8 lg:px-[72px]">
         <div data-head>
           <span className="rail-label block">{SITE.concepts.label}</span>
           <div className="mt-4 grid gap-[clamp(20px,4vh,40px)] lg:grid-cols-[1.1fr_1fr] lg:items-end">

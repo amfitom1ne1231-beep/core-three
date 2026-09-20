@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useId, useRef, useState, type ComponentType } from 'react';
+import { useEffect, useId, useRef, useState, type ComponentType } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import gsap from 'gsap';
@@ -20,10 +20,10 @@ import { scrollToY } from '@/lib/scroll';
  * экрана он становится плавающим пультом, а при полном возврате наверх
  * отдаёт себя обратно шапке. Раскрывается в компактный путеводитель.
  *
- * Главное требование — не мешать. Пульт не висит в одном углу: перед
- * каждым кадром он сверяет свою рамку с рамками текста и медиа и садится
- * в первый свободный угол, а когда свободного нет — в наименее занятый.
- * Отсюда и вся геометрия ниже.
+ * Место у пульта одно — левый нижний угол. Он там и остаётся: прыгающий
+ * по экрану элемент сам по себе отвлекает сильнее, чем помогает, а угол
+ * у сетки сайта всё равно свободен — боковое поле секций 72px, и пульт
+ * в него укладывается. Вместо перелётов — тихое покачивание.
  *
  * Открывается не только наведением: наведение — приятный, но не
  * единственный путь, на тачскрине его нет вовсе, поэтому клик и клавиатура
@@ -32,18 +32,11 @@ import { scrollToY } from '@/lib/scroll';
  */
 
 /**
- * Размер свёрнутого пульта и отступ от края подобраны под сетку сайта:
- * у секций боковое поле 72px, и 56 + 10 укладываются в него целиком.
- * Поэтому у пульта всегда есть куда сесть, не наехав на текст.
+ * Размер пульта и отступ от края подобраны под сетку сайта: у секций
+ * боковое поле 72px, и 56 + 24 укладываются в него, не наезжая на текст.
  */
 const SIZE = 56;
-const EDGE = 10;
-/** Запас вокруг пульта: вплотную к тексту он всё равно мешает. */
-const CLEAR = 6;
-/** Зазор между знаком и раскрытой панелью. */
-const PANEL_GAP = 10;
-/** Перекрытие мельче этого считаем шумом округления, а не помехой. */
-const NOISE = 400;
+const EDGE = 24;
 /** Ниже этой доли экрана знак уходит из шапки в пульт. */
 const HANDOFF = 0.75;
 /** Ширина живого экрана в панели и его высота по пропорции вставки. */
@@ -71,17 +64,6 @@ const EXTRA = [
 /** Знак повёрнут на 120° — силуэт тот же: полный оборот незаметно бесшовен. */
 const TURN = 120;
 
-type Slot = { id: string; x: number; y: number; up: boolean; right: boolean };
-type Box = { l: number; t: number; r: number; b: number };
-
-/** Что пульт обязан облетать: текст, схемы, живые вставки, форма. */
-const GUARD =
-  'h1,h2,h3,p,ol,ul,dl,form,figure,table,svg[role="img"],[data-live],[data-pod-avoid]';
-
-const overlap = (a: Box, b: Box) =>
-  Math.max(0, Math.min(a.r, b.r) - Math.max(a.l, b.l)) *
-  Math.max(0, Math.min(a.b, b.b) - Math.max(a.t, b.t));
-
 export default function NavPod() {
   const pod = useRef<HTMLDivElement>(null);
   const shell = useRef<HTMLDivElement>(null);
@@ -95,141 +77,25 @@ export default function NavPod() {
   const [open, setOpen] = useState(false);
   /** Какое направление показывает живой экран панели. */
   const [active, setActive] = useState(0);
-  /** Куда раскрывать панель, чтобы она не упиралась в край окна. */
-  const [dir, setDir] = useState({ up: true, right: true });
 
-  const openRef = useRef(false);
-  openRef.current = open;
   const liveRef = useRef(false);
   liveRef.current = live;
 
-  const moveX = useRef<((v: number) => void) | null>(null);
-  const moveY = useRef<((v: number) => void) | null>(null);
-  const slot = useRef<string>('');
-  const panel = useRef<HTMLDivElement>(null);
   const spin = useRef<HTMLSpanElement>(null);
-  /** Размер панели нужен до её показа, поэтому меряем и запоминаем. */
-  const panelSize = useRef({ w: 268, h: 300 });
+  const float = useRef<HTMLDivElement>(null);
 
   // закрываем при переходе — панель не должна пережить страницу
   useEffect(() => setOpen(false), [pathname]);
 
-  /* ---------------- выбор угла ---------------- */
-
-  const place = useCallback(() => {
-    const el = pod.current;
-    if (!el || !liveRef.current) return;
-
-    const vw = innerWidth;
-    const vh = innerHeight;
-    // Считаем по свёрнутому пульту, а не по раскрытому: панель лежит
-    // абсолютом и в размер не входит. Раньше она входила, пульт считался
-    // объектом в 360px высотой и «не помещался» никуда — отсюда и наезды
-    // на текст в трети положений.
-    const w = SIZE;
-    const h = SIZE;
-    const midY = Math.round((vh - h) / 2);
-    const left = EDGE;
-    const right = vw - w - EDGE;
-
-    // up/right говорят, в какую сторону раскрывать панель из этого угла
-    const slots: Slot[] = [
-      { id: 'bl', x: left, y: vh - h - EDGE, up: true, right: true },
-      { id: 'br', x: right, y: vh - h - EDGE, up: true, right: false },
-      { id: 'ml', x: left, y: midY, up: false, right: true },
-      { id: 'mr', x: right, y: midY, up: false, right: false },
-      { id: 'tl', x: left, y: EDGE + 80, up: false, right: true },
-      { id: 'tr', x: right, y: EDGE + 80, up: false, right: false }
-    ];
-
-    // все чтения layout — до единой записи, иначе каждый кадр упирается
-    // в принудительный пересчёт
-    const guards: Box[] = [];
-    document.querySelectorAll<HTMLElement>(GUARD).forEach((g) => {
-      if (el.contains(g)) return;
-      const r = g.getBoundingClientRect();
-      if (r.width < 24 || r.height < 12) return;
-      if (r.bottom < 0 || r.top > vh) return;
-      guards.push({ l: r.left - CLEAR, t: r.top - CLEAR, r: r.right + CLEAR, b: r.bottom + CLEAR });
-    });
-
-    /**
-     * Рамка пульта в этом углу. Свёрнутый — квадрат со знаком; раскрытый
-     * занимает ещё и панель, поэтому угол для него выбирается по всей
-     * занимаемой площади: открытое меню тоже не должно ложиться на текст,
-     * раз уж его можно открыть просто наведением.
-     */
-    const boxAt = (s: Slot): Box => {
-      const pill: Box = { l: s.x, t: s.y, r: s.x + w, b: s.y + h };
-      if (!openRef.current) return pill;
-      const pw = panelSize.current.w;
-      const ph = panelSize.current.h;
-      const pl = s.right ? s.x : s.x + w - pw;
-      const pt = s.up ? s.y - PANEL_GAP - ph : s.y + h + PANEL_GAP;
-      return {
-        l: Math.min(pill.l, pl),
-        t: Math.min(pill.t, pt),
-        r: Math.max(pill.r, pl + pw),
-        b: Math.max(pill.b, pt + ph)
-      };
-    };
-
-    const cost = (s: Slot) => {
-      const box = boxAt(s);
-      let c = 0;
-      for (const g of guards) c += overlap(box, g);
-      // угол, из которого панель вылезает за край окна, не годится вовсе
-      if (box.l < 0 || box.t < 0 || box.r > vw || box.b > vh) c += 1e6;
-      return c;
-    };
-
-    let best = slots[0];
-    let bestCost = Infinity;
-    for (const s of slots) {
-      const c = cost(s);
-      if (c < bestCost) {
-        bestCost = c;
-        best = s;
-      }
-      if (c <= NOISE) break;
-    }
-
-    /**
-     * Гистерезис: пока текущий угол свободен, никуда не переезжаем, а
-     * переезжаем только ради заметно лучшего места. Иначе пульт скачет
-     * от каждого пикселя прокрутки.
-     *
-     * Скидку текущему углу давать нельзя: с ней он оставался занятым
-     * углом, лишь бы не двигаться, и наезжал на текст там, где поле
-     * секции уже (у схемы оно 56px против 72px у остальных).
-     */
-    const current = slots.find((s) => s.id === slot.current);
-    if (current) {
-      const cc = cost(current);
-      if (cc <= NOISE || bestCost > cc - NOISE * 2) {
-        best = current;
-        bestCost = cc;
-      }
-    }
-
-    setDir({ up: best.up, right: best.right });
-    if (best.id === slot.current) return;
-    slot.current = best.id;
-    moveX.current?.(best.x);
-    moveY.current?.(best.y);
-  }, []);
-
-  /* ---------------- появление и перелёт ---------------- */
+  /* ---------------- появление, вращение, покачивание ---------------- */
 
   useEffect(() => {
     const el = pod.current;
-    if (!el) return;
+    const bob = float.current;
+    if (!el || !bob) return;
     if (!matchMedia('(min-width: 768px)').matches) return;
 
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const dur = reduced ? 0 : 0.7;
-    moveX.current = gsap.quickTo(el, 'x', { duration: dur, ease: 'power3.out' });
-    moveY.current = gsap.quickTo(el, 'y', { duration: dur, ease: 'power3.out' });
 
     /**
      * Знак проворачивается вместе с прокруткой.
@@ -241,6 +107,13 @@ export default function NavPod() {
     const spinTo = reduced
       ? null
       : gsap.quickTo(spin.current, 'rotation', { duration: 0.55, ease: 'power2.out' });
+
+    // Парение: медленное всплытие на четыре пикселя и обратно. Отдельный
+    // слой — внешний занят появлением, внутренний вращением; наложи их
+    // друг на друга, и каждая анимация затирала бы чужой трансформ.
+    const idle = reduced
+      ? null
+      : gsap.to(bob, { y: -4, duration: 3.4, ease: 'sine.inOut', yoyo: true, repeat: -1 });
 
     let raf = 0;
     const sync = () => {
@@ -259,24 +132,20 @@ export default function NavPod() {
           setLive(on);
           if (!on) setOpen(false);
         }
-        if (on) {
-          place();
-          spinTo?.((scrollY / innerHeight) * TURN);
-        }
+        if (on) spinTo?.((scrollY / innerHeight) * TURN);
       });
     };
 
     sync();
     const off = onHeaderToggle(sync);
     addEventListener('scroll', sync, { passive: true });
-    addEventListener('resize', sync, { passive: true });
     return () => {
       cancelAnimationFrame(raf);
+      idle?.kill();
       off();
       removeEventListener('scroll', sync);
-      removeEventListener('resize', sync);
     };
-  }, [place]);
+  }, []);
 
   // знак прилетает из шапки и туда же уходит: масштаб с прозрачностью
   // читаются как передача, а не как появление второго знака
@@ -291,13 +160,6 @@ export default function NavPod() {
       ease: 'power3.out'
     });
   }, [live]);
-
-  // раскрытие меняет размер — угол пересчитывается под новую рамку
-  useEffect(() => {
-    const p = panel.current;
-    if (p) panelSize.current = { w: p.offsetWidth, h: p.offsetHeight };
-    if (live) requestAnimationFrame(place);
-  }, [open, live, place]);
 
   /* ---------------- поведение ---------------- */
 
@@ -331,17 +193,17 @@ export default function NavPod() {
       // left/top держим в нуле: положение задаётся трансформом, поэтому
       // перелёт между углами идёт на композиторе и не трогает layout
       /**
-       * Появление ведёт GSAP, а не CSS-свойство `scale`.
-       *
-       * Положение пульта двигает `gsap.quickTo(el, 'x'|'y')`, то есть
-       * трансформ элемента принадлежит GSAP целиком: он запекает в свою
-       * матрицу и масштаб тоже. Инлайновый `scale` от React в эту матрицу
-       * не попадал — знак так и оставался в 0.6 и рендерился 33px вместо
-       * 56, заодно проваливая область нажатия.
+       * Появление ведёт GSAP, а не CSS-свойство `scale`: трансформ
+       * элемента принадлежит GSAP целиком, и инлайновый `scale` от React
+       * в его матрицу не попадал — знак оставался в 0.6 и рендерился
+       * 33px вместо 56, заодно проваливая область нажатия.
        */
-      className="pointer-events-none fixed left-0 top-0 z-[120] hidden opacity-0 md:block"
+      className="pointer-events-none fixed z-[120] hidden opacity-0 md:block"
+      style={{ left: EDGE, bottom: EDGE }}
       aria-hidden={!live}
     >
+      {/* слой парения: медленно всплывает и опускается */}
+      <div ref={float}>
       <div
         ref={shell}
         className="pointer-events-auto relative"
@@ -358,23 +220,19 @@ export default function NavPod() {
           onFocus={() => setOpen(true)}
           className="grid h-full w-full place-items-center rounded-full border border-line bg-bg/80 text-fg backdrop-blur-md transition-colors duration-300 hover:border-accent hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
         >
-          {/* знак проворачивается отдельным слоем: внешний трансформ
-              пульта занят перелётом между углами */}
+          {/* знак проворачивается своим слоем: внешние заняты появлением
+              и парением */}
           <span ref={spin} className="block h-8 w-8">
             <MarkColor id={markId} className="h-full w-full" />
           </span>
         </button>
 
-        {/* Панель лежит абсолютом: в размер пульта она не входит, иначе
-            свёрнутый пульт считался бы объектом в три сотни пикселей
-            и не помещался бы никуда. Сторона раскрытия приходит из
-            выбранного угла — так панель не упирается в край окна. */}
+        {/* Панель лежит абсолютом и раскрывается вверх от знака: пульт
+            стоит в нижнем левом углу, поэтому другого направления у неё
+            и быть не может. */}
         <div
-          ref={panel}
           id={panelId}
-          className={`absolute w-[268px] rounded-[18px] border border-line bg-bg/85 p-2 backdrop-blur-md transition-[opacity,transform] duration-300 ${
-            dir.up ? 'bottom-[calc(100%+10px)] origin-bottom' : 'top-[calc(100%+10px)] origin-top'
-          } ${dir.right ? 'left-0' : 'right-0'} ${
+          className={`absolute bottom-[calc(100%+10px)] left-0 w-[268px] origin-bottom-left rounded-[18px] border border-line bg-bg/85 p-2 backdrop-blur-md transition-[opacity,transform] duration-300 ${
             open ? 'pointer-events-auto scale-100 opacity-100' : 'pointer-events-none scale-[0.94] opacity-0'
           }`}
           aria-hidden={!open}
@@ -469,6 +327,7 @@ export default function NavPod() {
             </Link>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

@@ -69,7 +69,7 @@ export default function AboutPage() {
 
         {/* ---------- три ядра ---------- */}
         <section data-chapter="manifesto" className="relative">
-          <div className="grid gap-[clamp(32px,6vh,64px)] px-4 py-[13vh] sm:px-8 lg:grid-cols-[minmax(280px,0.85fr)_minmax(0,1.5fr)] lg:gap-[clamp(40px,5vw,96px)] lg:px-[72px]">
+          <div className="grid gap-[clamp(32px,6vh,64px)] px-4 section-y sm:px-8 lg:grid-cols-[minmax(280px,0.85fr)_minmax(0,1.5fr)] lg:gap-[clamp(40px,5vw,96px)] lg:px-[72px]">
             <div className="lg:sticky lg:top-28 lg:self-start">
               <span className="rail-label">{ABOUT.cores.label}</span>
               <h2 className="display m-0 mt-4 text-[clamp(26px,3.6vw,52px)]">
@@ -95,7 +95,7 @@ export default function AboutPage() {
 
         {/* ---------- команда ---------- */}
         <section data-chapter="anatomy" className="relative border-t border-line">
-          <div className="px-4 py-[13vh] sm:px-8 lg:px-[72px]">
+          <div className="px-4 section-y sm:px-8 lg:px-[72px]">
             <span className="rail-label">{ABOUT.team.label}</span>
             <div className="mt-4 grid gap-[clamp(16px,3vh,32px)] lg:grid-cols-[1.15fr_1fr] lg:items-end">
               <h2 className="display m-0 text-[clamp(26px,4.2vw,64px)]">
@@ -133,7 +133,7 @@ export default function AboutPage() {
 
         {/* ---------- принципы ---------- */}
         <section data-chapter="atlas" className="relative border-t border-line">
-          <div className="px-4 py-[13vh] sm:px-8 lg:px-[72px]">
+          <div className="px-4 section-y sm:px-8 lg:px-[72px]">
             <span className="rail-label">{ABOUT.principles.label}</span>
             <h2 className="display m-0 mt-4 max-w-[20ch] text-[clamp(26px,4.2vw,64px)]">
               {ABOUT.principles.title}{' '}
@@ -152,7 +152,7 @@ export default function AboutPage() {
 
         {/* ---------- границы ---------- */}
         <section data-chapter="concepts" className="relative border-t border-line">
-          <div className="grid gap-[clamp(28px,5vh,56px)] px-4 py-[13vh] sm:px-8 lg:grid-cols-[minmax(280px,0.85fr)_minmax(0,1.5fr)] lg:gap-[clamp(40px,5vw,96px)] lg:px-[72px]">
+          <div className="grid gap-[clamp(28px,5vh,56px)] px-4 section-y sm:px-8 lg:grid-cols-[minmax(280px,0.85fr)_minmax(0,1.5fr)] lg:gap-[clamp(40px,5vw,96px)] lg:px-[72px]">
             <div>
               <span className="rail-label">{ABOUT.limits.label}</span>
               <h2 className="display m-0 mt-4 text-[clamp(26px,3.6vw,52px)]">
@@ -176,7 +176,7 @@ export default function AboutPage() {
 
         {/* ---------- переход к направлениям ---------- */}
         <section className="relative border-t border-line">
-          <div className="px-4 py-[10vh] sm:px-8 lg:px-[72px]">
+          <div className="px-4 section-y-tight sm:px-8 lg:px-[72px]">
             <span className="rail-label">Чем занимаемся</span>
             <ul className="m-0 mt-6 grid list-none gap-px border border-line bg-line p-0 sm:grid-cols-2 lg:grid-cols-3">
               {SITE.services.map((s) => (

@@ -60,14 +60,14 @@ export default function ConceptsPage() {
 
         {/* ---------- сама витрина ---------- */}
         <section data-chapter="concepts" className="relative border-t border-line" aria-label="Концепты">
-          <div className="px-4 py-[12vh] sm:px-8 lg:px-[72px]">
+          <div className="px-4 section-y sm:px-8 lg:px-[72px]">
             <ConceptCards />
           </div>
         </section>
 
         {/* ---------- как этим пользоваться ---------- */}
         <section data-chapter="atlas" className="relative border-t border-line">
-          <div className="px-4 py-[12vh] sm:px-8 lg:px-[72px]">
+          <div className="px-4 section-y sm:px-8 lg:px-[72px]">
             <span className="rail-label">{PAGE.how.label}</span>
             <ol className="m-0 mt-[clamp(28px,5vh,56px)] grid list-none gap-px border border-line bg-line p-0 sm:grid-cols-3">
               {PAGE.how.items.map((it) => (
