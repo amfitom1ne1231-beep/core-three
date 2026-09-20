@@ -39,7 +39,7 @@ export default function ConceptsPage() {
             <div>
               <span className="rail-label">{PAGE.label}</span>
               <h1
-                className="display m-0 mt-6 text-[clamp(36px,6vw,104px)]"
+                className="display m-0 mt-6 text-[clamp(32px,5vw,86px)]"
                 aria-label={`${PAGE.title} ${PAGE.titleAccent}`}
               >
                 <RevealText text={PAGE.title} as="span" className="block" decorative />

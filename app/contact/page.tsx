@@ -27,7 +27,7 @@ export default function ContactPage() {
             <div className="lg:col-start-1 lg:row-start-1">
               <span className="rail-label">{contact.label}</span>
               <h1
-                className="display m-0 mt-6 text-[clamp(40px,6.6vw,108px)]"
+                className="display m-0 mt-6 text-[clamp(32px,5vw,86px)]"
                 aria-label={`${contact.title} ${contact.titleAccent}`}
               >
                 <RevealText text={contact.title} as="span" className="block" decorative />

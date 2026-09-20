@@ -66,14 +66,14 @@ export default function ServicePage({ page, children }: { page: Page; children?:
     <main id="content" className="relative z-10 w-full">
       {/* ---------- первый экран ---------- */}
       <section data-chapter="hero" className="relative overflow-hidden">
-        <div className="grid items-center gap-[clamp(32px,6vh,64px)] px-4 pb-[10vh] pt-[clamp(120px,19vh,200px)] sm:px-8 lg:grid-cols-[1fr_minmax(0,1.05fr)] lg:gap-[clamp(40px,5vw,88px)] lg:px-[72px]">
+        <div className="grid items-center gap-[clamp(32px,6vh,64px)] px-4 pb-[10vh] pt-[clamp(120px,19vh,200px)] sm:px-8 lg:grid-cols-[1.25fr_minmax(0,1fr)] lg:gap-[clamp(40px,5vw,88px)] lg:px-[72px]">
           <div>
             {/* номер тот же, что в атласе: страница — продолжение карусели */}
             <span className="rail-label">
               <b>{page.n}</b> / {page.group}
             </span>
             <h1
-              className="display m-0 mt-6 text-[clamp(36px,5.6vw,92px)]"
+              className="display m-0 mt-6 text-[clamp(32px,4.8vw,80px)]"
               aria-label={`${page.title} ${page.titleAccent}`}
             >
               <RevealText text={page.title} as="span" className="block" decorative />

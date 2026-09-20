@@ -38,7 +38,7 @@ export default function Footer({ cta = true }: { cta?: boolean }) {
 
             <div data-rise className="mt-6 grid gap-[clamp(40px,7vh,72px)] lg:grid-cols-[1fr_minmax(0,1.05fr)] lg:gap-[clamp(48px,6vw,112px)]">
               <div>
-                <h2 data-skew className="display m-0 text-[clamp(32px,6vw,96px)]">
+                <h2 data-skew className="display m-0 text-[clamp(32px,5vw,86px)]">
                   {footer.title} <span className="title-accent">{footer.titleAccent}</span>
                 </h2>
                 <p className="m-0 mt-7 max-w-[44ch] text-[clamp(13px,1.1vw,16px)] leading-relaxed text-dim">

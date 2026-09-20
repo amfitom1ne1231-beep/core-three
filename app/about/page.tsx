@@ -38,7 +38,7 @@ export default function AboutPage() {
             <div>
               <span className="rail-label">{ABOUT.label}</span>
               <h1
-                className="display m-0 mt-6 text-[clamp(36px,6vw,104px)]"
+                className="display m-0 mt-6 text-[clamp(32px,5vw,86px)]"
                 aria-label={`${ABOUT.title} ${ABOUT.titleAccent}`}
               >
                 <RevealText text={ABOUT.title} as="span" className="block" decorative />
