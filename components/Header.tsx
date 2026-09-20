@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import gsap from 'gsap';
 import Mark from './Mark';
 import MobileMenu from './MobileMenu';
+import { setHeaderHidden } from '@/lib/chrome';
 import { contactHref } from '@/lib/lead';
 import { SITE } from '@/content/site';
 
@@ -27,6 +28,7 @@ export default function Header() {
     // состояние сбрасываем вместе с положением, иначе после закрытия меню
     // шапка считает себя спрятанной и не уезжает на следующем скролле
     hidden.current = false;
+    setHeaderHidden(false);
     gsap.to(ref.current, { yPercent: 0, duration: 0.25, ease: 'power2.out' });
   }, []);
 
@@ -68,6 +70,8 @@ export default function Header() {
       const shouldHide = delta > 0 && y > 120;
       if (shouldHide === hidden.current) return;
       hidden.current = shouldHide;
+      // пульт навигации берёт знак на себя ровно тогда, когда шапка ушла
+      setHeaderHidden(shouldHide);
 
       gsap.to(el, {
         yPercent: shouldHide ? -130 : 0,

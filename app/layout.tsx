@@ -3,6 +3,7 @@ import { Onest, JetBrains_Mono, Playfair_Display } from 'next/font/google';
 import CookieConsent from '@/components/CookieConsent';
 import Cursor from '@/components/Cursor';
 import Header from '@/components/Header';
+import NavPod from '@/components/NavPod';
 import Preloader from '@/components/Preloader';
 import SmoothScroll from '@/components/SmoothScroll';
 import { SITE } from '@/content/site';
@@ -72,6 +73,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SmoothScroll />
         <Preloader />
         <Header />
+        <NavPod />
         {children}
         <CookieConsent />
         <Cursor />

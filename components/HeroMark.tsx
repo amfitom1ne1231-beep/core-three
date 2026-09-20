@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { MARK_ARMS, MARK_CENTER } from './mark-geometry';
+import { BEVEL, FACET_FILL } from './mark-palette';
 import { isRevealed, preloaderLeaving } from '@/lib/boot';
 import { CORE_PHASE, CORE_SPEED, silkClock } from '@/lib/silk';
 
@@ -19,29 +20,6 @@ const OUT = [
   [-0.87, 0.5]
 ];
 
-/**
- * Цвета граней — как в логотипе: синий и серебро, свет сверху. Синие
- * темнеют книзу, серебро темнеет к внутренним углам. Ключ — грань
- * элемента, для нижней балки свои (верх и перед).
- *
- * Палитра приведена к токенам брифа. Прежняя была на ступень ярче и
- * насыщеннее (`#2c5ea6` против `--brand-core #143968`, кромка почти
- * белая), и рядом с очень сдержанным тёмным материалом знак читался
- * лакированным 3D-рендером, а не предметом из того же мира. Объём
- * держится геометрией и перепадом между гранями, а не глянцем,
- * поэтому глубину можно забрать без потери формы.
- */
-const FACET_FILL: Record<string, [string, string]> = {
-  cap: ['#3a6099', '#1d4374'],
-  column: ['#245081', '#0e2b52'],
-  inner: ['#1c4271', '#0b2445'],
-  front: ['#1e4576', '#0c2748'],
-  ell: ['#a7aeb6', '#5e646b'],
-  beam: ['#9aa1a9', '#545a61'],
-  top: ['#8f969e', '#5a6067']
-};
-/** Металлическая кромка в зазорах между гранями — фаски логотипа. */
-const BEVEL = '#b9c0c8';
 const ORIGIN = `50% ${MARK_CENTER.y}%`;
 
 /**
