@@ -52,15 +52,9 @@ export default function ConceptsPage() {
                 />
               </h1>
             </div>
-            <div>
-              <p className="m-0 max-w-[44ch] text-[clamp(14px,1.15vw,17px)] leading-relaxed text-dim">
-                {PAGE.lead}
-              </p>
-              <p className="m-0 mt-6 flex items-center gap-2.5 font-mono text-[10px] uppercase tracking-rail text-accent">
-                <span className="inline-block h-1.5 w-1.5 rounded-full bg-accent" aria-hidden />
-                {SITE.concepts.due}
-              </p>
-            </div>
+            <p className="m-0 max-w-[44ch] text-[clamp(14px,1.15vw,17px)] leading-relaxed text-dim">
+              {PAGE.lead}
+            </p>
           </div>
         </section>
 
