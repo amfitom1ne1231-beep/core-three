@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import CafeDemo from '@/components/demo/cafe/CafeDemo';
 import StatusDemo from '@/components/demo/status/StatusDemo';
 import { DEMOS, demoBySlug } from '@/content/concepts';
 
@@ -40,6 +41,8 @@ export default async function Demo({ params }: { params: Promise<{ slug: string 
   switch (slug) {
     case 'status':
       return <StatusDemo />;
+    case 'cafe':
+      return <CafeDemo />;
     default:
       notFound();
   }

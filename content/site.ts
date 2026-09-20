@@ -249,7 +249,7 @@ export const SITE = {
         title: 'Кафе: бот и меню',
         niche: 'Кафе · ресторан',
         points: ['Бронь стола в переписке', 'Меню внутри Telegram', 'Заказ с оплатой'],
-        ready: false
+        ready: true
       },
       {
         slug: 'status',

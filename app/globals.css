@@ -58,6 +58,19 @@
   --demo-bar: 36px;
 }
 
+/* Лист снизу: так открываются карточка позиции и мини-приложение
+   в Telegram. Ключевой кадр общий, потому что движение одно и то же. */
+@keyframes sheet {
+  from {
+    transform: translateY(14%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
 * { box-sizing: border-box; }
 
 html {
