@@ -267,7 +267,9 @@ export default function Anatomy() {
                   </div>
                   <p
                     className="m-0 mt-1.5 max-w-[34ch] text-[clamp(12px,1vw,14px)] leading-relaxed text-dim transition-opacity duration-500"
-                    style={{ opacity: on ? 1 : 0.35 }}
+                    // 0.35 поверх text-dim давали ~1.6:1 — текст неактивного
+                    // шага не читался вовсе, а через 3.8 с он станет активным
+                    style={{ opacity: on ? 1 : 0.55 }}
                   >
                     {s.text}
                   </p>
@@ -360,7 +362,7 @@ export default function Anatomy() {
                         </div>
                         <p
                           className="m-0 mt-1.5 text-[12px] leading-relaxed text-dim transition-opacity duration-500"
-                          style={{ opacity: on ? 1 : 0.4 }}
+                          style={{ opacity: on ? 1 : 0.55 }}
                         >
                           {n.desc}
                         </p>
