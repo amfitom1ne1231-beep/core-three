@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { markSilkReady } from '@/lib/boot';
 import { createSilk, SILK_DEFAULTS, type SilkParams } from '@/lib/silk';
+import { onThemeChange, readTheme } from '@/lib/theme';
 
 type Num = 'exposure' | 'warp' | 'sheen' | 'glint' | 'fresnel' | 'core1' | 'core2' | 'core3' | 'vignette' | 'edge';
 type Chapter = Partial<Pick<SilkParams, Num>> & { veil: number; accent?: string };
@@ -139,8 +140,17 @@ export default function HeroSilk({ params }: { params?: Partial<SilkParams> }) {
     addEventListener('scroll', schedule, { passive: true });
     addEventListener('resize', schedule, { passive: true });
 
+    /**
+     * Материал живёт в WebGL, и CSS-токены до него не достают: палитру
+     * ему надо передать отдельно. Переход внутри шейдера плавный —
+     * `setTheme` двигает `uMode` к цели, а не переключает его.
+     */
+    silk.setTheme(readTheme() === 'light' ? 1 : 0);
+    const offTheme = onThemeChange((t) => silk.setTheme(t === 'light' ? 1 : 0));
+
     return () => {
       cancelAnimationFrame(raf);
+      offTheme();
       removeEventListener('scroll', schedule);
       removeEventListener('resize', schedule);
       silk.destroy();

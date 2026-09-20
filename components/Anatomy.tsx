@@ -420,8 +420,10 @@ export default function Anatomy() {
                       <circle cx="1" cy="1" r="1" className="grid-dot" />
                     </pattern>
                     <linearGradient id="ct-node" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="rgb(255 255 255 / 0.045)" />
-                      <stop offset="100%" stopColor="rgb(255 255 255 / 0.012)" />
+                      {/* блик внутри узла — через токен: в светлой теме
+                          панель белая, и белый градиент на ней пропадал */}
+                      <stop offset="0%" stopColor="rgb(var(--fg-rgb) / 0.045)" />
+                      <stop offset="100%" stopColor="rgb(var(--fg-rgb) / 0.012)" />
                     </linearGradient>
                     <filter id="ct-glow" x="-40%" y="-400%" width="180%" height="900%">
                       <feGaussianBlur stdDeviation="3" />

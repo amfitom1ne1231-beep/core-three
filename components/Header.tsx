@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import gsap from 'gsap';
 import Mark from './Mark';
 import MobileMenu from './MobileMenu';
+import ThemeToggle from './ThemeToggle';
 import { setHeaderHidden } from '@/lib/chrome';
 import { contactHref } from '@/lib/lead';
 import { SITE } from '@/content/site';
@@ -122,6 +123,10 @@ export default function Header() {
           </Link>
         ))}
       </nav>
+
+      {/* тема живёт рядом с навигацией: это настройка просмотра,
+          а не действие, поэтому шрифт и вес те же, что у пунктов меню */}
+      <ThemeToggle className="hidden md:flex" />
 
       {/* на узких экранах вместо кнопки — меню: CTA лежит внутри него */}
       <Link

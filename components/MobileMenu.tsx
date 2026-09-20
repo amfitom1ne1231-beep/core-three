@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import ThemeToggle from './ThemeToggle';
 import { lockScroll } from '@/lib/scroll';
 import { SITE } from '@/content/site';
 
@@ -121,7 +122,11 @@ export default function MobileMenu({ onOpenChange }: { onOpenChange?: (open: boo
         >
           {SITE.hero.primary.label}
         </Link>
-        <div className="mt-6 flex flex-col gap-2">
+        <div className="mt-6 flex items-center justify-between gap-4 border-t border-line pt-5">
+          <span className="rail-label">Тема</span>
+          <ThemeToggle />
+        </div>
+        <div className="mt-5 flex flex-col gap-2">
           <a href={`mailto:${SITE.email}`} className="text-[14px] text-dim">
             {SITE.email}
           </a>

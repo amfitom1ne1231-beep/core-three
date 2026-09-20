@@ -7,6 +7,7 @@ import NavPod from '@/components/NavPod';
 import Preloader from '@/components/Preloader';
 import SmoothScroll from '@/components/SmoothScroll';
 import { SITE } from '@/content/site';
+import { THEME_BOOT } from '@/lib/theme';
 import './globals.css';
 
 // Onest переменный — так он и был записан в брифе. Без `weight` next/font
@@ -47,13 +48,29 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#050608',
-  colorScheme: 'dark'
+  // Обе темы объявлены: браузер красит строку по системной настройке ещё
+  // до выполнения скриптов, а дальше цвет ведёт сам переключатель.
+  themeColor: [
+    { media: '(prefers-color-scheme: dark)', color: '#050608' },
+    { media: '(prefers-color-scheme: light)', color: '#f4f5f7' }
+  ],
+  colorScheme: 'dark light'
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ru" data-theme="dark" className={`${onest.variable} ${mono.variable}`}>
+    // data-theme выставляет загрузочный скрипт до первой отрисовки;
+    // suppressHydrationWarning — потому что разметка сервера про тему
+    // не знает и знать не может
+    <html lang="ru" suppressHydrationWarning className={`${onest.variable} ${mono.variable}`}>
+      <head>
+        {/*
+          Тема применяется до первого кадра. Без этого страница успевает
+          мигнуть тёмной у того, кто выбрал светлую, — и наоборот: скрипт
+          в <head> выполняется раньше, чем браузер что-либо рисует.
+        */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT }} />
+      </head>
       <body>
         <a className="skip-link" href="#content">
           К содержанию
