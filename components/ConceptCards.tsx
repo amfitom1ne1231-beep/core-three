@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import Link from 'next/link';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import ConceptPreview from './concept-previews';
@@ -12,9 +13,12 @@ gsap.registerPlugin(ScrollTrigger);
  * Карточки концептов. Живут отдельно от секции, потому что витрина стоит
  * в двух местах: главой на главной и целой страницей `/concepts`.
  *
- * Рамка у карточки не подсвечивается на наведении: карточка никуда не
- * ведёт, пока демо не собраны, а подсвеченная рамка обещает переход.
- * Искажение превью остаётся — это фактура, а не приглашение нажать.
+ * Собранное демо — ссылка с подсвеченной рамкой и приглашением открыть.
+ * Несобранное — та же карточка, но без ссылки и без подсветки: рамка,
+ * которая реагирует на курсор, обещает переход, и обещание надо
+ * либо выполнять, либо не давать.
+ *
+ * Искажение превью работает у всех — это фактура, а не приглашение нажать.
  */
 export default function ConceptCards({ className = '' }: { className?: string }) {
   const root = useRef<HTMLUListElement>(null);
@@ -72,7 +76,9 @@ export default function ConceptCards({ className = '' }: { className?: string })
       {SITE.concepts.items.map((c) => (
         <li key={c.slug} className="w-[78vw] max-w-[340px] shrink-0 snap-start sm:w-auto sm:max-w-none">
           <article
-            className="flex h-full flex-col border border-line bg-elev"
+            className={`group flex h-full flex-col border border-line bg-elev transition-colors duration-300 ${
+              c.ready ? 'hover:border-line-strong' : ''
+            }`}
             onMouseEnter={() => warp(c.slug, true)}
             onMouseLeave={() => warp(c.slug, false)}
           >
@@ -102,10 +108,22 @@ export default function ConceptCards({ className = '' }: { className?: string })
               </svg>
             </div>
 
-            <div className="flex flex-1 flex-col p-5">
+            <div className="relative flex flex-1 flex-col p-5">
               <span className="rail-label">{c.niche}</span>
               <h3 className="m-0 mt-3 text-[clamp(17px,1.5vw,21px)] font-medium leading-tight">
-                {c.title}
+                {c.ready ? (
+                  // растянутая ссылка: нажимается вся карточка, но в разметке
+                  // остаётся одна ссылка с внятным именем, а не оболочка
+                  // вокруг заголовка, списка и картинки
+                  <Link
+                    href={`/concepts/${c.slug}`}
+                    className="transition-colors duration-300 before:absolute before:inset-0 before:content-[''] hover:text-accent"
+                  >
+                    {c.title}
+                  </Link>
+                ) : (
+                  c.title
+                )}
               </h3>
               <ul className="m-0 mt-4 flex flex-1 list-none flex-col gap-1.5 p-0">
                 {c.points.map((p) => (
@@ -117,6 +135,14 @@ export default function ConceptCards({ className = '' }: { className?: string })
                   </li>
                 ))}
               </ul>
+              {c.ready && (
+                <span className="mt-5 flex items-center gap-2 font-mono text-[10px] uppercase tracking-rail text-accent">
+                  Открыть демо
+                  <span className="transition-transform duration-300 group-hover:translate-x-1" aria-hidden>
+                    →
+                  </span>
+                </span>
+              )}
             </div>
           </article>
         </li>

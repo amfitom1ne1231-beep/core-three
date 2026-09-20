@@ -1,10 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Onest, JetBrains_Mono } from 'next/font/google';
 import CookieConsent from '@/components/CookieConsent';
-import Cursor from '@/components/Cursor';
-import Header from '@/components/Header';
-import NavPod from '@/components/NavPod';
-import Preloader from '@/components/Preloader';
+import SiteChrome from '@/components/SiteChrome';
 import SmoothScroll from '@/components/SmoothScroll';
 import { SITE } from '@/content/site';
 import { THEME_BOOT } from '@/lib/theme';
@@ -76,13 +73,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           К содержанию
         </a>
         <SmoothScroll />
-        <Preloader />
-        <Header />
-        <NavPod />
+        {/* шапка, пульт, курсор и зерно — только вне демо концептов */}
+        <SiteChrome />
         {children}
         <CookieConsent />
-        <Cursor />
-        <div className="grain" aria-hidden />
       </body>
     </html>
   );
