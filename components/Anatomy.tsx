@@ -495,17 +495,25 @@ export default function Anatomy() {
                           className="node-inner"
                         />
                         <Ticks n={n} />
-                        <Glyph id={n.id} x={n.x + 14} y={n.y + 14} />
+                        {/* у широкого узла глиф и заголовок стоят в одну
+                            строку, поэтому глиф опущен по центру полосы, а
+                            заголовок сдвинут вправо: при общем отступе
+                            иконка ложилась прямо на «М» слова «Мониторинг» */}
+                        <Glyph id={n.id} x={n.x + 14} y={n.y + (wide ? 20 : 14)} />
                         <text x={n.x + n.w - 14} y={n.y + 28} className="node-id">
                           {wide ? '00' : String(CHAIN.indexOf(n.id) + 1).padStart(2, '0')}
                         </text>
-                        <text x={n.x + 14} y={wide ? n.y + 40 : n.y + 62} className="node-title">
-                          {n.title}
+                        <text
+                          x={n.x + (wide ? 50 : 14)}
+                          y={wide ? n.y + 40 : n.y + 62}
+                          className="node-title"
+                        >
+                          {'short' in n ? n.short : n.title}
                         </text>
                         {!wide && <path d={`M${n.x + 14} ${n.y + 76} H${n.x + n.w - 14}`} className="node-div" />}
                         {/* широкому узлу переносить нечего: у него 790 единиц ширины */}
                         {wide ? (
-                          <text x={n.x + 168} y={n.y + 40} className="node-tech">
+                          <text x={n.x + 172} y={n.y + 40} className="node-tech">
                             {n.tech}
                           </text>
                         ) : (

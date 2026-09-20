@@ -338,7 +338,9 @@ html.has-cursor :is(input:not([type='checkbox']):not([type='radio']):not([type='
 .node .node-title {
   fill: var(--fg-faint);
   font-family: var(--font-onest), system-ui, sans-serif;
-  font-size: 17px;
+  /* 17px переполняли карточку: «Контент и каталог» уезжал за кромку
+     на 17px — ровно в зазор, где стоит подпись связи */
+  font-size: 15px;
   font-weight: 500;
   transition: fill 0.45s ease;
 }
@@ -384,7 +386,9 @@ html.has-cursor :is(input:not([type='checkbox']):not([type='radio']):not([type='
   fill: var(--fg-faint);
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 9px;
-  letter-spacing: 0.18em;
+  /* трекинг ужат: «СОБЫТИЕ» при 0.18em заполняло зазор впритык,
+     упираясь в кромки обеих карточек */
+  letter-spacing: 0.1em;
   text-anchor: middle;
   opacity: 0.45;
   transition: fill 0.45s ease, opacity 0.45s ease;
