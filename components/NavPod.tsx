@@ -6,15 +6,12 @@ import { usePathname } from 'next/navigation';
 import gsap from 'gsap';
 import MarkColor from './MarkColor';
 import { LIVE_H, LIVE_W, type LiveProps } from './live/kit';
-import LiveBlog from './live/LiveBlog';
 import LiveBot from './live/LiveBot';
 import LiveLanding from './live/LiveLanding';
 import LiveOps from './live/LiveOps';
 import LiveShop from './live/LiveShop';
-import LiveWebApp from './live/LiveWebApp';
 import { isHeaderHidden, onHeaderToggle } from '@/lib/chrome';
 import { scrollToY } from '@/lib/scroll';
-import { SITE } from '@/content/site';
 
 /**
  * Пульт навигации.
@@ -96,6 +93,8 @@ export default function NavPod() {
 
   const [live, setLive] = useState(false);
   const [open, setOpen] = useState(false);
+  /** Какое направление показывает живой экран панели. */
+  const [active, setActive] = useState(0);
   /** Куда раскрывать панель, чтобы она не упиралась в край окна. */
   const [dir, setDir] = useState({ up: true, right: true });
 
@@ -241,7 +240,7 @@ export default function NavPod() {
      */
     const spinTo = reduced
       ? null
-      : gsap.quickTo(spin.current, 'rotate', { duration: 0.55, ease: 'power2.out' });
+      : gsap.quickTo(spin.current, 'rotation', { duration: 0.55, ease: 'power2.out' });
 
     let raf = 0;
     const sync = () => {
@@ -326,8 +325,6 @@ export default function NavPod() {
     };
   }, [open]);
 
-  const links = SITE.footer.columns.flatMap((c) => [...c.links]);
-
   return (
     <div
       ref={pod}
@@ -361,7 +358,11 @@ export default function NavPod() {
           onFocus={() => setOpen(true)}
           className="grid h-full w-full place-items-center rounded-full border border-line bg-bg/80 text-fg backdrop-blur-md transition-colors duration-300 hover:border-accent hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
         >
-          <MarkColor id={markId} className="h-7 w-7" />
+          {/* знак проворачивается отдельным слоем: внешний трансформ
+              пульта занят перелётом между углами */}
+          <span ref={spin} className="block h-8 w-8">
+            <MarkColor id={markId} className="h-full w-full" />
+          </span>
         </button>
 
         {/* Панель лежит абсолютом: в размер пульта она не входит, иначе
@@ -378,28 +379,76 @@ export default function NavPod() {
           }`}
           aria-hidden={!open}
         >
-          <span className="rail-label block px-3 pb-2 pt-2">Направления</span>
+          {/**
+           * Живой экран направления. Играет ровно одна вставка — та, на
+           * которой сейчас палец или курсор: шесть одновременных таймлайнов
+           * в меню никому не нужны. Закрытая панель не держит ни одной.
+           */}
+          <div
+            className="relative mb-2 overflow-hidden rounded-[12px] border border-line bg-elev"
+            style={{ width: SCREEN_W, height: SCREEN_H }}
+            aria-hidden
+          >
+            {open &&
+              ROUTES.map((r, i) => {
+                const Live = r.live;
+                return (
+                  <div
+                    key={r.href}
+                    className="absolute inset-0 transition-opacity duration-300"
+                    style={{
+                      // вставка нарисована в макетных координатах, рамка её масштабирует
+                      ['--live-k' as string]: (SCREEN_W / LIVE_W).toFixed(4),
+                      opacity: i === active ? 1 : 0
+                    }}
+                  >
+                    <Live playing={i === active} />
+                  </div>
+                );
+              })}
+          </div>
+
           <ul className="m-0 flex list-none flex-col p-0">
-            {links.map((l) => {
-              const here = pathname === l.href;
+            {ROUTES.map((r, i) => {
+              const here = pathname === r.href;
               return (
-                <li key={l.href}>
+                <li key={r.href}>
                   <Link
-                    href={l.href}
+                    href={r.href}
                     tabIndex={open ? undefined : -1}
                     aria-current={here ? 'page' : undefined}
-                    className={`block rounded-[10px] px-3 py-2.5 text-[13.5px] leading-snug transition-colors duration-200 hover:bg-elev ${
-                      here ? 'text-accent' : 'text-dim hover:text-fg'
-                    }`}
+                    onMouseEnter={() => setActive(i)}
+                    onFocus={() => setActive(i)}
+                    className={`flex items-baseline gap-3 rounded-[10px] px-3 py-2.5 text-[13.5px] leading-snug transition-colors duration-200 ${
+                      i === active ? 'bg-elev text-fg' : 'text-dim hover:text-fg'
+                    } ${here ? 'text-accent' : ''}`}
                   >
-                    {l.label}
+                    <span className="font-mono text-[10px] tracking-rail text-faint">{r.n}</span>
+                    {r.label}
                   </Link>
                 </li>
               );
             })}
           </ul>
 
-          <div className="mt-2 flex gap-2 border-t border-line pt-2">
+          {/* служебные разделы: живого экрана у них нет, поэтому строкой */}
+          <div className="mt-1 flex flex-wrap gap-x-1 px-3 pb-1 pt-2">
+            {EXTRA.map((e) => (
+              <Link
+                key={e.href}
+                href={e.href}
+                tabIndex={open ? undefined : -1}
+                aria-current={pathname === e.href ? 'page' : undefined}
+                className={`rounded-[8px] px-1.5 py-1 font-mono text-[9px] uppercase tracking-rail transition-colors duration-200 hover:text-fg ${
+                  pathname === e.href ? 'text-accent' : 'text-faint'
+                }`}
+              >
+                {e.label}
+              </Link>
+            ))}
+          </div>
+
+          <div className="mt-1 flex gap-2 border-t border-line pt-2">
             <Link
               href="/contact"
               tabIndex={open ? undefined : -1}
