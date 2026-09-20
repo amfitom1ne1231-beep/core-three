@@ -45,7 +45,7 @@ export default function AboutPage() {
                 <RevealText
                   text={ABOUT.titleAccent}
                   as="span"
-                  className="accent-serif block"
+                  className="title-accent block"
                   delay={0.12}
                   decorative
                 />
@@ -73,7 +73,7 @@ export default function AboutPage() {
             <div className="lg:sticky lg:top-28 lg:self-start">
               <span className="rail-label">{ABOUT.cores.label}</span>
               <h2 className="display m-0 mt-4 text-[clamp(26px,3.6vw,52px)]">
-                {ABOUT.cores.title} <span className="accent-serif">{ABOUT.cores.titleAccent}</span>
+                {ABOUT.cores.title} <span className="title-accent">{ABOUT.cores.titleAccent}</span>
               </h2>
               <Mark className="mt-8 h-20 w-20 text-fg/70" />
               <p className="m-0 mt-8 max-w-[38ch] text-[14px] leading-relaxed text-dim">{ABOUT.cores.text}</p>
@@ -99,7 +99,7 @@ export default function AboutPage() {
             <span className="rail-label">{ABOUT.team.label}</span>
             <div className="mt-4 grid gap-[clamp(16px,3vh,32px)] lg:grid-cols-[1.15fr_1fr] lg:items-end">
               <h2 className="display m-0 text-[clamp(26px,4.2vw,64px)]">
-                {ABOUT.team.title} <span className="accent-serif">{ABOUT.team.titleAccent}</span>
+                {ABOUT.team.title} <span className="title-accent">{ABOUT.team.titleAccent}</span>
               </h2>
               <p className="m-0 max-w-[44ch] text-[clamp(13px,1.1vw,16px)] leading-relaxed text-dim">
                 {ABOUT.team.lead}
@@ -137,7 +137,7 @@ export default function AboutPage() {
             <span className="rail-label">{ABOUT.principles.label}</span>
             <h2 className="display m-0 mt-4 max-w-[20ch] text-[clamp(26px,4.2vw,64px)]">
               {ABOUT.principles.title}{' '}
-              <span className="accent-serif">{ABOUT.principles.titleAccent}</span>
+              <span className="title-accent">{ABOUT.principles.titleAccent}</span>
             </h2>
             <ul className="m-0 mt-[clamp(28px,5vh,56px)] grid list-none gap-px border border-line bg-line p-0 sm:grid-cols-2 lg:grid-cols-3">
               {ABOUT.principles.items.map((p) => (
@@ -156,7 +156,7 @@ export default function AboutPage() {
             <div>
               <span className="rail-label">{ABOUT.limits.label}</span>
               <h2 className="display m-0 mt-4 text-[clamp(26px,3.6vw,52px)]">
-                {ABOUT.limits.title} <span className="accent-serif">{ABOUT.limits.titleAccent}</span>
+                {ABOUT.limits.title} <span className="title-accent">{ABOUT.limits.titleAccent}</span>
               </h2>
               <p className="m-0 mt-6 max-w-[34ch] text-[14px] leading-relaxed text-dim">{ABOUT.limits.lead}</p>
             </div>

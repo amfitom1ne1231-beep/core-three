@@ -107,10 +107,14 @@ export default function Home() {
               </a>
             </div>
 
-            {/* на телефоне внизу стоит знак — подсказка там только мешала бы */}
-            <div className="rail-label absolute bottom-[clamp(20px,5vh,54px)] left-4 hidden sm:left-8 lg:left-[72px] lg:block">
-              {SITE.hero.scrollHint}
-            </div>
+            {/* Подсказка прокрутки без слов: штрих уходит вниз и возвращается.
+                Фраза «прокрутите — дальше устройство работы» объясняла то,
+                что человек и так делает первым движением.
+                На телефоне внизу стоит знак — там и штрих лишний. */}
+            <div
+              className="scroll-cue absolute bottom-[clamp(20px,5vh,54px)] left-4 hidden sm:left-8 lg:left-[72px] lg:block"
+              aria-hidden
+            />
           </div>
         </section>
 

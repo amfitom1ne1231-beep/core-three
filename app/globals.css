@@ -87,14 +87,38 @@ body {
 
 .rail-label b { color: var(--fg); font-weight: 500; }
 
-/* Акцент курсивной антиквой: два-три слова в заголовке, не больше.
-   Кегль чуть крупнее гротеска — антиква оптически мельчит. */
-.accent-serif {
-  font-family: var(--font-serif), Georgia, serif;
-  font-style: italic;
-  font-weight: 500;
-  letter-spacing: -0.01em;
-  font-size: 1.06em;
+/* Акцент в заголовке — тем же гротеском, жирным начертанием.
+   Контраст веса вместо смены гарнитуры: на сайте один шрифт и ни одного
+   курсива. Тот же приём уже держит заголовок первого экрана —
+   «От идеи» светлым, «до запуска.» жирным, — и теперь он один на весь
+   сайт, а не спорит с антиквой через строку. */
+.title-accent {
+  font-weight: 700;
+  letter-spacing: -0.035em;
+}
+
+/* Беззвучная подсказка прокрутки: штрих уходит вниз и гаснет.
+   Жест понятен без слов, поэтому подписи под ним нет. */
+.scroll-cue {
+  width: 1px;
+  height: clamp(40px, 6vh, 64px);
+  overflow: hidden;
+  background: linear-gradient(180deg, var(--line-strong), rgb(255 255 255 / 0));
+}
+
+.scroll-cue::after {
+  content: '';
+  display: block;
+  width: 1px;
+  height: 40%;
+  background: var(--fg);
+  animation: ct-cue 2.6s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+@keyframes ct-cue {
+  0% { transform: translateY(-100%); opacity: 0; }
+  25%, 70% { opacity: 1; }
+  100% { transform: translateY(250%); opacity: 0; }
 }
 
 /* Заголовки — смешанный регистр, отрицательный трекинг на крупных кеглях. */

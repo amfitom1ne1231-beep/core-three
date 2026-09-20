@@ -1,9 +1,12 @@
 'use client';
 
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import ConceptPreview from './concept-previews';
 import { SITE } from '@/content/site';
+
+gsap.registerPlugin(ScrollTrigger);
 
 /**
  * Витрина концептов. Превью схематичные: живые демо — волна 3, но пустая
@@ -15,6 +18,45 @@ import { SITE } from '@/content/site';
  */
 export default function Concepts() {
   const root = useRef<HTMLElement>(null);
+
+  // Рамка каждого превью раскрывается по скроллу (data-reveal="clip"),
+  // а сами карточки до этого появлялись готовыми — рамка «оживала» вокруг
+  // того, что уже стояло на месте. Теперь сначала входит карточка.
+  useEffect(() => {
+    const el = root.current;
+    if (!el) return;
+
+    const ctx = gsap.context(() => {
+      const mm = gsap.matchMedia();
+      mm.add('(prefers-reduced-motion: no-preference)', () => {
+        const head = el.querySelector<HTMLElement>('[data-head]');
+        if (head) {
+          gsap.from(head.children, {
+            opacity: 0,
+            y: 14,
+            duration: 0.55,
+            ease: 'power2.out',
+            stagger: 0.07,
+            scrollTrigger: { trigger: head, start: 'top 85%', once: true }
+          });
+        }
+
+        const cards = el.querySelectorAll<HTMLElement>('[data-concept-card]');
+        if (cards.length) {
+          gsap.from(cards, {
+            opacity: 0,
+            y: 16,
+            duration: 0.55,
+            ease: 'power2.out',
+            stagger: 0.08,
+            scrollTrigger: { trigger: cards[0], start: 'top 90%', once: true }
+          });
+        }
+      });
+    }, el);
+
+    return () => ctx.revert();
+  }, []);
 
   const warp = (slug: string, on: boolean) => {
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -45,14 +87,16 @@ export default function Concepts() {
     >
 
       <div data-recede className="relative px-4 py-[14vh] sm:px-8 lg:px-[72px]">
-        <span className="rail-label">{SITE.concepts.label}</span>
-        <div className="mt-4 grid gap-[clamp(20px,4vh,40px)] lg:grid-cols-[1.1fr_1fr] lg:items-end">
+        <div data-head>
+          <span className="rail-label block">{SITE.concepts.label}</span>
+          <div className="mt-4 grid gap-[clamp(20px,4vh,40px)] lg:grid-cols-[1.1fr_1fr] lg:items-end">
           <h2 data-skew className="display m-0 text-[clamp(28px,5.2vw,80px)]">
-            {SITE.concepts.title} <span className="accent-serif">{SITE.concepts.titleAccent}</span>
+            {SITE.concepts.title} <span className="title-accent">{SITE.concepts.titleAccent}</span>
           </h2>
-          <p className="m-0 max-w-[46ch] text-[clamp(13px,1.1vw,16px)] leading-relaxed text-dim">
-            {SITE.concepts.lead}
-          </p>
+            <p className="m-0 max-w-[46ch] text-[clamp(13px,1.1vw,16px)] leading-relaxed text-dim">
+              {SITE.concepts.lead}
+            </p>
+          </div>
         </div>
 
         {/* до 640px — свайп-ряд: четыре карточки столбиком стоили телефону два с половиной экрана */}
@@ -61,7 +105,7 @@ export default function Concepts() {
           className="-mx-4 m-0 mt-[clamp(32px,7vh,80px)] flex snap-x snap-mandatory scroll-px-4 list-none gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] after:w-px after:shrink-0 after:content-[''] sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:after:hidden xl:grid-cols-4 [&::-webkit-scrollbar]:hidden"
         >
           {SITE.concepts.items.map((c) => (
-            <li key={c.slug} className="w-[78vw] max-w-[340px] shrink-0 snap-start sm:w-auto sm:max-w-none">
+            <li key={c.slug} data-concept-card className="w-[78vw] max-w-[340px] shrink-0 snap-start sm:w-auto sm:max-w-none">
               <article
                 className="group flex h-full flex-col border border-line bg-elev transition-colors duration-500 hover:border-line-strong"
                 onMouseEnter={() => warp(c.slug, true)}

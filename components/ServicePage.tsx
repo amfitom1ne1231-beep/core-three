@@ -80,7 +80,7 @@ export default function ServicePage({ page, children }: { page: Page; children?:
               <RevealText
                 text={page.titleAccent}
                 as="span"
-                className="accent-serif block"
+                className="title-accent block"
                 delay={0.12}
                 decorative
               />
@@ -121,7 +121,7 @@ export default function ServicePage({ page, children }: { page: Page; children?:
         <div className="px-4 py-[12vh] sm:px-8 lg:px-[72px]">
           <span className="rail-label">Состав работы</span>
           <h2 className="display m-0 mt-4 max-w-[18ch] text-[clamp(26px,4.2vw,64px)]">
-            Что входит <span className="accent-serif">в запуск</span>
+            Что входит <span className="title-accent">в запуск</span>
           </h2>
           <ul className="m-0 mt-[clamp(28px,5vh,56px)] grid list-none gap-px border border-line bg-line p-0 sm:grid-cols-2 lg:grid-cols-3">
             {page.includes.map((it) => (
@@ -144,7 +144,7 @@ export default function ServicePage({ page, children }: { page: Page; children?:
           <div>
             <span className="rail-label">Как идёт работа</span>
             <h2 className="display m-0 mt-4 text-[clamp(26px,3.6vw,52px)]">
-              Четыре шага, <span className="accent-serif">без сюрпризов</span>
+              Четыре шага, <span className="title-accent">без сюрпризов</span>
             </h2>
           </div>
           <ol className="m-0 list-none p-0">
@@ -207,7 +207,7 @@ export default function ServicePage({ page, children }: { page: Page; children?:
           <div>
             <span className="rail-label">Вопросы</span>
             <h2 className="display m-0 mt-4 text-[clamp(26px,3.6vw,52px)]">
-              Спрашивают <span className="accent-serif">чаще всего</span>
+              Спрашивают <span className="title-accent">чаще всего</span>
             </h2>
           </div>
           <div>

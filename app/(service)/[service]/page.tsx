@@ -97,7 +97,7 @@ export default async function Service({ params }: { params: Promise<{ service: s
               <div>
                 <span className="rail-label">{TG_DEMO.label}</span>
                 <h2 className="display m-0 mt-4 text-[clamp(26px,3.6vw,52px)]">
-                  {TG_DEMO.title} <span className="accent-serif">{TG_DEMO.titleAccent}</span>
+                  {TG_DEMO.title} <span className="title-accent">{TG_DEMO.titleAccent}</span>
                 </h2>
                 <p className="m-0 mt-6 max-w-[42ch] text-[clamp(13px,1.1vw,16px)] leading-relaxed text-dim">
                   {TG_DEMO.lead}

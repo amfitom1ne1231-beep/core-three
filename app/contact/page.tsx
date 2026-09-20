@@ -34,7 +34,7 @@ export default function ContactPage() {
                 <RevealText
                   text={contact.titleAccent}
                   as="span"
-                  className="accent-serif block"
+                  className="title-accent block"
                   delay={0.12}
                   decorative
                 />

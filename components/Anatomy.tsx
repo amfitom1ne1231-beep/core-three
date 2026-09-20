@@ -106,7 +106,95 @@ export default function Anatomy() {
     return activeIds.has(from) && activeIds.has(to);
   };
 
-  const inspected = hovered ? byId.get(hovered) : null;
+  /**
+   * Строка осмотра всегда несёт содержание. Раньше в покое она держала
+   * инструкцию «наведите на слой» — подсказку к тому, что и так видно:
+   * слой под курсором подсвечивается сам. Теперь в покое показан слой,
+   * на который пришёл текущий шаг, и строка живёт вместе со схемой.
+   */
+  const inspected = useMemo(() => {
+    if (hovered) return byId.get(hovered) ?? null;
+    const chain = steps[step]?.nodes ?? [];
+    return byId.get(chain[chain.length - 1] ?? '') ?? null;
+  }, [hovered, step, steps, byId]);
+
+  /**
+   * Появление схемы. Рамка панели и раньше раскрывалась по скроллу, но
+   * содержимое внутри было готовым с первого кадра — прибор возникал
+   * собранным. Теперь он собирается по тому самому потоку, который
+   * объясняет: слои встают слева направо, связи протягиваются следом.
+   * Один раз, на входе секции в экран.
+   */
+  useEffect(() => {
+    const el = section.current;
+    if (!el) return;
+
+    const ctx = gsap.context(() => {
+      const mm = gsap.matchMedia();
+      mm.add('(prefers-reduced-motion: no-preference)', () => {
+        const panel = el.querySelector<HTMLElement>('[data-panel]');
+        if (!panel) return;
+
+        // порядок сборки — порядок потока, а не порядок в разметке
+        const nodeEls = [...CHAIN, 'ops']
+          .map((id) => el.querySelector<SVGGElement>(`[data-node="${id}"]`))
+          .filter((n): n is SVGGElement => Boolean(n));
+
+        const onPanel = { trigger: panel, start: 'top 82%', once: true } as const;
+
+        if (nodeEls.length) {
+          gsap.from(nodeEls, {
+            opacity: 0,
+            duration: 0.4,
+            delay: 0.15,
+            ease: 'power2.out',
+            stagger: 0.09,
+            scrollTrigger: onPanel
+          });
+        }
+
+        const links = el.querySelectorAll<SVGGElement>('[data-link]');
+        if (links.length) {
+          gsap.from(links, {
+            opacity: 0,
+            duration: 0.5,
+            delay: 0.45,
+            ease: 'none',
+            stagger: 0.09,
+            scrollTrigger: onPanel
+          });
+        }
+
+        // на узкой колонке схемы нет — там собирается разрез слоёв
+        const rows = el.querySelectorAll<HTMLElement>('[data-row]');
+        if (rows.length) {
+          gsap.from(rows, {
+            opacity: 0,
+            y: 10,
+            duration: 0.45,
+            delay: 0.1,
+            ease: 'power2.out',
+            stagger: 0.06,
+            scrollTrigger: onPanel
+          });
+        }
+
+        const steps = el.querySelectorAll<HTMLElement>('[data-step]');
+        if (steps.length) {
+          gsap.from(steps, {
+            opacity: 0,
+            y: 12,
+            duration: 0.5,
+            ease: 'power2.out',
+            stagger: 0.07,
+            scrollTrigger: { trigger: el, start: 'top 82%', once: true }
+          });
+        }
+      });
+    }, el);
+
+    return () => ctx.revert();
+  }, []);
 
   // Секция больше не занимает два экрана скролла: шаги проигрываются сами,
   // пока схема на экране, и замирают, когда её рассматривают.
@@ -143,7 +231,7 @@ export default function Anatomy() {
         <div>
           <span className="rail-label">{SITE.anatomy.label}</span>
           <h2 data-skew className="display m-0 mt-4 text-[clamp(28px,5vw,76px)]">
-            {SITE.anatomy.title} <span className="accent-serif">{SITE.anatomy.titleAccent}</span>
+            {SITE.anatomy.title} <span className="title-accent">{SITE.anatomy.titleAccent}</span>
           </h2>
         </div>
 
@@ -204,6 +292,7 @@ export default function Anatomy() {
           {/* Панель-прибор: рамка, шапка с плоскостями, поле схемы, строка осмотра */}
           {/* стекло: сквозь панель виден тот же материал, что под всей страницей */}
           <div
+            data-panel
             data-reveal="clip"
             className="relative min-w-0 overflow-hidden rounded-lg border border-line bg-bg/60 backdrop-blur-xl"
           >
@@ -239,6 +328,7 @@ export default function Anatomy() {
                   return (
                     <li
                       key={n.id}
+                      data-row
                       className="flex gap-3 border-l-2 bg-elev px-3 py-3 transition-colors duration-500"
                       style={{ borderColor: on ? 'var(--accent)' : 'var(--line)' }}
                     >
@@ -345,7 +435,7 @@ export default function Anatomy() {
                     const labelX = (a.x + a.w + b.x) / 2;
                     const labelY = a.y + a.h / 2 - 11;
                     return (
-                      <g key={`${l.from}-${l.to}`}>
+                      <g key={`${l.from}-${l.to}`} data-link>
                         <path
                           d={d}
                           className="link-base"
@@ -380,6 +470,7 @@ export default function Anatomy() {
                       <g
                         key={n.id}
                         className="node"
+                        data-node={n.id}
                         data-on={on || undefined}
                         onMouseEnter={() => setHovered(n.id)}
                         onMouseLeave={() => setHovered((cur) => (cur === n.id ? null : cur))}
@@ -433,17 +524,15 @@ export default function Anatomy() {
 
             {/* строка осмотра живёт внутри прибора, а не под ним */}
             <div className="hidden min-h-[64px] items-start border-t border-line px-4 py-3 sm:px-5 xl:flex">
-              {inspected ? (
+              {inspected && (
                 <div>
                   <span className="font-mono text-[10px] tracking-rail text-accent">
-                    {inspected.tech}
+                    {inspected.title} · {inspected.tech}
                   </span>
                   <p className="m-0 mt-1.5 max-w-[68ch] text-[clamp(12px,1vw,14px)] leading-relaxed text-dim">
                     {inspected.desc}
                   </p>
                 </div>
-              ) : (
-                <span className="rail-label">{SITE.anatomy.hint}</span>
               )}
             </div>
             </div>

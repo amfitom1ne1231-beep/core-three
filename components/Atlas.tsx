@@ -407,13 +407,17 @@ export default function Atlas() {
             scrollTrigger: { trigger: sh, start: 'top 90%', end: 'top 40%', scrub: 0.6 }
           }
         );
+        // Сдвиг 26px за 0.9s поверх инерции Lenis читался подлагиванием:
+        // глаз уже довёл страницу, а блок всё ещё догоняет. Тот же жест,
+        // что у схемы, витрины и футера, — 14px за 0.55s.
         gsap.from(sh.querySelectorAll('[data-enter]'), {
-          y: 26,
+          y: 14,
           opacity: 0,
-          duration: 0.9,
-          ease: 'power3.out',
-          stagger: 0.08,
-          scrollTrigger: { trigger: sh, start: 'top 75%', once: true }
+          duration: 0.55,
+          ease: 'power2.out',
+          stagger: 0.07,
+          clearProps: 'transform',
+          scrollTrigger: { trigger: sh, start: 'top 80%', once: true }
         });
       });
     }, sec);
@@ -466,7 +470,7 @@ export default function Atlas() {
         <span className="rail-label">{SITE.atlas.label}</span>
         <div className="mt-4 grid gap-[clamp(16px,3vh,32px)] lg:grid-cols-[1.15fr_1fr] lg:items-end">
           <h2 data-skew className="display m-0 text-[clamp(28px,5.2vw,80px)]">
-            {SITE.atlas.title} <span className="accent-serif">{SITE.atlas.titleAccent}</span>
+            {SITE.atlas.title} <span className="title-accent">{SITE.atlas.titleAccent}</span>
           </h2>
           <p className="m-0 max-w-[46ch] text-[clamp(13px,1.1vw,16px)] leading-relaxed text-dim">{SITE.atlas.lead}</p>
         </div>
@@ -523,7 +527,7 @@ export default function Atlas() {
                 </div>
                 <div className="mt-3 overflow-hidden pb-1">
                   <h3 data-ln className="display m-0 text-[clamp(30px,3.3vw,52px)]">
-                    {s.title} <span className="accent-serif">{s.titleAccent}</span>
+                    {s.title} <span className="title-accent">{s.titleAccent}</span>
                   </h3>
                 </div>
                 <div className="mt-3 overflow-hidden">

@@ -65,8 +65,11 @@ export default function LiveBlog({ playing }: LiveProps) {
               Заметки · 4 мин
             </p>
             <h4
-              className="m-0 mt-2 text-[33px] italic leading-[1.04] tracking-[-0.01em]"
-              style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontWeight: 500 }}
+              // Антиква здесь — примета чужого блога в рамке демо, а не
+              // типографика сайта: своя гарнитура на сайте ровно одна.
+              // Курсива нет и тут: он ушёл со всего проекта.
+              className="m-0 mt-2 text-[33px] leading-[1.04] tracking-[-0.01em]"
+              style={{ fontFamily: 'Georgia, \'Times New Roman\', serif', fontWeight: 500 }}
             >
               <span className="block overflow-hidden pb-1">
                 <span data-hl className="block">
@@ -88,8 +91,8 @@ export default function LiveBlog({ playing }: LiveProps) {
               <i data-quote-rule className="absolute left-0 top-0 block h-full w-[2px] origin-top bg-[#141414]" />
               <p
                 data-quote
-                className="m-0 text-[16px] italic leading-snug"
-                style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontWeight: 500 }}
+                className="m-0 text-[16px] leading-snug"
+                style={{ fontFamily: 'Georgia, \'Times New Roman\', serif', fontWeight: 500 }}
               >
                 «Начните с пяти минут — остальное подтянется»
               </p>

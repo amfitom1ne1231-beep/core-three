@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import LeadForm from './LeadForm';
 import Mark from './Mark';
+import Reveal from './Reveal';
 import VideoFrame from './VideoFrame';
 import { SITE } from '@/content/site';
 
@@ -27,14 +28,18 @@ export default function Footer({ cta = true }: { cta?: boolean }) {
       />
 
       <div className={`relative px-4 sm:px-8 lg:px-[72px] ${cta ? 'pb-12 pt-[14vh]' : 'py-12'}`}>
+        {/* Финал раньше возникал целиком и сразу — последний экран был
+            единственным без входа. Тот же жест, что у остальных секций. */}
         {cta && (
-          <div id="lead" className="scroll-mt-24">
-            <span className="rail-label">{footer.label}</span>
+          <Reveal id="lead" className="scroll-mt-24" start="top 78%">
+            <span className="rail-label block" data-rise>
+              {footer.label}
+            </span>
 
-            <div className="mt-6 grid gap-[clamp(40px,7vh,72px)] lg:grid-cols-[1fr_minmax(0,1.05fr)] lg:gap-[clamp(48px,6vw,112px)]">
+            <div data-rise className="mt-6 grid gap-[clamp(40px,7vh,72px)] lg:grid-cols-[1fr_minmax(0,1.05fr)] lg:gap-[clamp(48px,6vw,112px)]">
               <div>
                 <h2 data-skew className="display m-0 text-[clamp(32px,6vw,96px)]">
-                  {footer.title} <span className="accent-serif">{footer.titleAccent}</span>
+                  {footer.title} <span className="title-accent">{footer.titleAccent}</span>
                 </h2>
                 <p className="m-0 mt-7 max-w-[44ch] text-[clamp(13px,1.1vw,16px)] leading-relaxed text-dim">
                   {footer.lead}
@@ -67,7 +72,7 @@ export default function Footer({ cta = true }: { cta?: boolean }) {
                 <LeadForm />
               </div>
             </div>
-          </div>
+          </Reveal>
         )}
 
         <div
