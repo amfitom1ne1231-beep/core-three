@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import DemoFrame from '../DemoFrame';
+import { useInView } from '../reveal';
+import { mono as monoFont, sans as sansFont } from './fonts';
 import {
   BACKUP,
   CHECKS,
@@ -87,8 +89,14 @@ function Panel({
   children: React.ReactNode;
   className?: string;
 }) {
+  // вход встроен в саму панель, а не в обёртку: лишний div вокруг каждой
+  // секции ломал бы сетку `lg:grid-cols-2` у бэкапов и сроков
+  const [ref, seen] = useInView<HTMLElement>();
   return (
     <section
+      ref={ref}
+      data-demo-rise=""
+      {...(seen ? { 'data-in': '' } : {})}
       className={`border ${className}`}
       style={{ borderColor: C.line, background: C.panel }}
     >
@@ -127,6 +135,7 @@ function UptimeRow({
   /** След сегодняшнего сбоя: остаётся на полосе и после починки */
   today?: Health;
 }) {
+  const [barsRef, built] = useInView<HTMLDivElement>();
   const bars = useMemo(() => {
     const b = barsOf(id);
     // страница обещает, что цветная полоса всегда означает запись
@@ -166,13 +175,21 @@ function UptimeRow({
       </p>
 
       {/* 90 суток. На узком экране показываем последние 45: 90 полосок
-          по полтора пикселя — это не история, а шум */}
-      <div className="mt-3 flex h-6 items-stretch gap-px sm:gap-[2px]">
+          по полтора пикселя — это не история, а шум.
+          Собираются слева направо при появлении в кадре: история
+          прочитывается как история, а не возникает готовой таблицей. */}
+      <div ref={barsRef} className="mt-3 flex h-6 items-stretch gap-px sm:gap-[2px]">
         {bars.map((b, i) => (
           <i
             key={i}
-            className={`block flex-1 rounded-[1px] ${i < DAYS - 45 ? 'hidden sm:block' : ''}`}
-            style={{ background: HEALTH_COLOR[b], opacity: b === 'ok' ? 0.5 : 1 }}
+            className={`block flex-1 origin-bottom rounded-[1px] ${i < DAYS - 45 ? 'hidden sm:block' : ''}`}
+            style={{
+              background: HEALTH_COLOR[b],
+              opacity: b === 'ok' ? 0.5 : 1,
+              transform: built ? 'scaleY(1)' : 'scaleY(0.08)',
+              transition: 'transform 0.42s cubic-bezier(0.22,1,0.36,1)',
+              transitionDelay: `${Math.min(i, 90) * 5}ms`
+            }}
             title={`${daysAgoLabel(DAYS - 1 - i)} — ${HEALTH_LABEL[b]}`}
           />
         ))}
@@ -270,7 +287,46 @@ function IncidentEntry({ incident }: { incident: Incident }) {
   );
 }
 
+/**
+ * Счёт до значения при появлении в кадре.
+ *
+ * Только для трёх чисел под графиком: приборная панель, на которой
+ * считается всё подряд, превращается в игровой автомат. Разряды набраны
+ * `tabular-nums`, поэтому ширина не дёргается по дороге.
+ */
+function Metric({ value, suffix = '', decimals = 0 }: { value: number; suffix?: string; decimals?: number }) {
+  const [ref, seen] = useInView<HTMLSpanElement>();
+  const [shown, setShown] = useState(0);
+
+  useEffect(() => {
+    if (!seen) return;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setShown(value);
+      return;
+    }
+    const from = performance.now();
+    const dur = 900;
+    let raf = 0;
+    const step = (t: number) => {
+      const k = Math.min(1, (t - from) / dur);
+      // замедление к концу: число «доезжает», а не обрывается
+      setShown(value * (1 - Math.pow(1 - k, 3)));
+      if (k < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [seen, value]);
+
+  return (
+    <span ref={ref} className="tabular-nums">
+      {shown.toLocaleString('ru-RU', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}
+      {suffix}
+    </span>
+  );
+}
+
 function Latency() {
+  const [ref, seen] = useInView<HTMLDivElement>();
   const series = useMemo(latencySeries, []);
   const w = 720;
   const h = 96;
@@ -280,15 +336,46 @@ function Latency() {
   const spike = series.findIndex((v) => v > LAT_CAP);
 
   return (
-    <div className="relative">
+    <div ref={ref} className="relative">
       <svg viewBox={`0 0 ${w} ${h}`} className="block h-24 w-full" preserveAspectRatio="none" aria-hidden>
         {[40, 80, 120].map((v) => (
           <line key={v} x1={0} x2={w} y1={y(v)} y2={y(v)} stroke={C.line} strokeWidth={1} vectorEffect="non-scaling-stroke" />
         ))}
-        <path d={`${d} L${w} ${h} L0 ${h} Z`} fill={C.ok} fillOpacity={0.08} />
-        <path d={d} fill="none" stroke={C.ok} strokeWidth={1.4} vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
+        <path
+          d={`${d} L${w} ${h} L0 ${h} Z`}
+          fill={C.ok}
+          fillOpacity={seen ? 0.08 : 0}
+          style={{ transition: 'fill-opacity 0.9s ease 0.5s' }}
+        />
+        {/*
+          Линия прочерчивается, а не появляется готовой: девяносто дней
+          читаются слева направо, и ступенька от переезда на новый сервер
+          успевает попасть в глаз.
+        */}
+        <path
+          d={d}
+          pathLength={1}
+          fill="none"
+          stroke={C.ok}
+          strokeWidth={1.4}
+          vectorEffect="non-scaling-stroke"
+          strokeLinejoin="round"
+          strokeDasharray={1}
+          strokeDashoffset={seen ? 0 : 1}
+          style={{ transition: 'stroke-dashoffset 1.3s cubic-bezier(0.33,1,0.68,1)' }}
+        />
         {spike >= 0 && (
-          <line x1={x(spike)} x2={x(spike)} y1={0} y2={h} stroke={C.warn} strokeWidth={1.4} vectorEffect="non-scaling-stroke" />
+          <line
+            x1={x(spike)}
+            x2={x(spike)}
+            y1={0}
+            y2={h}
+            stroke={C.warn}
+            strokeWidth={1.4}
+            vectorEffect="non-scaling-stroke"
+            opacity={seen ? 1 : 0}
+            style={{ transition: 'opacity 0.4s ease 1s' }}
+          />
         )}
       </svg>
 
@@ -501,14 +588,28 @@ export default function StatusDemo() {
       {/* фон демо: свой, до самого края, включая перелистывание за границу */}
       <div className="pointer-events-none fixed inset-0 -z-10" style={{ background: C.bg }} />
 
-      <div style={{ background: C.bg, color: C.fg, fontFamily: SANS }} className="min-h-screen">
+      <div
+        className={`${sansFont.variable} ${monoFont.variable} min-h-screen`}
+        style={{ background: C.bg, color: C.fg, fontFamily: SANS }}
+      >
         {/* ---------- шапка клиента ---------- */}
         <header className="border-b" style={{ borderColor: C.line }}>
           <div className="mx-auto flex max-w-[980px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-4 sm:px-6">
-            <span className="flex items-baseline gap-2">
-              <span className="text-[16px] font-semibold tracking-tight">{CLIENT.name}</span>
-              <span className="text-[12px]" style={{ color: C.faint }}>
-                {CLIENT.tagline}
+            <span className="flex items-center gap-2.5">
+              {/* монограмма вместо логотипа: страница статуса — служебная,
+                  рисованный знак на ней выглядел бы чужой наклейкой */}
+              <span
+                aria-hidden
+                className="grid h-7 w-7 shrink-0 place-items-center rounded-[7px] text-[13px] font-semibold"
+                style={{ background: C.raise, color: C.fg }}
+              >
+                {CLIENT.name[0]}
+              </span>
+              <span className="flex items-baseline gap-2">
+                <span className="text-[16px] font-semibold tracking-tight">{CLIENT.name}</span>
+                <span className="text-[12px]" style={{ color: C.faint }}>
+                  {CLIENT.tagline}
+                </span>
               </span>
             </span>
             <a
@@ -612,16 +713,16 @@ export default function StatusDemo() {
               style={{ borderColor: C.line, background: C.line }}
             >
               {[
-                ['сейчас', '61 мс'],
-                ['p95 за сутки', '78 мс'],
-                ['доля ошибок', '0,004%']
-              ].map(([k, v]) => (
-                <div key={k} className="px-4 py-3 sm:px-5" style={{ background: C.panel }}>
+                { k: 'сейчас', v: 61, suffix: ' мс', decimals: 0 },
+                { k: 'p95 за сутки', v: 78, suffix: ' мс', decimals: 0 },
+                { k: 'доля ошибок', v: 0.004, suffix: '%', decimals: 3 }
+              ].map((m) => (
+                <div key={m.k} className="px-4 py-3 sm:px-5" style={{ background: C.panel }}>
                   <p className="m-0 text-[10.5px] uppercase tracking-[0.12em]" style={{ color: C.faint, fontFamily: MONO }}>
-                    {k}
+                    {m.k}
                   </p>
-                  <p className="m-0 mt-1 text-[17px] tabular-nums" style={{ fontFamily: MONO }}>
-                    {v}
+                  <p className="m-0 mt-1 text-[17px]" style={{ fontFamily: MONO }}>
+                    <Metric value={m.v} suffix={m.suffix} decimals={m.decimals} />
                   </p>
                 </div>
               ))}
@@ -691,7 +792,10 @@ export default function StatusDemo() {
               aria-live="off"
             >
               {feed.map((f) => (
-                <li key={f.id} className="flex items-baseline gap-3 sm:gap-4">
+                <li
+                  key={f.id}
+                  className="flex items-baseline gap-3 motion-safe:animate-[feedin_0.32s_ease-out] sm:gap-4"
+                >
                   <span className="shrink-0 tabular-nums" style={{ color: C.faint }}>
                     {f.time}
                   </span>

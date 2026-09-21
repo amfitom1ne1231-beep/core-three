@@ -22,8 +22,9 @@ export const C = {
   plan: '#5b9ad6'
 } as const;
 
-export const MONO = "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace";
-export const SANS = "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
+/** Гарнитуры приходят из `fonts.ts`; системные — только запасные. */
+export const MONO = "var(--ops-mono), ui-monospace, SFMono-Regular, Menlo, monospace";
+export const SANS = "var(--ops-sans), system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
 
 export const HEALTH_COLOR: Record<Health, string> = {
   ok: C.ok,

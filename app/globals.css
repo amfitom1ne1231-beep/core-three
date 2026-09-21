@@ -58,6 +58,41 @@
   --demo-bar: 36px;
 }
 
+/* Вход блока в демо. Начальное состояние живёт в CSS, а не ставится
+   скриптом: иначе блок успевает мигнуть готовым до того, как его спрячут.
+   Демо и так не работают без JS — там весь смысл в том, что нажимается. */
+[data-demo-rise] {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-demo-rise][data-in] {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-demo-rise] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* Новая строка ленты проверок: приходит сверху, а не возникает.
+   Сдвиг маленький — лента должна успокаивать, а не мельтешить. */
+@keyframes feedin {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* Лист снизу: так открываются карточка позиции и мини-приложение
    в Telegram. Ключевой кадр общий, потому что движение одно и то же. */
 @keyframes sheet {

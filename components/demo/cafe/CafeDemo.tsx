@@ -2,6 +2,7 @@
 
 import DemoFrame from '../DemoFrame';
 import Phone from './Phone';
+import Reveal from '../reveal';
 import { display, text } from './fonts';
 import { C, money } from './shared';
 import { CAFE, COPY, MENU } from '@/content/concepts/cafe';
@@ -150,8 +151,8 @@ export default function CafeDemo() {
               </div>
 
               <ol className="m-0 mt-12 grid list-none gap-px p-0 sm:grid-cols-3" style={{ background: C.line }}>
-                {COPY.telegram.points.map((p) => (
-                  <li key={p.n} className="p-6 sm:p-7" style={{ background: C.paperDeep }}>
+                {COPY.telegram.points.map((p, i) => (
+                  <Reveal as="li" key={p.n} delay={i * 90} className="p-6 sm:p-7" style={{ background: C.paperDeep }}>
                     <span className="text-[12px] tabular-nums" style={{ color: C.accent }}>
                       {p.n}
                     </span>
@@ -159,7 +160,7 @@ export default function CafeDemo() {
                     <p className="m-0 mt-2.5 text-[13.5px] leading-relaxed" style={{ color: C.muted }}>
                       {p.text}
                     </p>
-                  </li>
+                  </Reveal>
                 ))}
               </ol>
             </div>
@@ -182,8 +183,8 @@ export default function CafeDemo() {
               </div>
 
               <div className="mt-12 grid gap-x-16 gap-y-12 md:grid-cols-2">
-                {MENU.map((sec) => (
-                  <section key={sec.id} className="break-inside-avoid">
+                {MENU.map((sec, i) => (
+                  <Reveal as="section" key={sec.id} delay={(i % 2) * 90} className="break-inside-avoid">
                     <div className="flex items-baseline gap-3 border-b pb-2" style={{ borderColor: C.line }}>
                       <h3
                         className="m-0 text-[22px] font-normal"
@@ -220,7 +221,7 @@ export default function CafeDemo() {
                         </li>
                       ))}
                     </ul>
-                  </section>
+                  </Reveal>
                 ))}
               </div>
             </div>
