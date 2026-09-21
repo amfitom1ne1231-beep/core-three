@@ -19,8 +19,15 @@ import { LIVE_W, LIVE_H, type LiveProps } from '../live/kit';
  * шейдер (глава `hero`, завеса ноль), и вторая фактура поверх него
  * превращается в шум. Материал направления появляется ниже — в главе
  * состава, где завеса гасит шейдер целиком.
+ *
+ * Под кадром — задача, которую он решает. Приём тот же, что под
+ * каруселью на главной: у kling.ai под роликом лежит промпт, и ролик
+ * читается доказательством, а не заставкой. Строка берётся из того же
+ * места, что и в карусели, — по живой вставке, которая стоит в кадре.
+ * Один текст на оба экрана: человек, пришедший с главной, узнаёт кадр
+ * вместе с его задачей, а не читает про него второе объяснение.
  */
-export default function Stage({ live: Live }: { live: ComponentType<LiveProps> }) {
+export default function Stage({ live: Live, task }: { live: ComponentType<LiveProps>; task?: string }) {
   const stage = useRef<HTMLDivElement>(null);
   const frame = useRef<HTMLDivElement>(null);
   const [playing, setPlaying] = useState(false);
@@ -109,6 +116,17 @@ export default function Stage({ live: Live }: { live: ComponentType<LiveProps> }
           aria-hidden
         />
       </div>
+
+      {/* Номер направления здесь не повторяется, хотя в карусели он в этой
+          карточке есть: на странице он уже стоит кикером над заголовком
+          и гигантской цифрой за сценой — третий раз подряд то же число
+          читается сбоем вёрстки, а не системой. */}
+      {task && (
+        <div className="glass mt-3 rounded-[12px] px-4 py-3">
+          <span className="rail-label block">Задача в кадре</span>
+          <span className="mt-1.5 block max-w-[46ch] text-[13.5px] leading-snug text-fg">{task}</span>
+        </div>
+      )}
     </div>
   );
 }

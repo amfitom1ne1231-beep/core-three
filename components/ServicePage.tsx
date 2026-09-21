@@ -18,6 +18,7 @@ import Passport from './service/Passport';
 import Process from './service/Process';
 import Stage from './service/Stage';
 import type { ServicePage as Page } from '@/content/services';
+import { SITE } from '@/content/site';
 
 /** Те же вставки, что играют в карусели атласа: направление узнаётся по кадру. */
 const LIVE: Record<string, ComponentType<LiveProps>> = {
@@ -48,12 +49,18 @@ const LIVE: Record<string, ComponentType<LiveProps>> = {
 export default function ServicePage({ page, children }: { page: Page; children?: React.ReactNode }) {
   const Live = LIVE[page.live] ?? LiveLanding;
   const material = DIRECTION_MATERIAL[page.n] ?? 'silk';
+  /**
+   * Задача кадра ищется по самой вставке, а не по номеру направления:
+   * в карусели на главной та же вставка подписана той же строкой, и
+   * связь должна держаться за то, что человек видит, — за кадр.
+   */
+  const task = SITE.services.find((s) => s.live === page.live)?.task;
 
   return (
     <>
       <main id="content" className="relative z-10 w-full">
         {/* ---------- первый экран ---------- */}
-        <section data-chapter="hero" className="relative overflow-x-clip">
+        <section data-chapter="hero" className="relative overflow-x-clip" aria-label="Начало">
           {/* номер направления как якорь сцены: тот же приём, что у гигантских
               чисел в карусели на главной — по нему видно, где ты в атласе */}
           <span
@@ -106,7 +113,7 @@ export default function ServicePage({ page, children }: { page: Page; children?:
             </div>
 
             {/* кадр направления: живая вставка во всю правую половину */}
-            <Stage live={Live} />
+            <Stage live={Live} task={task} />
           </div>
         </section>
 
