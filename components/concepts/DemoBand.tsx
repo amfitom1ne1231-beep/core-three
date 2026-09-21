@@ -96,7 +96,16 @@ export default function DemoBand({
   }, []);
 
   return (
-    <article className="grid items-center gap-[clamp(24px,4vh,56px)] lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] lg:gap-[clamp(40px,5vw,96px)]">
+    <article
+      className={`grid items-center gap-[clamp(24px,4vh,56px)] lg:gap-[clamp(40px,5vw,96px)] ${
+        // Колонки меняются местами вместе с кадром: иначе у перевёрнутой
+        // полосы кадр попадал в узкую колонку и был на четверть мельче
+        // соседнего — разнобой читался сбоем вёрстки.
+        flip
+          ? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]'
+          : 'lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]'
+      }`}
+    >
       {/* ---------- кадр ---------- */}
       <div className={flip ? 'lg:order-2' : undefined}>
         <div className="mb-3 flex items-center justify-between gap-4">
