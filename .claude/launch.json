@@ -12,6 +12,15 @@
       "autoPort": true
     },
     {
+      "name": "corethree-prod",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "start:check"
+      ],
+      "port": 3100
+    },
+    {
       "name": "proto",
       "runtimeExecutable": "python3",
       "runtimeArgs": [
