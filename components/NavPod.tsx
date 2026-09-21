@@ -30,7 +30,9 @@ import { SITE } from '@/content/site';
  *
  * Открывается не только наведением: наведение — приятный, но не
  * единственный путь, на тачскрине его нет вовсе, поэтому клик и клавиатура
- * работают наравне.
+ * работают наравне. Одним попаданием фокуса панель больше не
+ * раскрывается: это мешало и табу мимо пульта, и возврату фокуса на знак
+ * после Escape — знак тут же открывал её заново.
  *
  * Пульт живёт от `lg`, а не от `md`. Его посадка держится на боковом поле
  * секций в 72px — а оно появляется ровно на 1024. На планшете поле 16–32,
@@ -104,6 +106,7 @@ const TURN = 120;
 export default function NavPod() {
   const pod = useRef<HTMLDivElement>(null);
   const shell = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
   const panelId = useId();
   // свой идентификатор для градиентов знака: на странице он не один
   // (шапка, футер), а в SVG одинаковые id забирают заливки друг у друга
@@ -119,6 +122,8 @@ export default function NavPod() {
   const [at, setAt] = useState(0);
   /** Пульт закрывает собой то, что сейчас в фокусе. */
   const [covers, setCovers] = useState(false);
+  /** Хватает ли ширины для пульта. */
+  const [wide, setWide] = useState(false);
 
   const liveRef = useRef(false);
   liveRef.current = live;
@@ -133,6 +138,22 @@ export default function NavPod() {
 
   // закрываем при переходе — панель не должна пережить страницу
   useEffect(() => setOpen(false), [pathname]);
+
+  /**
+   * Ширина слушается, а не спрашивается один раз.
+   *
+   * Настройка пульта стояла в эффекте без зависимостей и выходила на
+   * первой же проверке ширины: окно, растянутое с половины экрана на
+   * полный, оставляло пульт мёртвым до перезагрузки. С порогом 768 это
+   * почти не встречалось, с 1024 — обычное дело.
+   */
+  useEffect(() => {
+    const mq = matchMedia('(min-width: 1024px)');
+    const sync = () => setWide(mq.matches);
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, []);
 
   /* ---------------- места страницы ---------------- */
 
@@ -212,7 +233,13 @@ export default function NavPod() {
     const el = pod.current;
     const bob = float.current;
     if (!el || !bob) return;
-    if (!matchMedia('(min-width: 1024px)').matches) return;
+    if (!wide) {
+      // ушли на узкий экран: знак возвращается шапке, пульта здесь нет
+      liveRef.current = false;
+      setLive(false);
+      setOpen(false);
+      return;
+    }
 
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -286,7 +313,7 @@ export default function NavPod() {
       off();
       removeEventListener('scroll', sync);
     };
-  }, []);
+  }, [wide]);
 
   // знак прилетает из шапки и туда же уходит: масштаб с прозрачностью
   // читаются как передача, а не как появление второго знака
@@ -324,7 +351,16 @@ export default function NavPod() {
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
+      if (e.key !== 'Escape') return;
+      /**
+       * Фокус возвращается на знак, а не падает в `body`.
+       *
+       * Закрытая панель становится `inert`, и элемент, на котором
+       * стоял фокус, перестаёт существовать для клавиатуры: без
+       * возврата обход начинался заново со «К содержанию».
+       */
+      if (shell.current?.contains(document.activeElement)) trigger.current?.focus();
+      setOpen(false);
     };
     const onDown = (e: PointerEvent) => {
       if (!shell.current?.contains(e.target as Node)) setOpen(false);
@@ -364,12 +400,12 @@ export default function NavPod() {
         onMouseLeave={() => setOpen(false)}
       >
         <button
+          ref={trigger}
           type="button"
           aria-expanded={open}
           aria-controls={panelId}
           aria-label={open ? 'Скрыть навигацию' : 'Навигация по сайту'}
           onClick={() => setOpen((v) => !v)}
-          onFocus={() => setOpen(true)}
           className="relative grid h-full w-full place-items-center rounded-full border border-line bg-bg/80 text-fg backdrop-blur-md transition-colors duration-300 hover:border-accent hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
         >
           {/**
