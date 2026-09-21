@@ -19,7 +19,15 @@ import { SITE } from '@/content/site';
  * только: на тач-устройстве кадру неоткуда взяться, и строки работают
  * сами по себе.
  */
-export default function Neighbors({ current }: { current: string }) {
+export default function Neighbors({
+  current,
+  label = 'Соседние направления'
+}: {
+  /** Адрес текущей страницы: её саму в списке не показываем. На «О нас»
+      пусто — там перечислены все шесть. */
+  current: string;
+  label?: string;
+}) {
   const items = SITE.services.filter((s) => s.href !== current);
   const card = useRef<HTMLDivElement>(null);
   const [at, setAt] = useState<number | null>(null);
@@ -52,10 +60,10 @@ export default function Neighbors({ current }: { current: string }) {
   const shown = at === null ? null : items[at];
 
   return (
-    <section data-chapter="concepts" className="relative z-10 w-full border-t border-line" aria-label="Соседние направления">
+    <section data-chapter="concepts" className="relative z-10 w-full border-t border-line" aria-label={label}>
       <div className="px-4 section-y-tight sm:px-8 lg:px-[72px]">
         <div className="flex items-baseline justify-between gap-6">
-          <span className="rail-label">Соседние направления</span>
+          <span className="rail-label">{label}</span>
           <Link
             href="/#directions"
             className="font-mono text-[10px] uppercase tracking-rail text-faint transition-colors duration-300 hover:text-fg"
