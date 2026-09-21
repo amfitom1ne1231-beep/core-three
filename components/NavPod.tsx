@@ -117,6 +117,8 @@ export default function NavPod() {
   /** Места текущей страницы и то из них, где человек сейчас. */
   const [places, setPlaces] = useState<string[]>([]);
   const [at, setAt] = useState(0);
+  /** Пульт закрывает собой то, что сейчас в фокусе. */
+  const [covers, setCovers] = useState(false);
 
   const liveRef = useRef(false);
   liveRef.current = live;
@@ -174,6 +176,35 @@ export default function NavPod() {
   useEffect(() => {
     if (open) measure();
   }, [open, measure]);
+
+  /**
+   * Пульт уходит, если накрыл собой элемент в фокусе.
+   *
+   * Он висит в углу поверх страницы, и ссылка в нижней левой части
+   * экрана, до которой дошли табом, оказывалась под ним: фокус есть,
+   * увидеть его нельзя. По WCAG 2.4.11 так нельзя, и починить это
+   * отступами невозможно — пульт не в потоке. Поэтому он просто
+   * убирается на то время, пока мешает.
+   */
+  useEffect(() => {
+    const onFocus = (e: FocusEvent) => {
+      const el = e.target as HTMLElement | null;
+      const box = pod.current;
+      if (!box || !el?.getBoundingClientRect || box.contains(el)) return;
+      const a = el.getBoundingClientRect();
+      const b = box.getBoundingClientRect();
+      setCovers(a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top);
+    };
+    // Уход фокуса в никуда (клик по тексту) не даёт события focusin,
+    // и без этого пульт оставался бы спрятанным до следующего таба.
+    const onBlur = () => setCovers(false);
+    addEventListener('focusin', onFocus);
+    addEventListener('focusout', onBlur);
+    return () => {
+      removeEventListener('focusin', onFocus);
+      removeEventListener('focusout', onBlur);
+    };
+  }, []);
 
   /* ---------------- появление, вращение, покачивание ---------------- */
 
@@ -263,13 +294,14 @@ export default function NavPod() {
     const el = pod.current;
     if (!el) return;
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const on = live && !covers;
     gsap.to(el, {
-      autoAlpha: live ? 1 : 0,
-      scale: live ? 1 : 0.6,
+      autoAlpha: on ? 1 : 0,
+      scale: on ? 1 : 0.6,
       duration: reduced ? 0 : 0.42,
       ease: 'power3.out'
     });
-  }, [live]);
+  }, [live, covers]);
 
   /* ---------------- поведение ---------------- */
 
@@ -413,7 +445,7 @@ export default function NavPod() {
                     type="button"
                     onClick={() => goTo(i)}
                     aria-current={i === at ? 'true' : undefined}
-                    className={`flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2 text-left text-[13px] leading-snug transition-colors duration-200 ${
+                    className={`flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2 text-left text-[13px] leading-snug transition-colors duration-200 focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-fg ${
                       i === at ? 'text-fg' : 'text-dim hover:text-fg'
                     }`}
                   >
@@ -519,7 +551,7 @@ export default function NavPod() {
               target="_blank"
               rel="noreferrer noopener"
               aria-label={`Написать в Telegram: ${SITE.telegramLabel}`}
-              className="grid w-12 place-items-center rounded-[10px] border border-line font-mono text-[10px] uppercase tracking-rail text-dim transition-colors duration-200 hover:border-accent hover:text-accent"
+              className="grid w-12 place-items-center rounded-[10px] border border-line font-mono text-[10px] uppercase tracking-rail text-dim transition-colors duration-200 hover:border-accent hover:text-accent focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-fg"
             >
               TG
             </a>
@@ -527,7 +559,7 @@ export default function NavPod() {
               type="button"
               onClick={home}
               aria-label="В начало страницы"
-              className="grid w-12 place-items-center rounded-[10px] border border-line text-dim transition-colors duration-200 hover:border-accent hover:text-accent"
+              className="grid w-12 place-items-center rounded-[10px] border border-line text-dim transition-colors duration-200 hover:border-accent hover:text-accent focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-fg"
             >
               <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden>
                 <path d="M8 13V3M3.5 7.5 8 3l4.5 4.5" strokeLinecap="round" strokeLinejoin="round" />
