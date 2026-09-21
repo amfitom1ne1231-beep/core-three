@@ -44,11 +44,11 @@ export default function DemoFrame({
         >
           <Mark className="h-[13px] w-[13px]" flat />
           <span className="hidden sm:inline">CoreThree</span>
-          <span className="text-white/35">демо</span>
+          <span className="text-white/55">демо</span>
         </Link>
 
         {/* адрес клиента: демо честно говорит, что оно вымышленное */}
-        <span className="hidden min-w-0 flex-1 items-center gap-3 truncate text-white/35 md:flex">
+        <span className="hidden min-w-0 flex-1 items-center gap-3 truncate text-white/55 md:flex">
           <span className="h-3 w-px bg-white/15" />
           {meta.domain}
           <span className="truncate normal-case tracking-normal">{meta.hint}</span>

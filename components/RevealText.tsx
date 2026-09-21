@@ -119,9 +119,17 @@ export default function RevealText({
     <Tag
       ref={ref as never}
       className={className}
-      aria-label={decorative ? undefined : text}
       aria-hidden={decorative || undefined}
     >
+      {/**
+       * Текст для читалки лежит отдельной строкой, а не в `aria-label`
+       * на теге. `aria-label` разрешён не везде: на <p> и <div> без роли
+       * он запрещён и просто игнорируется — читалке доставался набор
+       * букв вразнобой из анимированных знаков. Lighthouse ловит это
+       * как `aria-prohibited-attr`; поймал на первом экране главной и
+       * на манифесте.
+       */}
+      {!decorative && <span className="sr-only">{text}</span>}
       {lines.map((line, row) => {
         // Знаки — inline-block, поэтому слово обязано быть цельным блоком:
         // иначе строка рвётся посреди слова.

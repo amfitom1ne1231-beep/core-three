@@ -100,9 +100,15 @@ export default function Stage({ live: Live, task }: { live: ComponentType<LivePr
           законченная композиция 560×380, и срез двенадцати процентов
           съедает её правую колонку с цифрами. Кадр держит размер
           и целостность, сцену делают масштаб, вход и рельс над ним. */}
+      {/* Кадр скрыт от читалок целиком: это снимок продукта, а не текст
+          страницы. Внутри вставки живут свои заголовки — h4 в лендинге, —
+          и без этого они попадали в оглавление документа и ломали его
+          порядок (Lighthouse: heading-order на `/sites`). Тот же приём
+          уже стоит в карусели атласа и в панели пульта. */}
       <div
         ref={frame}
         data-cursor="ring"
+        aria-hidden
         className="relative overflow-hidden rounded-[10px] border border-line bg-elev"
       >
         <div ref={stage} data-parallax-media className="relative w-full">

@@ -183,8 +183,12 @@ export default function Manifesto() {
            * держит сетка, второй ограничитель просто отнимал строку.
            */
           className="display m-0 origin-left text-[clamp(26px,4.4vw,72px)] leading-[1.06] lg:text-[clamp(34px,4.7vw,80px)]"
-          aria-label={SITE.manifesto.text.replace(/\*\*/g, '')}
         >
+          {/* Читалке — целый текст строкой, а не `aria-label` на абзаце:
+              на <p> без роли он запрещён и игнорируется, и от манифеста
+              оставались отдельные слова вразнобой. Видимые слова скрыты
+              от неё своим `aria-hidden` — они здесь ради подсветки. */}
+          <span className="sr-only">{SITE.manifesto.text.replace(/\*\*/g, '')}</span>
           {units.map((unit, i) => (
             <Fragment key={i}>
               <span className="inline-block whitespace-nowrap">

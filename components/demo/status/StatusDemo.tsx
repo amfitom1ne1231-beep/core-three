@@ -622,7 +622,7 @@ export default function StatusDemo() {
           </div>
         </header>
 
-        <main className="mx-auto max-w-[980px] px-4 pb-20 pt-8 sm:px-6 sm:pt-12">
+        <main id="content" className="mx-auto max-w-[980px] px-4 pb-20 pt-8 sm:px-6 sm:pt-12">
           {/* ---------- главное состояние ---------- */}
           <div
             className="border px-4 py-5 sm:px-6 sm:py-6"

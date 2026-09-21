@@ -60,7 +60,7 @@ export default function CourseDemo() {
           style={{ top: 'var(--demo-bar)', borderColor: C.lineSoft, background: 'rgba(20,26,38,0.9)' }}
         >
           <div className="mx-auto flex max-w-[1140px] items-center gap-6 px-5 py-3.5 sm:px-8">
-            <a href="#top" className="text-[17px] font-medium uppercase tracking-[0.06em]" style={{ fontFamily: DISPLAY }}>
+            <a href="#content" className="text-[17px] font-medium uppercase tracking-[0.06em]" style={{ fontFamily: DISPLAY }}>
               {COURSE.author}
             </a>
 
@@ -83,7 +83,7 @@ export default function CourseDemo() {
           </div>
         </header>
 
-        <main id="top">
+        <main id="content">
           {/* ---------- первый экран ---------- */}
           <section className="mx-auto max-w-[1140px] px-5 pb-16 pt-12 sm:px-8 sm:pb-24 sm:pt-20">
             <div className="grid items-center gap-12 lg:grid-cols-[1.1fr_minmax(0,0.9fr)] lg:gap-16">

@@ -41,7 +41,7 @@ export default function CafeDemo() {
           }}
         >
           <div className="mx-auto flex max-w-[1180px] items-center gap-6 px-5 py-3.5 sm:px-8">
-            <a href="#top" className="flex items-baseline gap-2.5">
+            <a href="#content" className="flex items-baseline gap-2.5">
               <span
                 className="text-[21px] leading-none"
                 style={{ fontFamily: 'var(--cafe-display), Georgia, serif' }}
@@ -76,7 +76,7 @@ export default function CafeDemo() {
           </div>
         </header>
 
-        <main id="top">
+        <main id="content">
           {/* ---------- первый экран: слева слово, справа продукт ---------- */}
           <section className="mx-auto max-w-[1180px] px-5 pb-16 pt-12 sm:px-8 sm:pb-24 sm:pt-20">
             <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_minmax(0,0.95fr)] lg:gap-16">
