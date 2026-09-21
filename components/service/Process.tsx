@@ -21,7 +21,21 @@ export type Step = { n: string; title: string; text: string };
  * на телефоне — сверху вниз, а считает его один ScrollTrigger и отдаёт
  * в переменную `--p`. Ориентацию выбирает CSS, не второй триггер.
  */
-export default function Process({ steps }: { steps: Step[] }) {
+export default function Process({
+  steps,
+  label = 'Как идёт работа',
+  title = 'Четыре шага,',
+  titleAccent = 'без сюрпризов',
+  lead = 'На каждом шаге есть что показать. Работающая ссылка вместо отчёта о процессе.',
+  chapter = 'atlas'
+}: {
+  steps: readonly Step[];
+  label?: string;
+  title?: string;
+  titleAccent?: string;
+  lead?: string;
+  chapter?: string;
+}) {
   const root = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -55,18 +69,16 @@ export default function Process({ steps }: { steps: Step[] }) {
   }, [steps.length]);
 
   return (
-    <section data-chapter="atlas" className="relative z-10 w-full border-t border-line" aria-label="Как идёт работа">
+    <section data-chapter={chapter} className="relative z-10 w-full border-t border-line" aria-label={label}>
       <div data-recede className="px-4 section-y sm:px-8 lg:px-[72px]">
         <div className="grid gap-[clamp(16px,3vh,32px)] lg:grid-cols-[1.7fr_1fr] lg:items-end">
           <div>
-            <span className="rail-label">Как идёт работа</span>
+            <span className="rail-label">{label}</span>
             <h2 className="display m-0 mt-4 text-[clamp(26px,4.2vw,64px)]">
-              Четыре шага, <span className="title-accent">без сюрпризов</span>
+              {title} <span className="title-accent">{titleAccent}</span>
             </h2>
           </div>
-          <p className="m-0 max-w-[40ch] text-[clamp(13px,1.1vw,16px)] leading-relaxed text-dim">
-            На каждом шаге есть что показать. Работающая ссылка вместо отчёта о процессе.
-          </p>
+          <p className="m-0 max-w-[40ch] text-[clamp(13px,1.1vw,16px)] leading-relaxed text-dim">{lead}</p>
         </div>
 
         <div ref={root} className="relative mt-[clamp(36px,7vh,88px)]" style={{ ['--p' as string]: 0 }}>
@@ -86,7 +98,10 @@ export default function Process({ steps }: { steps: Step[] }) {
             />
           </div>
 
-          <ol className="m-0 grid list-none gap-[clamp(28px,4vh,44px)] p-0 pl-8 lg:grid-cols-4 lg:gap-[clamp(20px,2.4vw,44px)] lg:pl-0">
+          <ol
+            className="timeline-cols m-0 grid list-none gap-[clamp(28px,4vh,44px)] p-0 pl-8 lg:gap-[clamp(20px,2.4vw,44px)] lg:pl-0"
+            style={{ ['--cols' as string]: steps.length }}
+          >
             {steps.map((s) => (
               <li key={s.n} data-step className="group relative pt-0 lg:pt-[clamp(20px,3vh,40px)]">
                 {/* засечка на рельсе */}

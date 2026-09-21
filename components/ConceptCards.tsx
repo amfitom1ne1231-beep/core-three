@@ -20,7 +20,18 @@ gsap.registerPlugin(ScrollTrigger);
  *
  * Искажение превью работает у всех — это фактура, а не приглашение нажать.
  */
-export default function ConceptCards({ className = '' }: { className?: string }) {
+export default function ConceptCards({
+  className = '',
+  items = SITE.concepts.items,
+  wide = true
+}: {
+  className?: string;
+  /** Четыре карточки в ряд на широком экране. На `/concepts` их две. */
+  wide?: boolean;
+  /** По умолчанию вся витрина. На `/concepts` сюда приходят только ниши
+      без собранного демо: у собранных там своя полоса с живым кадром. */
+  items?: readonly (typeof SITE.concepts.items)[number][];
+}) {
   const root = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
@@ -71,9 +82,9 @@ export default function ConceptCards({ className = '' }: { className?: string })
     <ul
       ref={root}
       data-lenis-prevent-horizontal
-      className={`-mx-4 m-0 flex snap-x snap-mandatory scroll-px-4 list-none gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] after:w-px after:shrink-0 after:content-[''] sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:after:hidden xl:grid-cols-4 [&::-webkit-scrollbar]:hidden ${className}`}
+      className={`-mx-4 m-0 flex snap-x snap-mandatory scroll-px-4 list-none gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] after:w-px after:shrink-0 after:content-[''] sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:after:hidden [&::-webkit-scrollbar]:hidden ${wide ? 'xl:grid-cols-4' : ''} ${className}`}
     >
-      {SITE.concepts.items.map((c) => (
+      {items.map((c) => (
         <li key={c.slug} className="w-[78vw] max-w-[340px] shrink-0 snap-start sm:w-auto sm:max-w-none">
           <article
             className={`group flex h-full flex-col border border-line bg-elev transition-colors duration-300 ${

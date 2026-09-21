@@ -162,6 +162,15 @@ body {
 .section-y { padding-block: clamp(72px, 12vh, 148px); }
 .section-y-tight { padding-block: clamp(52px, 9vh, 112px); }
 
+/* Линия времени: колонок ровно столько, сколько шагов. Классом
+   это не задать — Tailwind собирает утилиты статически, а шагов
+   бывает и три, и четыре. */
+@media (min-width: 1024px) {
+  .timeline-cols {
+    grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  }
+}
+
 /* Беззвучная подсказка прокрутки: штрих уходит вниз и гаснет.
    Жест понятен без слов, поэтому подписи под ним нет. */
 .scroll-cue {
