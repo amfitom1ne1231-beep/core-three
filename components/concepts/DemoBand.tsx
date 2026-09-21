@@ -1,13 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import ConceptPreview from '../concept-previews';
+import DemoView from './DemoView';
 import type { DemoMeta } from '@/content/concepts';
-
-/** В каких координатах грузится страница демо внутри кадра. */
-const W = 1280;
-const H = 800;
 
 export type BandItem = {
   slug: string;
@@ -18,18 +13,11 @@ export type BandItem = {
 };
 
 /**
- * Полоса собранного демо.
+ * Полоса собранного демо на странице витрины.
  *
- * Витрина обещает «демо, которое проходится насквозь», а показывала
- * схематичный каркас в карточке 320×200. Здесь в рамке идёт сама
- * страница демо: тот же адрес, тот же код, живые проверки и живая
- * переписка. Картинка продукта, нарисованная нами, всегда выглядит
- * лучше продукта — и ровно поэтому ей не верят.
- *
- * Кадр грузится не всем и не сразу: только на широком экране с мышью,
- * только когда полоса подошла к экрану, и только если человек не просил
- * беречь трафик или движение. Во всех остальных случаях остаётся
- * схема — та же, что в карточках на главной.
+ * Кадр живёт в `DemoView` — он общий с главой на главной. Здесь
+ * остаётся только раскладка: медиа с одной стороны, состав и переход
+ * с другой, стороны чередуются.
  *
  * Внутри рамки страница не кликается (`pointer-events: none`), а сверху
  * лежит настоящая ссылка: иначе половина нажатий уходила бы кнопкам
@@ -45,56 +33,6 @@ export default function DemoBand({
   /** Чередование сторон: медиа то слева, то справа. */
   flip: boolean;
 }) {
-  const frame = useRef<HTMLDivElement>(null);
-  const [live, setLive] = useState(false);
-  const [shown, setShown] = useState(false);
-  const [k, setK] = useState(0);
-
-  useEffect(() => {
-    const el = frame.current;
-    if (!el) return;
-
-    const measure = () => setK(el.clientWidth / W);
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-
-    const heavyOk =
-      matchMedia('(min-width: 1024px)').matches &&
-      matchMedia('(pointer: fine)').matches &&
-      !matchMedia('(prefers-reduced-motion: reduce)').matches &&
-      // «экономия трафика» в браузере — просьба не грузить лишнее
-      !(navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData;
-
-    if (!heavyOk) return () => ro.disconnect();
-
-    /**
-     * Два наблюдателя с разным запасом — гистерезис.
-     *
-     * Кадров на витрине четыре, и каждый — полноценная страница
-     * со своими таймерами: держать все четыре живыми ради одной
-     * видимой незачем. Ближний включает кадр за 300 пикселей до входа,
-     * дальний гасит его, только когда полоса ушла больше чем на экран.
-     * Один порог на оба события дал бы мигание на границе.
-     */
-    const near = new IntersectionObserver(([e]) => e.isIntersecting && setLive(true), { rootMargin: '300px' });
-    const far = new IntersectionObserver(
-      ([e]) => {
-        if (e.isIntersecting) return;
-        setLive(false);
-        setShown(false);
-      },
-      { rootMargin: '1200px' }
-    );
-    near.observe(el);
-    far.observe(el);
-    return () => {
-      ro.disconnect();
-      near.disconnect();
-      far.disconnect();
-    };
-  }, []);
-
   return (
     <article
       className={`grid items-center gap-[clamp(24px,4vh,56px)] lg:gap-[clamp(40px,5vw,96px)] ${
@@ -120,31 +58,12 @@ export default function DemoBand({
         </div>
 
         <div
-          ref={frame}
           data-cursor="ring"
           data-reveal="clip"
           className="group relative aspect-[16/10] overflow-hidden rounded-[10px] border border-line bg-elev"
         >
-          {/* схема: то, что видно до загрузки кадра и всегда на телефоне */}
-          <svg viewBox="0 0 320 200" className="block h-full w-full text-fg" aria-hidden>
-            <ConceptPreview kind={item.kind} />
-          </svg>
+          <DemoView slug={item.slug} kind={item.kind} title={meta.title} className="h-full w-full" />
 
-          {live && (
-            <iframe
-              src={`/concepts/${item.slug}`}
-              title={meta.title}
-              aria-hidden
-              tabIndex={-1}
-              scrolling="no"
-              loading="lazy"
-              onLoad={() => setShown(true)}
-              className="pointer-events-none absolute left-0 top-0 origin-top-left border-0 transition-opacity duration-700"
-              style={{ width: W, height: H, transform: `scale(${k || 0.5})`, opacity: shown ? 1 : 0 }}
-            />
-          )}
-
-          {/* ссылка поверх всего кадра */}
           <Link
             href={`/concepts/${item.slug}`}
             className="absolute inset-0 flex items-end justify-end p-4"
