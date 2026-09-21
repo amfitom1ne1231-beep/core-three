@@ -33,6 +33,23 @@ export const MATERIALS: Record<string, MaterialPreset> = {
   deep: { seed: 89, freq: [0.008, 0.011], octaves: 5, surface: 2.8, azimuth: 220, elevation: 34, diffuse: '#556f8c', specular: '#b8cde3', exponent: 14, scale: 1.2 }
 };
 
+/**
+ * Фактура направления: номер в атласе → пресет.
+ *
+ * Живёт здесь, рядом с самими пресетами, потому что знают её двое —
+ * страница направления и полоса перехода к соседям, и расходиться им
+ * незачем: если «Магазины» на своей странице зернистые, то и в списке
+ * соседей они должны быть зернистыми.
+ */
+export const DIRECTION_MATERIAL: Record<string, keyof typeof MATERIALS> = {
+  '01': 'silk',
+  '02': 'folded',
+  '03': 'grain',
+  '04': 'stream',
+  '05': 'crystal',
+  '06': 'deep'
+};
+
 export default function Material({
   preset = 'silk',
   className = '',
