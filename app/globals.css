@@ -273,6 +273,12 @@ body {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+    /* Задержки тоже в ноль. Без этого ступенчатый вход (пункты меню,
+       карточки демо) с fill-mode both держал элемент в начальном
+       состоянии всю задержку: до полусекунды пустоты у того, кто
+       как раз просил не двигать ничего. */
+    animation-delay: 0ms !important;
+    transition-delay: 0ms !important;
   }
 }
 
