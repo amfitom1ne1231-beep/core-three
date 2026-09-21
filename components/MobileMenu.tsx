@@ -215,7 +215,7 @@ export default function MobileMenu({ onOpenChange }: { onOpenChange?: (open: boo
         <Link
           href={contactHref(pathname)}
           onClick={() => close(false)}
-          className="block border border-fg bg-fg px-[22px] py-[15px] text-center font-mono text-[11px] uppercase tracking-label text-bg"
+          className="btn btn-lg btn-primary w-full"
         >
           {SITE.hero.primary.label}
         </Link>

@@ -96,14 +96,14 @@ export default function ServicePage({ page, children }: { page: Page; children?:
                 <Link
                   data-magnetic
                   href={`/contact?type=${page.kind}`}
-                  className="border border-fg bg-fg px-[22px] py-[13px] font-mono text-[11px] uppercase tracking-label text-bg transition-colors duration-300 hover:border-accent hover:bg-accent hover:text-white"
+                  className="btn btn-lg btn-primary"
                 >
                   Обсудить проект
                 </Link>
                 <Link
                   data-magnetic
                   href="/concepts"
-                  className="border border-line bg-bg/30 px-[22px] py-[13px] font-mono text-[11px] uppercase tracking-label text-fg backdrop-blur-sm transition-colors duration-300 hover:border-accent hover:text-accent"
+                  className="btn btn-lg btn-ghost bg-bg/30 backdrop-blur-sm"
                 >
                   Посмотреть демо
                 </Link>

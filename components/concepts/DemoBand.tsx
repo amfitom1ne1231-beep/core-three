@@ -98,7 +98,7 @@ export default function DemoBand({
         <Link
           data-magnetic
           href={`/concepts/${item.slug}`}
-          className="mt-8 inline-flex items-center gap-2 border border-fg bg-fg px-[22px] py-[13px] font-mono text-[11px] uppercase tracking-label text-bg transition-colors duration-300 hover:border-accent hover:bg-accent hover:text-white"
+          className="btn btn-primary mt-8"
         >
           Открыть демо
           <span aria-hidden>→</span>

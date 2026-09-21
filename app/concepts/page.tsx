@@ -130,7 +130,7 @@ export default function ConceptsPage() {
             <Link
               data-magnetic
               href={contactHref('/concepts')}
-              className="mt-[clamp(28px,5vh,56px)] inline-block border border-fg bg-fg px-[22px] py-[15px] font-mono text-[11px] uppercase tracking-label text-bg transition-colors duration-300 hover:border-accent hover:bg-accent hover:text-white"
+              className="btn btn-lg btn-primary mt-[clamp(28px,5vh,56px)]"
             >
               {SITE.hero.primary.label}
             </Link>

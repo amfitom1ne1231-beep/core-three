@@ -191,6 +191,67 @@ body {
   box-shadow: inset 0 0 0 1px var(--edge);
 }
 
+/* Кнопки действия.
+   Одна строка классов на весь сайт вместо девяти копий инлайном: раньше
+   у одной и той же кнопки было три разных размера (22/13, 22/15, 26/15),
+   и разъезжались они молча. Заодно выросли: 46px в обычном размере и
+   54px на первых экранах — ниже 44 область нажатия проваливает
+   требования к касанию, а главное действие страницы должно читаться
+   как главное.
+   Кольцо фокуса здесь же: у ссылок-кнопок его раньше рисовал только
+   браузер. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid transparent;
+  padding: 15px 26px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+}
+
+/* Первый экран и финальный призыв: та же кнопка, но крупнее. */
+.btn-lg {
+  padding: 19px 34px;
+  font-size: 13px;
+}
+
+.btn-primary {
+  background: var(--fg);
+  border-color: var(--fg);
+  color: var(--bg);
+}
+
+.btn-primary:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.btn-ghost {
+  border-color: var(--line);
+  color: var(--fg);
+}
+
+.btn-ghost:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: 2px;
+}
+
+.btn:disabled {
+  cursor: wait;
+}
+
 /* Беззвучная подсказка прокрутки: штрих уходит вниз и гаснет.
    Жест понятен без слов, поэтому подписи под ним нет. */
 .scroll-cue {

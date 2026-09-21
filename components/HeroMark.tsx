@@ -109,11 +109,22 @@ export default function HeroMark() {
           defaults: { duration: 1 },
           scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom top', scrub: 0.8, invalidateOnRefresh: true }
         });
+        /**
+         * Лучи расходятся линейно, а не с разгоном.
+         *
+         * Было `power1.in`: на трети прокрутки первого экрана знак
+         * расходился всего на девятую часть пути, и распад читался
+         * только в самом конце — когда смотреть на него уже поздно.
+         * Линейная шкала на той же прокрутке даёт треть, то есть жест
+         * начинается с первого движения колеса. Конец тот же: дальше
+         * менять нечего.
+         */
         layers.current.forEach((el, i) => {
-          st.to(el, { x: () => OUT[i][0] * size() * 0.7, y: () => OUT[i][1] * size() * 0.7, ease: 'power1.in' }, 0);
+          st.to(el, { x: () => OUT[i][0] * size() * 0.7, y: () => OUT[i][1] * size() * 0.7, ease: 'none' }, 0);
         });
-        // смаз в полёте: лучи уходят на скорости
-        st.fromTo(layers.current, { filter: 'blur(0px)' }, { filter: 'blur(7px)', ease: 'power2.in' }, 0);
+        // смаз в полёте: лучи уходят на скорости — смаз идёт за ней,
+        // поэтому и он потерял разгон вместе с движением
+        st.fromTo(layers.current, { filter: 'blur(0px)' }, { filter: 'blur(6px)', ease: 'power1.in' }, 0);
         // вспышка ядер в момент прохода сквозь центр
         if (bloom.current) {
           st.fromTo(

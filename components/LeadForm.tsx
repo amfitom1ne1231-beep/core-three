@@ -200,7 +200,10 @@ export default function LeadForm() {
       </div>
 
       <div className="mt-8">
-        <label className="flex cursor-pointer items-start gap-3 text-[13px] leading-snug text-dim">
+        {/* py-1.5: сам квадратик 16px, и на телефоне это меньше половины
+            пальца. Нажимается вся строка, поэтому ей и добавлены поля —
+            строка становится 46px, а квадратик остаётся тихим. */}
+        <label className="flex cursor-pointer items-start gap-3 py-1.5 text-[13px] leading-snug text-dim">
           <span className="relative mt-px flex h-4 w-4 shrink-0">
             <input
               name="consent"
@@ -251,7 +254,7 @@ export default function LeadForm() {
         <button
           type="submit"
           disabled={sending}
-          className="relative overflow-hidden border border-fg bg-fg px-[26px] py-[15px] font-mono text-[11px] uppercase tracking-label text-bg transition-colors duration-300 hover:border-accent hover:bg-accent hover:text-white disabled:cursor-wait"
+          className="btn btn-lg btn-primary relative overflow-hidden"
         >
           {sending ? form.sending : form.submit}
           {/* пока идёт отправка, по нижней кромке бежит полоса */}
