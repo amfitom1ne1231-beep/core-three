@@ -1,6 +1,7 @@
 node_modules/
 .next/
 .next-check/
+.test-out/
 out/
 .env*.local
 .DS_Store

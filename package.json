@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "build:check": "NEXT_DIST_DIR=.next-check next build",
-    "start:check": "NEXT_DIST_DIR=.next-check next start -p 3100"
+    "start:check": "NEXT_DIST_DIR=.next-check next start -p 3100",
+    "test": "tsc lib/lead.ts --outDir .test-out --target es2022 --module es2022 --skipLibCheck && node --test test/"
   },
   "dependencies": {
     "next": "^15.5.4",
