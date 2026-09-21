@@ -233,7 +233,7 @@ export const SITE = {
         title: 'Лендинг курса',
         niche: 'Эксперт · курс',
         points: ['Программа и блок отзывов', 'Запись с оплатой', 'Бот-воронка после заявки'],
-        ready: false
+        ready: true
       },
       {
         slug: 'shop',

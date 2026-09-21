@@ -68,18 +68,30 @@ export default function DemoBand({
 
     if (!heavyOk) return () => ro.disconnect();
 
-    const io = new IntersectionObserver(
+    /**
+     * Два наблюдателя с разным запасом — гистерезис.
+     *
+     * Кадров на витрине четыре, и каждый — полноценная страница
+     * со своими таймерами: держать все четыре живыми ради одной
+     * видимой незачем. Ближний включает кадр за 300 пикселей до входа,
+     * дальний гасит его, только когда полоса ушла больше чем на экран.
+     * Один порог на оба события дал бы мигание на границе.
+     */
+    const near = new IntersectionObserver(([e]) => e.isIntersecting && setLive(true), { rootMargin: '300px' });
+    const far = new IntersectionObserver(
       ([e]) => {
-        if (!e.isIntersecting) return;
-        setLive(true);
-        io.disconnect();
+        if (e.isIntersecting) return;
+        setLive(false);
+        setShown(false);
       },
-      { rootMargin: '200px' }
+      { rootMargin: '1200px' }
     );
-    io.observe(el);
+    near.observe(el);
+    far.observe(el);
     return () => {
       ro.disconnect();
-      io.disconnect();
+      near.disconnect();
+      far.disconnect();
     };
   }, []);
 
