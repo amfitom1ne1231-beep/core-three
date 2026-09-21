@@ -46,7 +46,7 @@ export default function ConceptsPage() {
       <HeroSilk />
       <main id="content" className="relative z-10 w-full">
         {/* ---------- первый экран ---------- */}
-        <section data-chapter="hero" className="relative overflow-hidden">
+        <section data-chapter="hero" className="relative overflow-hidden" aria-label="Начало">
           <div data-hero className="px-4 pb-[clamp(48px,9vh,110px)] pt-[clamp(120px,19vh,200px)] sm:px-8 lg:px-[72px]">
             <span className="rail-label">{PAGE.label}</span>
             <div className="mt-6 grid items-end gap-[clamp(28px,5vh,56px)] lg:grid-cols-[1.6fr_1fr] lg:gap-[clamp(40px,5vw,96px)]">
@@ -119,7 +119,7 @@ export default function ConceptsPage() {
         />
 
         {/* ---------- не нашли своё ---------- */}
-        <section data-chapter="concepts" className="relative border-t border-line">
+        <section data-chapter="concepts" className="relative border-t border-line" aria-label="Не нашли своё">
           <div className="px-4 section-y sm:px-8 lg:px-[72px]">
             <div className="grid gap-[clamp(24px,4vh,48px)] lg:grid-cols-[1.6fr_1fr] lg:items-end lg:gap-[clamp(40px,5vw,96px)]">
               <h2 className="display m-0 text-[clamp(26px,4.2vw,64px)]">

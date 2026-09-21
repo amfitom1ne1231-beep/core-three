@@ -34,7 +34,7 @@ export default function AboutPage() {
       <HeroSilk />
       <main id="content" className="relative z-10 w-full">
         {/* ---------- первый экран ---------- */}
-        <section data-chapter="hero" className="relative overflow-hidden">
+        <section data-chapter="hero" className="relative overflow-hidden" aria-label="Начало">
           <div data-hero className="px-4 pb-[clamp(40px,7vh,88px)] pt-[clamp(120px,19vh,200px)] sm:px-8 lg:px-[72px]">
             <span className="rail-label">{ABOUT.label}</span>
             <div className="mt-6 grid items-end gap-[clamp(28px,5vh,56px)] lg:grid-cols-[1.6fr_1fr] lg:gap-[clamp(40px,5vw,96px)]">

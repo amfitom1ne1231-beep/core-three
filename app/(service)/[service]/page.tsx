@@ -92,7 +92,7 @@ export default async function Service({ params }: { params: Promise<{ service: s
         {/* живая проба сценария — только у ботов: показывать её на
             мониторинге не за чем, а шаблон остаётся общим */}
         {page.slug === 'bots' ? (
-          <section data-chapter="atlas" className="relative border-t border-line">
+          <section data-chapter="atlas" className="relative border-t border-line" aria-label={TG_DEMO.label}>
             <div className="grid gap-[clamp(28px,5vh,56px)] px-4 section-y sm:px-8 lg:grid-cols-[minmax(260px,0.9fr)_minmax(0,1.2fr)] lg:items-center lg:gap-[clamp(40px,5vw,96px)] lg:px-[72px]">
               <div>
                 <span className="rail-label">{TG_DEMO.label}</span>

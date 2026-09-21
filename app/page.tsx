@@ -47,7 +47,12 @@ export default function Home() {
         {/* overflow-x-clip: знак выходит за край и на скролле растёт — страница
             не должна от этого становиться шире экрана, а по вертикали лучи
             разлетаются свободно */}
-        <section data-chapter="hero" data-cursor="ring" className="relative z-20 h-[100svh] select-none overflow-x-clip">
+        <section
+          data-chapter="hero"
+          data-cursor="ring"
+          className="relative z-20 h-[100svh] select-none overflow-x-clip"
+          aria-label="Начало"
+        >
           {/* знак-объект: прилетает из прелоадера, тянется за курсором, на скролле разлетается */}
           <HeroMark />
 

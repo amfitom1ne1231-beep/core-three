@@ -30,7 +30,7 @@ export default function ContactPage() {
       {/* тот же материал, что на главной: заявка — продолжение того же мира */}
       <HeroSilk />
       <main id="content" className="relative z-10 w-full">
-        <section data-chapter="contact" className="relative overflow-hidden">
+        <section data-chapter="contact" className="relative overflow-hidden" aria-label="Заявка">
           <div className="grid items-center gap-[clamp(36px,6vh,72px)] px-4 pb-[clamp(56px,10vh,120px)] pt-[clamp(112px,18vh,196px)] sm:px-8 lg:min-h-[100svh] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.02fr)] lg:gap-[clamp(48px,6vw,112px)] lg:px-[72px]">
             <div data-hero>
               <span className="rail-label">{contact.label}</span>
