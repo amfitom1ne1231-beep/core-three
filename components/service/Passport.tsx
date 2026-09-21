@@ -41,7 +41,7 @@ export default function Passport({ page }: { page: ServicePage }) {
         {/* ---------- паспорт ---------- */}
         <div
           data-cursor="ring"
-          className="self-start border border-line bg-bg/55 p-[clamp(20px,2.4vw,40px)] backdrop-blur-md"
+          className="glass self-start p-[clamp(20px,2.4vw,40px)]"
         >
           <div className="flex items-center justify-between gap-4">
             <span className="rail-label">Паспорт направления</span>

@@ -83,7 +83,7 @@ export default function ContactPage() {
             {/* ---------- форма ---------- */}
             <div
               data-cursor="ring"
-              className="self-start border border-line bg-bg/55 p-[clamp(20px,3vw,44px)] backdrop-blur-md"
+              className="glass self-start p-[clamp(20px,3vw,44px)]"
             >
               <div className="mb-[clamp(20px,3vh,32px)] flex items-center justify-between gap-4 border-b border-line pb-4">
                 <span className="rail-label">Заявка</span>

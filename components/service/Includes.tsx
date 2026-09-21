@@ -17,10 +17,18 @@ export type IncludeItem = { title: string; text: string };
  *
  * Было шесть одинаковых карточек в сетке — та самая «документация»,
  * из-за которой середина главной когда-то проигрывала первому экрану.
- * Стало устройство: слева перечень, справа панель с материалом
- * направления, и шаги проигрываются сами, пока секция на экране.
- * Приём не новый — ровно так устроена схема анатомии, и это хорошо:
- * человек, доехавший сюда с главной, уже знает, как этим пользоваться.
+ * Стало устройство: слева перечень, справа панель с фактурой
+ * направления, и шаги идут сами, пока секция на экране.
+ *
+ * Разбор kling.ai уточнил две вещи, и обе взяты:
+ *
+ * 1. Описание раскрывается в самой строке, а не живёт в панели справа.
+ *    Перечень получает вес, а панель остаётся чистым кадром — у них
+ *    справа так же стоит одно видео без единой подписи.
+ * 2. Таймер — один сплошной рельс вдоль всего перечня вместо полоски
+ *    под каждой строкой. Одним элементом видно и где ты, и сколько
+ *    осталось до смены; шесть отдельных полосок сообщали то же самое
+ *    шестью способами.
  *
  * Глава `anatomy` гасит шейдер завесой в единицу, поэтому фактура здесь
  * своя, на SVG-фильтре: у каждого направления свой пресет материала —
@@ -42,6 +50,9 @@ export default function Includes({
   const [inView, setInView] = useState(false);
   /** Первое прикосновение останавливает прокрутку насовсем: начали читать — не торопим. */
   const [held, setHeld] = useState(false);
+  /** Переход через конец списка: рельс возвращается в ноль без анимации. */
+  const [wrapped, setWrapped] = useState(false);
+  const prev = useRef(0);
 
   useEffect(() => {
     const el = section.current;
@@ -58,21 +69,34 @@ export default function Includes({
   useEffect(() => {
     if (!inView || held) return;
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    // На узком экране панель стоит над списком, и сама по себе
-    // раскрывающаяся строка читается сбоем, а не подсказкой: там перечень
-    // листает только палец.
+    // На узком экране строка раскрывается прямо под пальцем, и смена
+    // шага сама по себе двигала бы разметку под читающим.
     if (!matchMedia('(min-width: 1024px)').matches) return;
     const id = window.setInterval(() => setActive((p) => (p + 1) % items.length), STEP_MS);
     return () => window.clearInterval(id);
   }, [inView, held, items.length]);
 
+  /**
+   * Возврат к первому шагу. Без этого рельс, дойдя до низа, полз бы
+   * обратно наверх все 4.4 секунды — то есть показывал бы движение
+   * назад там, где перечень идёт вперёд.
+   */
+  useEffect(() => {
+    const back = active === 0 && prev.current === items.length - 1;
+    prev.current = active;
+    if (!back) return;
+    setWrapped(true);
+    const id = window.setTimeout(() => setWrapped(false), 40);
+    return () => window.clearTimeout(id);
+  }, [active, items.length]);
+
   const go = (i: number) => {
     setHeld(true);
-    setActive((i + items.length) % items.length);
+    setActive(i);
   };
 
-  const it = items[active];
   const nn = String(active + 1).padStart(2, '0');
+  const fill = wrapped ? 0 : ((active + 1) / items.length) * 100;
 
   return (
     <section
@@ -92,108 +116,101 @@ export default function Includes({
           </p>
         </div>
 
-        <div className="mt-[clamp(28px,5vh,60px)] grid gap-[clamp(20px,3vh,40px)] lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.4fr)] lg:gap-[clamp(32px,4vw,72px)]">
+        <div className="mt-[clamp(28px,5vh,60px)] grid gap-[clamp(20px,3vh,40px)] lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.35fr)] lg:gap-[clamp(32px,4vw,72px)]">
           {/* ---------- перечень ---------- */}
-          <ol
-            role="tablist"
-            aria-label="Части работы"
-            aria-orientation="vertical"
-            className="m-0 flex list-none flex-col p-0"
-            onMouseEnter={() => setHeld(true)}
-            onKeyDown={(e) => {
-              const d = e.key === 'ArrowDown' || e.key === 'ArrowRight' ? 1 : e.key === 'ArrowUp' || e.key === 'ArrowLeft' ? -1 : 0;
-              if (!d) return;
-              e.preventDefault();
-              const next = (active + d + items.length) % items.length;
-              go(next);
-              // фокус едет за выбором: иначе стрелки листают то, чего не видно
-              (e.currentTarget.querySelectorAll('button')[next] as HTMLButtonElement | undefined)?.focus();
-            }}
-          >
-            {items.map((item, i) => {
-              const on = i === active;
-              return (
-                <li key={item.title} className="border-t border-line last:border-b">
-                  <button
-                    type="button"
-                    role="tab"
-                    id={`inc-${slug}-${i}`}
-                    aria-selected={on}
-                    aria-controls={`incp-${slug}`}
-                    tabIndex={on ? 0 : -1}
-                    onClick={() => go(i)}
-                    onFocus={() => go(i)}
-                    className="w-full cursor-pointer appearance-none border-0 bg-transparent px-0 py-[clamp(14px,2vh,22px)] text-left outline-none"
-                  >
-                    <span className="flex items-baseline gap-4">
-                      <span
-                        className={`font-mono text-[11px] tracking-rail transition-colors duration-300 ${
-                          on ? 'text-accent' : 'text-faint'
-                        }`}
-                      >
-                        {String(i + 1).padStart(2, '0')}
-                      </span>
-                      <span
-                        className={`text-[clamp(15px,1.35vw,20px)] font-medium leading-snug transition-colors duration-300 ${
-                          on ? 'text-fg' : 'text-dim'
-                        }`}
-                      >
-                        {item.title}
-                      </span>
-                    </span>
-                    {/* На узком экране текст живёт в самой строке: панель
-                        стоит выше и до неё не доскроллить, пока читаешь
-                        перечень. Дублирования в разметке нет — второй
-                        экземпляр в панели скрыт display:none, и читалка
-                        озвучивает ровно один. */}
-                    {on && (
-                      <span className="mt-3 block max-w-[46ch] text-[14px] leading-relaxed text-dim lg:hidden">
-                        {item.text}
-                      </span>
-                    )}
+          <div className="relative pl-5" onMouseEnter={() => setHeld(true)}>
+            {/* рельс: один на весь перечень, он же таймер */}
+            <span className="pointer-events-none absolute left-0 top-0 h-full w-px bg-line" aria-hidden>
+              <span
+                className="absolute left-0 top-0 w-full bg-accent"
+                style={{
+                  height: `${fill}%`,
+                  transition: wrapped ? 'none' : held ? 'height .35s ease' : `height ${STEP_MS}ms linear`
+                }}
+              />
+            </span>
 
-                    {/* полоса таймера: видно, что перечень идёт сам */}
-                    <span
-                      className="mt-3 block h-px w-full origin-left bg-accent"
-                      style={{
-                        transform: `scaleX(${on ? 1 : 0})`,
-                        opacity: on ? 0.8 : 0,
-                        transition: on && !held ? `transform ${STEP_MS}ms linear, opacity .3s` : 'transform .3s, opacity .3s'
-                      }}
-                      aria-hidden
-                    />
-                  </button>
-                </li>
-              );
-            })}
-          </ol>
+            <ol className="m-0 flex list-none flex-col p-0">
+              {items.map((item, i) => {
+                const on = i === active;
+                return (
+                  <li key={item.title} className="border-t border-line last:border-b">
+                    <button
+                      type="button"
+                      aria-expanded={on}
+                      aria-controls={`inc-${slug}-${i}`}
+                      onClick={() => go(i)}
+                      onFocus={() => go(i)}
+                      className="w-full cursor-pointer appearance-none border-0 bg-transparent px-0 py-[clamp(14px,2vh,22px)] text-left outline-none"
+                    >
+                      <span className="flex items-baseline gap-4">
+                        <span
+                          className={`font-mono text-[11px] tracking-rail transition-colors duration-300 ${
+                            on ? 'text-accent' : 'text-faint'
+                          }`}
+                        >
+                          {String(i + 1).padStart(2, '0')}
+                        </span>
+                        <span
+                          className={`text-[clamp(15px,1.35vw,20px)] font-medium leading-snug transition-colors duration-300 ${
+                            on ? 'text-fg' : 'text-dim'
+                          }`}
+                        >
+                          {item.title}
+                        </span>
+                      </span>
+                    </button>
 
-          {/* ---------- панель с материалом направления ---------- */}
+                    {/* Раскрытие через grid-template-rows: высота текста
+                        заранее неизвестна, а анимировать `height: auto`
+                        нельзя. `visibility` уводит свёрнутое из дерева
+                        доступности, но с задержкой — иначе текст исчезал
+                        бы раньше, чем строка успевала сложиться. */}
+                    <div
+                      id={`inc-${slug}-${i}`}
+                      className="grid transition-[grid-template-rows] duration-500 ease-out"
+                      style={{ gridTemplateRows: on ? '1fr' : '0fr' }}
+                    >
+                      <div
+                        className="overflow-hidden"
+                        style={{
+                          visibility: on ? 'visible' : 'hidden',
+                          transition: `visibility 0s linear ${on ? '0s' : '.5s'}`
+                        }}
+                      >
+                        <p className="m-0 max-w-[52ch] pb-[clamp(14px,2vh,22px)] pl-[calc(11px+1rem)] text-[14.5px] leading-relaxed text-dim">
+                          {item.text}
+                        </p>
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+
+          {/* ---------- кадр с материалом направления ---------- */}
           <div
-            role="tabpanel"
-            id={`incp-${slug}`}
-            aria-labelledby={`inc-${slug}-${active}`}
+            aria-hidden
             data-cursor="ring"
             data-reveal="clip"
-            className="relative order-first min-h-[clamp(200px,28vh,420px)] overflow-hidden border border-line bg-elev lg:order-none lg:min-h-[clamp(280px,40vh,420px)]"
+            className="relative order-first min-h-[clamp(200px,28vh,420px)] overflow-hidden border border-line bg-elev lg:order-none lg:min-h-[clamp(300px,44vh,460px)]"
           >
             <Material preset={material} opacity={0.72} />
-            {/* вуаль под текст: фактура остаётся видна по краям, читаемость держится ею */}
+            {/* вуаль под подписи: фактура остаётся видна по краям */}
             <div
               className="pointer-events-none absolute inset-0"
               style={{
                 background:
-                  'linear-gradient(158deg, rgb(var(--bg-rgb) / 0.30) 0%, rgb(var(--bg-rgb) / 0.72) 42%, rgb(var(--bg-rgb) / 0.93) 78%)'
+                  'linear-gradient(158deg, rgb(var(--bg-rgb) / 0.22) 0%, rgb(var(--bg-rgb) / 0.55) 48%, rgb(var(--bg-rgb) / 0.82) 100%)'
               }}
-              aria-hidden
             />
 
             {/* номер части крупно: якорь, по которому видно движение перечня */}
             <span
               key={`n-${active}`}
-              className="pointer-events-none absolute -bottom-[0.22em] right-[0.06em] font-mono text-[clamp(120px,18vw,240px)] leading-none tracking-[-0.04em] text-fg/[0.07]"
+              className="pointer-events-none absolute -bottom-[0.22em] right-[0.06em] font-mono text-[clamp(120px,18vw,240px)] leading-none tracking-[-0.04em] text-fg/[0.08]"
               style={{ animation: 'ct-rise .5s cubic-bezier(0.22,1,0.36,1) both' }}
-              aria-hidden
             >
               {nn}
             </span>
@@ -205,7 +222,7 @@ export default function Includes({
               'left-0 bottom-0 border-l border-b',
               'right-0 bottom-0 border-r border-b'
             ].map((c) => (
-              <span key={c} className={`pointer-events-none absolute h-3 w-3 border-line-strong ${c}`} aria-hidden />
+              <span key={c} className={`pointer-events-none absolute h-3 w-3 border-line-strong ${c}`} />
             ))}
 
             <div className="relative flex h-full min-h-[inherit] flex-col justify-between gap-8 p-[clamp(20px,2.6vw,44px)]">
@@ -216,31 +233,13 @@ export default function Includes({
                 <span className="rail-label">{group}</span>
               </div>
 
-              <div>
-                <div
-                  key={active}
-                  className="hidden lg:block"
-                  style={{ animation: 'ct-rise .45s cubic-bezier(0.22,1,0.36,1) both' }}
-                >
-                  <h3 className="display m-0 max-w-[16ch] text-[clamp(24px,2.8vw,42px)]">{it.title}</h3>
-                  <p className="m-0 mt-5 max-w-[46ch] text-[clamp(14px,1.2vw,17px)] leading-relaxed text-dim">
-                    {it.text}
-                  </p>
-                </div>
-
-                {/* рельс состава: видно, сколько частей и где сейчас идём.
-                    Тот же приём, что у рельса карусели на главной. */}
-                <div className="mt-[clamp(18px,3vh,30px)] flex gap-1.5" aria-hidden>
-                  {items.map((part, i) => (
-                    <span
-                      key={part.title}
-                      className={`h-px flex-1 transition-colors duration-500 ${
-                        i === active ? 'bg-accent' : i < active ? 'bg-line-strong' : 'bg-line'
-                      }`}
-                    />
-                  ))}
-                </div>
-              </div>
+              <span
+                key={`t-${active}`}
+                className="block max-w-[18ch] text-[clamp(15px,1.5vw,21px)] font-medium leading-snug"
+                style={{ animation: 'ct-rise .45s cubic-bezier(0.22,1,0.36,1) both' }}
+              >
+                {items[active].title}
+              </span>
             </div>
           </div>
         </div>

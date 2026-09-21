@@ -677,6 +677,42 @@ export default function Atlas() {
               );
             })}
           </div>
+
+          {/*
+            Задача в кадре.
+
+            Приём с kling.ai: под кадром лежит вход, который его породил, —
+            у них это промпт, и ровно поэтому ролик читается доказательством,
+            а не красивой заставкой. У нас входом быть нечему: заказа за
+            вставкой нет, а выдумывать клиента на сайте про честность нельзя.
+            Поэтому строка описывает задачу, которую видно в самом кадре, —
+            и кадр перестаёт быть просто макетом.
+
+            Карточка стоит под сценой, а не поверх неё: слайды живут
+            в трансформах карусели, и всё, что попадёт внутрь, поедет
+            вместе с ними — масштаб, обрезка, размытие по скорости.
+          */}
+          <div className="mt-3 pr-4 sm:pr-8 lg:pr-0">
+            <div
+              key={index}
+              className="glass flex items-center gap-4 rounded-[12px] px-4 py-3"
+              style={{ animation: 'ct-rise .45s cubic-bezier(0.22,1,0.36,1) both' }}
+            >
+              <span
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[8px] font-mono text-[13px] tracking-rail text-fg"
+                style={{ background: 'rgb(var(--fg-rgb) / 0.08)' }}
+                aria-hidden
+              >
+                {SITE.services[index].n}
+              </span>
+              <span className="min-w-0">
+                <span className="rail-label block">Задача в кадре</span>
+                <span className="mt-1.5 block text-[13.5px] leading-snug text-fg">
+                  {SITE.services[index].task}
+                </span>
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
