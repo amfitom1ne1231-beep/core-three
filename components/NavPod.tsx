@@ -186,10 +186,16 @@ export default function NavPod() {
     return () => cancelAnimationFrame(raf);
   }, [pathname, measure]);
 
-  // высоты плывут от ширины окна, раскрытых вопросов и подгруженных шрифтов
+  /**
+   * Высота страницы плывёт: раскрытый вопрос в FAQ, подгруженный шрифт,
+   * смена ширины окна. Поэтому не событие `resize`, а наблюдатель за
+   * самим телом страницы — он ловит любое изменение размера, а не
+   * только оконное, и браузер сам склеивает всплески в один вызов.
+   */
   useEffect(() => {
-    addEventListener('resize', measure);
-    return () => removeEventListener('resize', measure);
+    const ro = new ResizeObserver(measure);
+    ro.observe(document.body);
+    return () => ro.disconnect();
   }, [measure]);
 
   // перед самым показом панели меряем ещё раз: к этому моменту страница
@@ -208,22 +214,37 @@ export default function NavPod() {
    * убирается на то время, пока мешает.
    */
   useEffect(() => {
-    const onFocus = (e: FocusEvent) => {
-      const el = e.target as HTMLElement | null;
+    /**
+     * Считаем по тому, где фокус оказался, а не по тому, откуда ушёл, —
+     * и на кадр позже события. Пара focusout + focusin приходит двумя
+     * событиями, и обработка каждого по отдельности давала вспышку:
+     * пульт начинал проявляться между двумя одинаково перекрытыми
+     * ссылками. Тот же проход закрывает и уход фокуса в никуда —
+     * клик по пустому месту не даёт focusin вовсе.
+     */
+    let raf = 0;
+    const check = () => {
+      raf = 0;
       const box = pod.current;
-      if (!box || !el?.getBoundingClientRect || box.contains(el)) return;
+      if (!box) return;
+      const el = document.activeElement as HTMLElement | null;
+      if (!el || el === document.body || box.contains(el)) {
+        setCovers(false);
+        return;
+      }
       const a = el.getBoundingClientRect();
       const b = box.getBoundingClientRect();
       setCovers(a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top);
     };
-    // Уход фокуса в никуда (клик по тексту) не даёт события focusin,
-    // и без этого пульт оставался бы спрятанным до следующего таба.
-    const onBlur = () => setCovers(false);
-    addEventListener('focusin', onFocus);
-    addEventListener('focusout', onBlur);
+    const schedule = () => {
+      if (!raf) raf = requestAnimationFrame(check);
+    };
+    addEventListener('focusin', schedule);
+    addEventListener('focusout', schedule);
     return () => {
-      removeEventListener('focusin', onFocus);
-      removeEventListener('focusout', onBlur);
+      cancelAnimationFrame(raf);
+      removeEventListener('focusin', schedule);
+      removeEventListener('focusout', schedule);
     };
   }, []);
 
@@ -332,12 +353,18 @@ export default function NavPod() {
 
   /* ---------------- поведение ---------------- */
 
+  /**
+   * Наверх — всегда наверх.
+   *
+   * Раньше здесь стояла ссылка на «/», и на главной её перехватывал
+   * обработчик: перезагружать страницу, чтобы попасть в её начало,
+   * незачем. Став кнопкой, элемент унаследовал только эту проверку —
+   * и на всех остальных страницах не делал ровно ничего, хотя подписан
+   * «в начало страницы». Домой уводит список разделов рядом.
+   */
   const home = () => {
-    // на главной «домой» — это вернуться к началу, а не перезагрузить её
-    if (pathname === '/') {
-      setOpen(false);
-      scrollToY(0);
-    }
+    setOpen(false);
+    scrollToY(0);
   };
 
   /** Переход к месту страницы. Отступ — под плавающую шапку. */
