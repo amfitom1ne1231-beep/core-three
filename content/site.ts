@@ -241,7 +241,7 @@ export const SITE = {
         title: 'Локальный магазин',
         niche: 'Розница',
         points: ['Каталог и карточка товара', 'Корзина и оформление', 'Доставка и самовывоз'],
-        ready: false
+        ready: true
       },
       {
         slug: 'cafe',
