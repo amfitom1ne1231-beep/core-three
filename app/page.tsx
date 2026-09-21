@@ -1,6 +1,5 @@
 import Anatomy from '@/components/Anatomy';
 import Atlas from '@/components/Atlas';
-import Concepts from '@/components/Concepts';
 import Footer from '@/components/Footer';
 import HeroMark from '@/components/HeroMark';
 import HeroSilk from '@/components/HeroSilk';
@@ -121,7 +120,6 @@ export default function Home() {
         <Manifesto />
         <Anatomy />
         <Atlas />
-        <Concepts />
       </main>
       <Footer />
       <ScrollScenes />
