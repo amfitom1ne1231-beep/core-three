@@ -37,11 +37,18 @@ export default function Cursor() {
     root.classList.add('has-cursor');
     gsap.set([d, r], { xPercent: -50, yPercent: -50 });
 
-    // точка идёт почти вплотную, кольцо догоняет с инерцией
-    const dx = gsap.quickTo(d, 'x', { duration: 0.08, ease: 'power3' });
-    const dy = gsap.quickTo(d, 'y', { duration: 0.08, ease: 'power3' });
-    const rx = gsap.quickTo(r, 'x', { duration: 0.4, ease: 'power3' });
-    const ry = gsap.quickTo(r, 'y', { duration: 0.4, ease: 'power3' });
+    /**
+     * Точка идёт почти вплотную, кольцо догоняет с инерцией.
+     *
+     * У кольца было 0.4 с на `power3` — оно отставало настолько, что
+     * читалось не инерцией, а задержкой отклика: курсор уже на кнопке,
+     * а кольцо ещё в пути. 0.24 с и `power2` оставляют шлейф, но кольцо
+     * успевает прийти раньше, чем палец решит нажать.
+     */
+    const dx = gsap.quickTo(d, 'x', { duration: 0.07, ease: 'power3' });
+    const dy = gsap.quickTo(d, 'y', { duration: 0.07, ease: 'power3' });
+    const rx = gsap.quickTo(r, 'x', { duration: 0.24, ease: 'power2' });
+    const ry = gsap.quickTo(r, 'y', { duration: 0.24, ease: 'power2' });
 
     let mode: Mode = 'gone';
     const setMode = (m: Mode) => {

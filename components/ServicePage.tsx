@@ -1,17 +1,11 @@
 'use client';
 
-import { type ComponentType } from 'react';
 import Link from 'next/link';
 import RevealText from './RevealText';
 import ScrollScenes from './ScrollScenes';
 import { DIRECTION_MATERIAL } from './Material';
-import { type LiveProps } from './live/kit';
-import LiveBlog from './live/LiveBlog';
-import LiveBot from './live/LiveBot';
 import LiveLanding from './live/LiveLanding';
-import LiveOps from './live/LiveOps';
-import LiveShop from './live/LiveShop';
-import LiveWebApp from './live/LiveWebApp';
+import { LIVE_BY_KEY } from './live/map';
 import Includes from './service/Includes';
 import Neighbors from './service/Neighbors';
 import Passport from './service/Passport';
@@ -19,16 +13,6 @@ import Process from './service/Process';
 import Stage from './service/Stage';
 import type { ServicePage as Page } from '@/content/services';
 import { SITE } from '@/content/site';
-
-/** Те же вставки, что играют в карусели атласа: направление узнаётся по кадру. */
-const LIVE: Record<string, ComponentType<LiveProps>> = {
-  landing: LiveLanding,
-  blog: LiveBlog,
-  shop: LiveShop,
-  bot: LiveBot,
-  webapp: LiveWebApp,
-  ops: LiveOps
-};
 
 /**
  * Страница направления. Четыре штуки на одном шаблоне: отличается
@@ -47,7 +31,7 @@ const LIVE: Record<string, ComponentType<LiveProps>> = {
  * одинаковыми сетками подряд и читалась документацией.
  */
 export default function ServicePage({ page, children }: { page: Page; children?: React.ReactNode }) {
-  const Live = LIVE[page.live] ?? LiveLanding;
+  const Live = LIVE_BY_KEY[page.live] ?? LiveLanding;
   const material = DIRECTION_MATERIAL[page.n] ?? 'silk';
   /**
    * Задача кадра ищется по самой вставке, а не по номеру направления:

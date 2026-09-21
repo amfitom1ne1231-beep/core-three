@@ -28,9 +28,15 @@ export default function SmoothScroll() {
   useEffect(() => {
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
+    /**
+     * 1.1 секунды хода читались как задержка: колесо уже остановилось,
+     * а страница ещё едет. 0.85 с и кривая четвёртой степени — трогается
+     * резче, садится так же мягко, и рука перестаёт чувствовать, что
+     * страница отвечает с опозданием.
+     */
     const lenis = new Lenis({
-      duration: 1.1,
-      easing: (t: number) => 1 - Math.pow(1 - t, 3),
+      duration: 0.85,
+      easing: (t: number) => 1 - Math.pow(1 - t, 4),
       touchMultiplier: 1.6
     });
 
@@ -40,9 +46,18 @@ export default function SmoothScroll() {
     gsap.ticker.add(tick);
     gsap.ticker.lagSmoothing(0);
 
-    // Скос и лёгкий блюр по скорости скролла: страница «тянется» за колесом.
-    // Только для мыши — на телефоне скролл нативный, а кадры дороже.
-    // Цели помечены data-skew, значение "blur" добавляет размытие медиа.
+    /**
+     * Скос по скорости скролла: страница «тянется» за колесом. Только
+     * для мыши — на телефоне скролл нативный, а кадры дороже.
+     *
+     * Размытие отсюда убрано, а стили в покое больше не снимаются.
+     * Из-за них и мерцало: `filter` заводит элементу собственный слой,
+     * а снятие `transform` и `filter` возвращает текст с серой
+     * растеризации на субпиксельную. На каждой остановке прокрутки
+     * крупные заголовки перерисовывались целиком — это и читалось как
+     * вспышка на долю секунды. Теперь скос просто паркуется в ноль:
+     * элемент всё время в одном режиме, перерисовывать нечего.
+     */
     let skew = 0;
     let dirty = false;
     const skewTick = () => {
@@ -50,11 +65,10 @@ export default function SmoothScroll() {
       skew += (target - skew) * 0.12;
       const els = () => document.querySelectorAll<HTMLElement>('[data-skew]');
       if (Math.abs(skew) < 0.01 && Math.abs(target) < 0.01) {
-        // в покое стили снимаются целиком, чтобы не держать лишние слои
+        // приехали: паркуем ровно в ноль и больше ничего не трогаем
         if (dirty) {
           els().forEach((el) => {
-            el.style.transform = '';
-            el.style.filter = '';
+            el.style.transform = 'skewY(0deg)';
           });
           dirty = false;
         }
@@ -62,10 +76,8 @@ export default function SmoothScroll() {
         return;
       }
       dirty = true;
-      const blur = Math.min(Math.abs(skew) * 0.45, 1);
       els().forEach((el) => {
         el.style.transform = `skewY(${skew.toFixed(3)}deg)`;
-        if (el.dataset.skew === 'blur') el.style.filter = `blur(${blur.toFixed(2)}px)`;
       });
     };
     const fine = matchMedia('(hover: hover) and (pointer: fine)').matches;

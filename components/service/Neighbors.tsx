@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import gsap from 'gsap';
-import Material, { DIRECTION_MATERIAL } from '../Material';
+import { LIVE_W, LIVE_H } from '../live/kit';
+import { LIVE_BY_KEY } from '../live/map';
 import { SITE } from '@/content/site';
 
 /**
@@ -14,10 +15,14 @@ import { SITE } from '@/content/site';
  * список направлений — последнее, что человек видит перед футером,
  * и он должен звать дальше, а не выглядеть подвалом.
  *
- * За курсором едет кадр с фактурой того направления, на которое
- * наведено, — тот же материал, что стоит у него на странице. Мышь
- * только: на тач-устройстве кадру неоткуда взяться, и строки работают
- * сами по себе.
+ * За курсором едет живой кадр того направления, на которое наведено, —
+ * та же вставка, что играет в карусели на главной и стоит на первом
+ * экране самого направления. Была фактура материала с номером: красиво,
+ * но про направление она не говорила ничего — текстура и цифра.
+ * Играет ровно один кадр: тот, под которым сейчас курсор.
+ *
+ * Мышь только: на тач-устройстве кадру неоткуда взяться, и строки
+ * работают сами по себе.
  */
 export default function Neighbors({
   current,
@@ -105,22 +110,27 @@ export default function Neighbors({
       <div
         ref={card}
         aria-hidden
-        className="pointer-events-none fixed left-0 top-0 z-[120] hidden h-[172px] w-[268px] overflow-hidden border border-line-strong bg-elev transition-opacity duration-300 [@media(pointer:fine)]:block"
-        style={{ opacity: shown ? 1 : 0 }}
+        className="pointer-events-none fixed left-0 top-0 z-[120] hidden h-[182px] w-[268px] overflow-hidden border border-line-strong bg-elev transition-opacity duration-300 [@media(pointer:fine)]:block"
+        style={{ opacity: shown ? 1 : 0, ['--live-k' as string]: (268 / LIVE_W).toFixed(4) }}
       >
         {shown && (
           <>
-            <Material preset={DIRECTION_MATERIAL[shown.n] ?? 'silk'} opacity={0.72} />
+            {(() => {
+              const Live = LIVE_BY_KEY[shown.live] ?? LIVE_BY_KEY.landing;
+              return <Live playing />;
+            })()}
+            {/* подпись поверх кадра: снизу завеса, чтобы буквы читались
+                на любой вставке, а сам кадр оставался видно */}
             <div
-              className="absolute inset-0"
-              style={{ background: 'linear-gradient(180deg, rgb(var(--bg-rgb) / 0.35) 0%, rgb(var(--bg-rgb) / 0.8) 100%)' }}
+              className="absolute inset-x-0 bottom-0 h-[58%]"
+              style={{ background: 'linear-gradient(180deg, rgb(var(--bg-rgb) / 0) 0%, rgb(var(--bg-rgb) / 0.86) 62%)' }}
             />
-            <div className="absolute inset-0 flex flex-col justify-between p-4">
-              <span className="rail-label">
-                <b>{shown.n}</b>
-              </span>
-              <span className="text-[15px] font-medium leading-snug">
+            <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-3.5">
+              <span className="text-[14px] font-medium leading-snug">
                 {shown.title} <span className="text-dim">{shown.titleAccent}</span>
+              </span>
+              <span className="rail-label shrink-0">
+                <b>{shown.n}</b>
               </span>
             </div>
           </>
