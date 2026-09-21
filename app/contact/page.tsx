@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
 import Footer from '@/components/Footer';
+import HeroSilk from '@/components/HeroSilk';
 import LeadForm from '@/components/LeadForm';
 import RevealText from '@/components/RevealText';
-import HeroSilk from '@/components/HeroSilk';
+import ScrollScenes from '@/components/ScrollScenes';
+import Process from '@/components/service/Process';
 import { SITE } from '@/content/site';
 
 export const metadata: Metadata = {
@@ -11,6 +13,15 @@ export const metadata: Metadata = {
   alternates: { canonical: '/contact' }
 };
 
+/**
+ * Заявка.
+ *
+ * Единственная страница, где форма важнее всего остального, поэтому она
+ * стоит в первом экране целиком — без прокрутки, без «узнать подробнее».
+ * Шаги после заявки уехали ниже отдельной секцией: раньше они делили
+ * первый экран с формой, и получалось два одинаково важных столбца,
+ * из которых один — обещание, а второй — действие.
+ */
 export default function ContactPage() {
   const { contact } = SITE;
 
@@ -19,15 +30,12 @@ export default function ContactPage() {
       {/* тот же материал, что на главной: заявка — продолжение того же мира */}
       <HeroSilk />
       <main id="content" className="relative z-10 w-full">
-        <section data-chapter="contact" className="relative min-h-[100svh] overflow-hidden">
-
-          {/* Три блока в сетке: на телефоне форма идёт сразу за заголовком,
-              на десктопе она справа, а шаги — под заголовком слева. */}
-          <div className="relative grid gap-[clamp(40px,7vh,72px)] px-4 pb-[10vh] pt-[clamp(112px,18vh,196px)] sm:px-8 lg:grid-cols-[1fr_minmax(0,1.05fr)] lg:grid-rows-[auto_1fr] lg:gap-x-[clamp(48px,6vw,112px)] lg:px-[72px]">
-            <div className="lg:col-start-1 lg:row-start-1">
+        <section data-chapter="contact" className="relative overflow-hidden">
+          <div className="grid items-center gap-[clamp(36px,6vh,72px)] px-4 pb-[clamp(56px,10vh,120px)] pt-[clamp(112px,18vh,196px)] sm:px-8 lg:min-h-[100svh] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.02fr)] lg:gap-[clamp(48px,6vw,112px)] lg:px-[72px]">
+            <div data-hero>
               <span className="rail-label">{contact.label}</span>
               <h1
-                className="display m-0 mt-6 text-[clamp(32px,5vw,86px)]"
+                className="display m-0 mt-6 text-[clamp(36px,5.6vw,92px)]"
                 aria-label={`${contact.title} ${contact.titleAccent}`}
               >
                 <RevealText text={contact.title} as="span" className="block" decorative />
@@ -42,30 +50,17 @@ export default function ContactPage() {
               <p className="m-0 mt-8 max-w-[42ch] text-[clamp(14px,1.15vw,17px)] leading-relaxed text-dim">
                 {contact.lead}
               </p>
-            </div>
 
-            <div className="self-start border border-line bg-bg/55 p-[clamp(20px,3vw,44px)] backdrop-blur-md lg:sticky lg:top-28 lg:col-start-2 lg:row-span-2 lg:row-start-1">
-              <LeadForm />
-            </div>
+              {/* Три факта, которые чаще всего спрашивают перед тем, как
+                  написать. Стоят до формы, а не после: именно они решают,
+                  писать ли вообще. */}
+              <ul className="m-0 mt-[clamp(28px,5vh,52px)] flex list-none flex-wrap gap-x-[clamp(16px,3vw,44px)] gap-y-3 border-t border-line p-0 pt-6">
+                <li className="rail-label">Ответ в течение дня</li>
+                <li className="rail-label">Разбор задачи — 0 ₽</li>
+                <li className="rail-label">Смета до старта</li>
+              </ul>
 
-            <div className="lg:col-start-1 lg:row-start-2">
-              {/* что будет после заявки — честность в первом касании */}
-              <ol className="m-0 list-none p-0">
-                {contact.steps.map((s) => (
-                  <li
-                    key={s.n}
-                    className="grid grid-cols-[3.25rem_1fr] gap-x-2 border-t border-line py-5 last:border-b"
-                  >
-                    <span className="font-mono text-[11px] tracking-rail text-accent">{s.n}</span>
-                    <div>
-                      <h2 className="m-0 text-[clamp(16px,1.3vw,19px)] font-medium leading-snug">{s.title}</h2>
-                      <p className="m-0 mt-1.5 max-w-[46ch] text-[13.5px] leading-relaxed text-dim">{s.text}</p>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-
-              <div className="mt-9 flex flex-wrap items-center gap-x-5 gap-y-3">
+              <div className="mt-[clamp(24px,4vh,40px)] flex flex-wrap items-center gap-x-5 gap-y-3">
                 <span className="rail-label">{contact.direct}</span>
                 <a
                   data-magnetic
@@ -84,10 +79,33 @@ export default function ContactPage() {
                 </a>
               </div>
             </div>
+
+            {/* ---------- форма ---------- */}
+            <div
+              data-cursor="ring"
+              className="self-start border border-line bg-bg/55 p-[clamp(20px,3vw,44px)] backdrop-blur-md"
+            >
+              <div className="mb-[clamp(20px,3vh,32px)] flex items-center justify-between gap-4 border-b border-line pb-4">
+                <span className="rail-label">Заявка</span>
+                <span className="rail-label">Три поля</span>
+              </div>
+              <LeadForm />
+            </div>
           </div>
         </section>
+
+        {/* ---------- что дальше ---------- */}
+        <Process
+          steps={contact.steps}
+          label="Что дальше"
+          title="Три шага"
+          titleAccent="после заявки"
+          lead="Ни одного из них не будет без вашего согласия — ни созвона, ни счёта."
+          chapter="concepts"
+        />
       </main>
       <Footer cta={false} />
+      <ScrollScenes />
     </>
   );
 }

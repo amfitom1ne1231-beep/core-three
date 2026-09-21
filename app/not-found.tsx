@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import Footer from '@/components/Footer';
 import Material from '@/components/Material';
+import Neighbors from '@/components/service/Neighbors';
 import { SITE } from '@/content/site';
 
 export const metadata: Metadata = {
@@ -16,7 +17,7 @@ export default function NotFound() {
   return (
     <>
       <main id="content" className="relative z-10 w-full">
-        <section className="relative flex min-h-[100svh] flex-col justify-center overflow-hidden bg-bg px-4 py-[16vh] sm:px-8 lg:px-[72px]">
+        <section className="relative flex min-h-[78svh] flex-col justify-center overflow-hidden bg-bg px-4 py-[14vh] sm:px-8 lg:px-[72px]">
           <Material preset="deep" opacity={0.55} />
           <div
             className="pointer-events-none absolute inset-0"
@@ -61,6 +62,10 @@ export default function NotFound() {
             </div>
           </div>
         </section>
+
+        {/* Страница ошибки, с которой некуда идти, — вторая ошибка подряд.
+            Те же полосы направлений, что стоят внизу внутренних страниц. */}
+        <Neighbors current="" label="Разделы сайта" />
       </main>
       <Footer cta={false} />
     </>

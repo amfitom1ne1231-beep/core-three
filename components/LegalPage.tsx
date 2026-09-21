@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import Footer from './Footer';
+import Toc from './legal/Toc';
 import type { LegalDoc } from '@/content/legal';
 
 /**
@@ -16,20 +17,7 @@ export default function LegalPage({ doc, extra = {} }: { doc: LegalDoc; extra?: 
           <p className="m-0 mt-6 font-mono text-[10px] uppercase tracking-rail text-faint">{doc.edition}</p>
 
           <div className="mt-[clamp(40px,8vh,88px)] grid gap-12 border-t border-line pt-10 lg:grid-cols-[minmax(200px,280px)_1fr] lg:gap-[clamp(48px,8vw,140px)]">
-            <nav aria-label="Содержание" className="hidden lg:block">
-              <ol className="sticky top-28 m-0 flex list-none flex-col gap-3 p-0">
-                {doc.sections.map((s, i) => (
-                  <li key={s.id} className="flex gap-3 text-[13px] leading-snug">
-                    <span className="w-6 shrink-0 font-mono text-[10px] leading-[1.9] tracking-rail text-faint">
-                      {String(i + 1).padStart(2, '0')}
-                    </span>
-                    <a href={`#${s.id}`} className="text-dim transition-colors duration-300 hover:text-fg">
-                      {s.title}
-                    </a>
-                  </li>
-                ))}
-              </ol>
-            </nav>
+            <Toc sections={doc.sections} />
 
             <article className="max-w-[68ch]">
               <p className="m-0 text-[clamp(17px,1.5vw,21px)] leading-relaxed text-fg">{doc.lead}</p>
