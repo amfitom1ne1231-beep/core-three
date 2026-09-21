@@ -245,6 +245,16 @@ body {
   to { opacity: 1; transform: none; }
 }
 
+/* Появление перекрытия. Именно анимация, а не переход: элемент
+   приходит из display:none, и перехода на нём не будет вовсе, а
+   requestAnimationFrame для подмены состояния не тикает на вкладке,
+   которую не рисуют, — панель осталась бы невидимой при заблокированном
+   скролле. */
+@keyframes ct-veil {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 @keyframes ct-run {
   from { transform: translateX(-100%); }
   to { transform: translateX(300%); }

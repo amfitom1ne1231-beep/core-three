@@ -1,41 +1,60 @@
 'use client';
 
-import { useEffect, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import ThemeToggle from './ThemeToggle';
+import { contactHref } from '@/lib/lead';
 import { lockScroll } from '@/lib/scroll';
+import { DEMOS } from '@/content/concepts';
 import { SITE } from '@/content/site';
 
 /**
  * Меню для узких экранов.
  *
  * До этого навигация пряталась на `md` и ничем не заменялась: с телефона
- * «Услуги», «Концепты» и «О нас» из шапки были недостижимы вовсе —
- * оставался только футер. Разделы здесь те же, что в футере, чтобы не
- * заводить третий список ссылок.
+ * «Услуги», «Концепты» и «О нас» из шапки были недостижимы вовсе.
+ * Первый заход закрыл дыру плоским списком из семи ссылок, где
+ * «Политика» стояла ровно с тем же весом, что «Магазины».
  *
- * Панель — настоящий диалог: Escape закрывает, фокус уходит внутрь и
- * возвращается на кнопку, Tab по кругу внутри панели, страница под
- * перекрытием заморожена вместе с Lenis.
+ * Здесь меню стало навигацией: разделы сгруппированы как в футере,
+ * текущий подсвечен и объявлен читалке, а собранные демо вынесены
+ * отдельной сеткой — на телефоне это самый короткий путь к тому,
+ * ради чего на сайт и приходят.
+ *
+ * Панель — настоящий диалог: `role="dialog"`, Escape закрывает, фокус
+ * уходит внутрь и возвращается на кнопку, Tab ходит по кругу, страница
+ * под перекрытием заморожена вместе с Lenis.
  */
 export default function MobileMenu({ onOpenChange }: { onOpenChange?: (open: boolean) => void }) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const panel = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
-  const pathname = usePathname();
+  const pathname = usePathname() ?? '';
   const panelId = useId();
 
   useEffect(() => setMounted(true), []);
 
-  // переход по ссылке закрывает меню
+  /**
+   * Закрытие мгновенное и без анимации ухода.
+   *
+   * Уход стоил бы второго состояния и таймера, а любой таймер между
+   * «закрыл» и «снял замок» — это шанс остаться с замороженной
+   * страницей. Меню, исчезающее сразу, читается нормально; меню,
+   * которое не отпустило страницу, — нет.
+   */
+  const close = useCallback((focusTrigger = true) => {
+    setOpen(false);
+    if (focusTrigger) trigger.current?.focus();
+  }, []);
+
+  // переход по ссылке закрывает меню; фокус при этом уводить некуда —
+  // страница уже другая
   useEffect(() => setOpen(false), [pathname]);
 
   useEffect(() => {
-    // шапка прячется при скролле вниз: открывать меню из спрятанной шапки
-    // нельзя, иначе панель откроется, а кнопка закрытия уедет за экран
     onOpenChange?.(open);
     lockScroll(open);
     if (!open) return;
@@ -45,8 +64,7 @@ export default function MobileMenu({ onOpenChange }: { onOpenChange?: (open: boo
 
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        setOpen(false);
-        trigger.current?.focus();
+        close();
         return;
       }
       if (e.key !== 'Tab' || !panel.current) return;
@@ -59,20 +77,29 @@ export default function MobileMenu({ onOpenChange }: { onOpenChange?: (open: boo
       (e.shiftKey ? items[items.length - 1] : items[0]).focus();
     };
 
+    /**
+     * Поворот телефона в ландшафт переваливал ширину за 768, панель
+     * пряталась по `md:hidden` — а замок на скролле оставался висеть,
+     * и страница застывала навсегда без единого способа её отпустить.
+     */
+    const wide = matchMedia('(min-width: 768px)');
+    const onWide = () => wide.matches && close(false);
+
     addEventListener('keydown', onKey);
-    return () => removeEventListener('keydown', onKey);
-  }, [open, onOpenChange]);
+    wide.addEventListener('change', onWide);
+    return () => {
+      removeEventListener('keydown', onKey);
+      wide.removeEventListener('change', onWide);
+    };
+  }, [open, onOpenChange, close]);
 
   // страховка: если компонент снимут с открытой панелью, скролл не должен остаться заблокированным
   useEffect(() => () => lockScroll(false), []);
 
-  const close = () => {
-    setOpen(false);
-    trigger.current?.focus();
-  };
+  const here = (href: string) => pathname === href || (href !== '/' && pathname.startsWith(`${href}/`));
 
-  // те же разделы, что в футере: третьему списку ссылок неоткуда взяться
-  const links: { label: string; href: string }[] = SITE.footer.columns.flatMap((col) => [...col.links]);
+  /** Те же группы, что в футере: третьему списку ссылок неоткуда взяться. */
+  const groups = SITE.footer.columns;
 
   /**
    * Панель уходит порталом в body, а не остаётся внутри шапки.
@@ -89,7 +116,9 @@ export default function MobileMenu({ onOpenChange }: { onOpenChange?: (open: boo
     <div
       ref={panel}
       id={panelId}
-      aria-hidden={!open}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Меню"
       /**
        * Класс display решает состояние, а не атрибут `hidden`.
        * `[hidden]` из preflight — селектор по атрибуту, и любой класс
@@ -99,33 +128,103 @@ export default function MobileMenu({ onOpenChange }: { onOpenChange?: (open: boo
        */
       className={
         open
-          ? 'fixed inset-0 z-[95] flex flex-col justify-between overflow-y-auto bg-bg px-4 pb-10 pt-24 md:hidden'
+          ? 'fixed inset-0 z-[95] flex flex-col overflow-y-auto bg-bg px-4 pb-10 pt-24 md:hidden'
           : 'hidden'
       }
+      style={{ animation: 'ct-veil .2s ease both' }}
     >
-      <nav>
-        <ul className="m-0 flex list-none flex-col gap-1 p-0">
-          {links.map((l) => (
-            <li key={l.href}>
-              <Link href={l.href} className="block border-b border-line py-4 text-[22px] leading-tight text-fg">
-                {l.label}
-              </Link>
-            </li>
-          ))}
-        </ul>
+      {/* Полоса под шапкой. Панель прокручивается целиком, и без неё
+          ссылки проезжали прямо под знаком и крестиком — буквы читались
+          сквозь шапку. `fixed` внутри панели цепляется за окно: панель
+          лежит порталом в body, трансформированных предков над ней нет.
+          z-1 держит полосу над содержимым панели и под шапкой (100). */}
+      <span
+        className="pointer-events-none fixed inset-x-0 top-0 z-[1] h-24"
+        style={{
+          background:
+            'linear-gradient(180deg, var(--bg) 0%, var(--bg) 72%, rgb(var(--bg-rgb) / 0) 100%)'
+        }}
+        aria-hidden
+      />
+
+      <nav className="relative flex-1">
+        {groups.map((col, gi) => (
+          <div key={col.label} className={gi ? 'mt-9' : undefined}>
+            <span className="rail-label">{col.label}</span>
+            <ul className="m-0 mt-3 flex list-none flex-col p-0">
+              {col.links.map((l, i) => {
+                const on = here(l.href);
+                return (
+                  <li
+                    key={l.href}
+                    style={{ animation: `ct-rise .35s cubic-bezier(0.22,1,0.36,1) ${60 + (gi * 4 + i) * 35}ms both` }}
+                  >
+                    <Link
+                      href={l.href}
+                      onClick={() => close(false)}
+                      aria-current={on ? 'page' : undefined}
+                      className={`flex items-center gap-3 border-b border-line py-4 text-[21px] leading-tight transition-colors duration-200 ${
+                        on ? 'text-accent' : 'text-fg'
+                      }`}
+                    >
+                      {/* штрих у текущего раздела: состояние видно без цвета */}
+                      <span
+                        className="h-px w-4 shrink-0 bg-accent transition-all duration-200"
+                        style={{ opacity: on ? 1 : 0, width: on ? 16 : 0 }}
+                        aria-hidden
+                      />
+                      {l.label}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+
+        {/* Собранные демо — самый короткий путь к тому, ради чего сюда
+            приходят. На телефоне до них было три касания: меню, концепты,
+            карточка. Стало одно. */}
+        <div className="mt-9">
+          <span className="rail-label">Живые демо</span>
+          <ul className="m-0 mt-3 grid list-none grid-cols-2 gap-2 p-0">
+            {DEMOS.map((d, i) => (
+              <li
+                key={d.slug}
+                style={{ animation: `ct-rise .35s cubic-bezier(0.22,1,0.36,1) ${300 + i * 35}ms both` }}
+              >
+                <Link
+                  href={`/concepts/${d.slug}`}
+                  onClick={() => close(false)}
+                  className="flex h-full flex-col justify-between gap-2 border border-line bg-elev p-3 text-fg"
+                >
+                  <span className="rail-label">{d.niche}</span>
+                  <span className="text-[14.5px] leading-snug">{d.client}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
       </nav>
 
-      <div className="mt-10">
+      <div
+        className="mt-10"
+        style={{ animation: 'ct-veil .3s ease 440ms both' }}
+      >
+        {/* тип проекта подставляется разделом, из которого открыли меню */}
         <Link
-          href="/contact"
+          href={contactHref(pathname)}
+          onClick={() => close(false)}
           className="block border border-fg bg-fg px-[22px] py-[15px] text-center font-mono text-[11px] uppercase tracking-label text-bg"
         >
           {SITE.hero.primary.label}
         </Link>
+
         <div className="mt-6 flex items-center justify-between gap-4 border-t border-line pt-5">
           <span className="rail-label">Тема</span>
           <ThemeToggle />
         </div>
+
         <div className="mt-5 flex flex-col gap-2">
           <a href={`mailto:${SITE.email}`} className="text-[14px] text-dim">
             {SITE.email}
