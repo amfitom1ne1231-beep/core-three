@@ -2,7 +2,6 @@ import Link from 'next/link';
 import LeadForm from './LeadForm';
 import Mark from './Mark';
 import Reveal from './Reveal';
-import VideoFrame from './VideoFrame';
 import { SITE } from '@/content/site';
 
 /**
@@ -63,10 +62,6 @@ export default function Footer({ cta = true }: { cta?: boolean }) {
                   </a>
                 </div>
 
-                {/* Живая вставка финала: капля — с неё начинается любой
-                    запуск. Ширина ограничена: в одной строке с формой
-                    ролик на 1280 поджимал поля до неудобного. */}
-                <VideoFrame clip={SITE.media.drop} aspect="16 / 9" className="mt-12 max-w-[420px]" />
               </div>
 
               {/* форма на стекле: видео под ней остаётся, текст читается */}
