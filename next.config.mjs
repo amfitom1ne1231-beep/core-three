@@ -14,6 +14,16 @@ const nextConfig = {
   outputFileTracingRoot: dirname(fileURLToPath(import.meta.url)),
   reactStrictMode: true,
   poweredByHeader: false,
+  /**
+   * Превью (SITE_NOINDEX=1 задаёт netlify.toml) не должно попасть в поиск
+   * раньше настоящего домена. Заголовок ставится здесь, а не в netlify.toml:
+   * заголовки Netlify ложатся только на статические файлы, а страницы
+   * отдаёт рантайм Next.js мимо них. На боевом хостинге переменной нет.
+   */
+  async headers() {
+    if (process.env.SITE_NOINDEX !== '1') return [];
+    return [{ source: '/:path*', headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }] }];
+  },
   compiler: {
     // шейдерные строки большие, но статичные — убираем только логи
     removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false

@@ -41,7 +41,8 @@ export const metadata: Metadata = {
   },
   twitter: { card: 'summary_large_image' },
   alternates: { canonical: '/' },
-  robots: { index: true, follow: true }
+  // превью закрыто от поиска и метатегом — на случай, если заголовок срежет прокси
+  robots: process.env.SITE_NOINDEX === '1' ? { index: false, follow: false } : { index: true, follow: true }
 };
 
 export const viewport: Viewport = {

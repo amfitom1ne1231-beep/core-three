@@ -14,11 +14,14 @@
 [build.environment]
   NODE_VERSION = "22"
   NEXT_TELEMETRY_DISABLED = "1"
+  # превью закрыто от поиска: заголовок, метатег и robots.txt (next.config.mjs)
+  SITE_NOINDEX = "1"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-# Превью не должно попасть в поиск раньше настоящего домена.
+# Превью не должно попасть в поиск раньше настоящего домена. Этот блок
+# закрывает статические файлы; страницы закрывает сам Next.js.
 [[headers]]
   for = "/*"
   [headers.values]
