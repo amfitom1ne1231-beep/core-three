@@ -127,6 +127,12 @@ export default function NavPod() {
 
   const liveRef = useRef(false);
   liveRef.current = live;
+  const openRef = useRef(false);
+  openRef.current = open;
+  /** Отложенное закрытие по уходу курсора — см. `leave`. */
+  const closeTimer = useRef(0);
+  /** Пересчёт видимости пульта — живёт в эффекте прокрутки. */
+  const resync = useRef<() => void>(() => {});
 
   const spin = useRef<HTMLSpanElement>(null);
   const float = useRef<HTMLDivElement>(null);
@@ -293,7 +299,12 @@ export default function NavPod() {
          * потянуть страницу вверх — шапка возвращается, пульт убирается,
          * и знак снова там, где его ищут.
          */
-        const on = scrollY > innerHeight * HANDOFF && isHeaderHidden();
+        /**
+         * Открытая панель держит пульт на месте. Иначе любое движение
+         * страницы вверх — колесо над панелью, дрожь тачпада — возвращало
+         * шапку, и пульт уходил вместе с панелью прямо из-под курсора.
+         */
+        const on = (scrollY > innerHeight * HANDOFF && isHeaderHidden()) || (openRef.current && liveRef.current);
         if (on !== liveRef.current) {
           liveRef.current = on;
           setLive(on);
@@ -326,6 +337,7 @@ export default function NavPod() {
     };
 
     sync();
+    resync.current = sync;
     const off = onHeaderToggle(sync);
     addEventListener('scroll', sync, { passive: true });
     return () => {
@@ -366,6 +378,31 @@ export default function NavPod() {
     setOpen(false);
     scrollToY(0);
   };
+
+  /**
+   * Наведение открывает сразу, а уход закрывает с запасом.
+   *
+   * Панель отделена от знака зазором, и курсор, который шёл от знака
+   * к ссылкам, пересекал пустоту: `mouseleave` закрывал панель ровно
+   * в тот момент, когда до неё оставалось десять пикселей, — выбрать
+   * в ней было ничего нельзя. Зазор теперь перекрыт мостиком, а на
+   * случай, когда рука срезает угол мимо панели, закрытие ждёт 320 мс:
+   * вернувшийся курсор его отменяет.
+   */
+  const enter = () => {
+    clearTimeout(closeTimer.current);
+    setOpen(true);
+  };
+  const leave = () => {
+    clearTimeout(closeTimer.current);
+    closeTimer.current = window.setTimeout(() => setOpen(false), 320);
+  };
+  useEffect(() => () => clearTimeout(closeTimer.current), []);
+  // панель закрылась — пульт снова подчиняется шапке: если та уже вернулась,
+  // второй знак на экране не нужен
+  useEffect(() => {
+    if (!open) resync.current();
+  }, [open]);
 
   /** Переход к месту страницы. Отступ — под плавающую шапку. */
   const goTo = (i: number) => {
@@ -423,8 +460,8 @@ export default function NavPod() {
         ref={shell}
         className="pointer-events-auto relative"
         style={{ width: SIZE, height: SIZE }}
-        onMouseEnter={() => setOpen(true)}
-        onMouseLeave={() => setOpen(false)}
+        onMouseEnter={enter}
+        onMouseLeave={leave}
       >
         <button
           ref={trigger}
@@ -465,6 +502,11 @@ export default function NavPod() {
           </span>
         </button>
 
+        {/* мостик через зазор между знаком и панелью: курсор идёт по нему,
+            не покидая пульта. Панель прокручивается и режет всё, что за её
+            краем, поэтому мостик — отдельный слой, а не псевдоэлемент */}
+        {open && <div className="absolute bottom-full left-0 h-3 w-[268px]" aria-hidden />}
+
         {/* Панель лежит абсолютом и раскрывается вверх от знака: пульт
             стоит в нижнем левом углу, поэтому другого направления у неё
             и быть не может.
@@ -481,6 +523,8 @@ export default function NavPod() {
            * в невидимую панель.
            */
           inert={!open}
+          // колесо над панелью листает её, а не страницу под ней
+          data-lenis-prevent
           className={`absolute bottom-[calc(100%+10px)] left-0 max-h-[calc(100svh-112px)] w-[268px] origin-bottom-left overflow-y-auto rounded-[18px] border border-line bg-bg/85 p-2 backdrop-blur-md transition-[opacity,transform] duration-300 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
             open ? 'pointer-events-auto scale-100 opacity-100' : 'pointer-events-none scale-[0.94] opacity-0'
           }`}

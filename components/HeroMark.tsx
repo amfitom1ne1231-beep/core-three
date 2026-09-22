@@ -103,11 +103,18 @@ export default function HeroMark() {
       const hero = w.closest('section');
       if (hero) {
         const size = () => sc.offsetWidth;
-        // шкала таймлайна 0..1 = весь уход первого экрана; у каждого твина
-        // явная длительность, иначе пропорции скраба плывут
+        /**
+         * Шкала таймлайна 0..1 — первые 60% ухода первого экрана, а не весь.
+         *
+         * На полной шкале знак дорастал до 3.2 и был ещё виден, когда
+         * манифест уже поднялся на пол-экрана: гигантские лучи ложились
+         * прямо на его текст. Теперь жест укладывается раньше, чем
+         * манифест доходит до середины, и не заходит в чужую главу.
+         * У каждого твина явная длительность, иначе пропорции скраба плывут.
+         */
         const st = gsap.timeline({
           defaults: { duration: 1 },
-          scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom top', scrub: 0.8, invalidateOnRefresh: true }
+          scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom 40%', scrub: 0.6, invalidateOnRefresh: true }
         });
         /**
          * Лучи расходятся линейно, а не с разгоном.
@@ -120,7 +127,7 @@ export default function HeroMark() {
          * менять нечего.
          */
         layers.current.forEach((el, i) => {
-          st.to(el, { x: () => OUT[i][0] * size() * 0.7, y: () => OUT[i][1] * size() * 0.7, ease: 'none' }, 0);
+          st.to(el, { x: () => OUT[i][0] * size() * 0.5, y: () => OUT[i][1] * size() * 0.5, ease: 'none' }, 0);
         });
         // смаз в полёте: лучи уходят на скорости — смаз идёт за ней,
         // поэтому и он потерял разгон вместе с движением
@@ -130,22 +137,26 @@ export default function HeroMark() {
           st.fromTo(
             bloom.current,
             { opacity: 0, scale: 0.4, xPercent: -50, yPercent: -50 },
-            { opacity: 1, scale: 1.3, ease: 'power2.in', duration: 0.3 },
-            0.42
+            { opacity: 1, scale: 1.3, ease: 'power2.in', duration: 0.26 },
+            0.28
           )
-            .to(bloom.current, { opacity: 0, scale: 1.8, ease: 'power1.out', duration: 0.26 }, 0.72);
+            .to(bloom.current, { opacity: 0, scale: 1.8, ease: 'power1.out', duration: 0.24 }, 0.54);
         }
         st.to(
           sc,
           {
-            // к центру экрана и сквозь него; offsetLeft — без учёта трансформов перелёта
+            // к центру экрана и сквозь него; offsetLeft — без учёта трансформов перелёта.
+            // Уход вверх держит знак над своей главой: без него нижние лучи
+            // спускались в манифест раньше, чем гасли
             x: () => innerWidth / 2 - (w.offsetLeft + sc.offsetWidth / 2),
-            scale: 3.2,
-            opacity: 0,
+            y: () => -innerHeight * 0.12,
+            scale: 2,
             ease: 'power2.in'
           },
           0
         );
+        // гаснет по ходу, а не на пределе: к концу шкалы от знака остаётся только след вспышки
+        st.to(sc, { opacity: 0, ease: 'power1.in', duration: 0.78 }, 0.22);
       }
     });
 

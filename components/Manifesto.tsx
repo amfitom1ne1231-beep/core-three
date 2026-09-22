@@ -3,7 +3,6 @@
 import { Fragment, useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import VideoFrame from './VideoFrame';
 import { SITE } from '@/content/site';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -160,9 +159,11 @@ export default function Manifesto() {
           aria-hidden
         />
 
-        {/* текст слева, ролик справа; на телефоне ролик под текстом */}
-        <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(220px,23vw)] lg:gap-[clamp(40px,5vw,96px)]">
-        <div>
+        {/* Ролик из генератора справа снят: рамка с пометкой «ИИ-ролик»
+            спорила с главным сообщением сайта и читалась стоковой вставкой.
+            Чернила ушли фоном в финал, а манифест снова держит одна
+            типографика — во всю колонку, без соседа. */}
+        <div className="max-w-[1180px]">
         <div data-emerge className="mb-[clamp(28px,6vh,72px)] flex flex-wrap items-center gap-x-[clamp(12px,3vw,40px)] gap-y-2">
           <span className="rail-label">{SITE.manifesto.label}</span>
           {SITE.cores.map((core) => (
@@ -209,10 +210,6 @@ export default function Manifesto() {
             </Fragment>
           ))}
         </p>
-        </div>
-
-        {/* живая вставка: чернила в воде — скорость, которая держит форму */}
-        <VideoFrame clip={SITE.media.ink} aspect="4 / 5" className="max-w-[420px] md:hidden lg:block lg:max-w-none" />
         </div>
       </div>
     </section>

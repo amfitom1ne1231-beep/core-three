@@ -41,6 +41,8 @@ export default function SmoothScroll() {
     });
 
     setLenis(lenis);
+    // для проверок из консоли: нативный scrollTo при живом Lenis бесполезен
+    if (process.env.NODE_ENV !== 'production') (window as { __lenis?: Lenis }).__lenis = lenis;
     lenis.on('scroll', ScrollTrigger.update);
     const tick = (time: number) => lenis.raf(time * 1000);
     gsap.ticker.add(tick);
