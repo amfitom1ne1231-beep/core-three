@@ -1,0 +1,25 @@
+# Превью для команды на Netlify. Боевой хостинг — Vercel или VPS (BRIEF.md,
+# раздел 9), поэтому этот файл нужен только превью и на запуск не влияет.
+#
+# Сборка — обычный `next build`, серверную часть (заявки, 404) Netlify
+# поднимает своим рантаймом Next.js. Ключи Supabase здесь не заданы:
+# без них заявка в продакшне честно отвечает 503 и предлагает написать
+# напрямую. Чтобы заявки с превью доходили, SUPABASE_URL и
+# SUPABASE_SECRET_KEY задаются в настройках сайта на Netlify, не здесь.
+
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NEXT_TELEMETRY_DISABLED = "1"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Превью не должно попасть в поиск раньше настоящего домена.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
