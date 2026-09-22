@@ -26,6 +26,8 @@
   --brand-core: #143968;
   --brand-steel: #55769a;
   --accent: #6e9bcc;
+  /* тот же акцент числами: мини-схемы заливают им плашки с прозрачностью */
+  --accent-rgb: 110 155 204;
   /* только ошибки формы: вне палитры намеренно, чтобы не спутать с акцентом */
   --danger: #e48a78;
 
@@ -53,6 +55,7 @@
   --line-strong: rgba(11, 12, 14, 0.26);
 
   --accent: #1d4e86;
+  --accent-rgb: 29 78 134;
   --danger: #b2412c;
 
   --grain-opacity: 0.030;
@@ -1075,6 +1078,20 @@ body {
 @keyframes ct-veil {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+/* Рост полосы слева направо — для мини-схем в составе работы.
+   Через scaleX, а не width: ширина считается вёрсткой каждый кадр,
+   трансформ идёт на композиторе. */
+@keyframes ct-grow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/* Штрих, который рисуется: галочка чека в схеме оплаты. */
+@keyframes ct-draw {
+  from { stroke-dashoffset: 26; }
+  to { stroke-dashoffset: 0; }
 }
 
 @keyframes ct-run {

@@ -4,13 +4,14 @@ import { useEffect, useRef, useState } from 'react';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import gsap from 'gsap';
 import Material from '../Material';
+import { VIZ } from './viz';
 
 gsap.registerPlugin(ScrollTrigger);
 
 /** Шаг сам сменится через столько — как в схеме на главной. */
 const STEP_MS = 4400;
 
-export type IncludeItem = { title: string; text: string };
+export type IncludeItem = { title: string; text: string; viz?: string; vizNote?: string };
 
 /**
  * Состав работы.
@@ -33,6 +34,12 @@ export type IncludeItem = { title: string; text: string };
  * Глава `anatomy` гасит шейдер завесой в единицу, поэтому фактура здесь
  * своя, на SVG-фильтре: у каждого направления свой пресет материала —
  * четыре страницы отличаются на ощупь, а не только текстом.
+ *
+ * В кадре стояли фактура и гигантский номер части: нажимаешь «Быстрая
+ * загрузка» — видишь текстуру и «02». Красиво, но о пункте ни слова.
+ * Теперь в кадре мини-схема самого пункта (`./viz`): первый экран
+ * и догружаемое, корзина, чек, маршрут доставки, календарь. Фактура
+ * осталась тихим фоном, номер — только в рельсе над схемой.
  */
 export default function Includes({
   items,
@@ -96,6 +103,7 @@ export default function Includes({
   };
 
   const nn = String(active + 1).padStart(2, '0');
+  const Viz = items[active].viz ? VIZ[items[active].viz!] : null;
   const fill = wrapped ? 0 : ((active + 1) / items.length) * 100;
 
   return (
@@ -196,7 +204,7 @@ export default function Includes({
             data-reveal="clip"
             className="relative order-first min-h-[clamp(200px,28vh,420px)] overflow-hidden border border-line bg-elev lg:order-none lg:min-h-[clamp(300px,44vh,460px)]"
           >
-            <Material preset={material} opacity={0.72} />
+            <Material preset={material} opacity={Viz ? 0.36 : 0.72} />
             {/* вуаль под подписи: фактура остаётся видна по краям */}
             <div
               className="pointer-events-none absolute inset-0"
@@ -206,7 +214,9 @@ export default function Includes({
               }}
             />
 
-            {/* номер части крупно: якорь, по которому видно движение перечня */}
+            {/* номер части крупно: якорь, по которому видно движение перечня.
+                Только там, где схемы нет, — рядом со схемой он её перекрикивал */}
+            {!Viz && (
             <span
               key={`n-${active}`}
               className="pointer-events-none absolute -bottom-[0.22em] right-[0.06em] font-mono text-[clamp(120px,18vw,240px)] leading-none tracking-[-0.04em] text-fg/[0.08]"
@@ -214,6 +224,7 @@ export default function Includes({
             >
               {nn}
             </span>
+            )}
 
             {/* угловые засечки — та же рамка прибора, что у схемы */}
             {[
@@ -232,6 +243,13 @@ export default function Includes({
                 </span>
                 <span className="rail-label">{group}</span>
               </div>
+
+              {/* схема пункта: перемонтирование по ключу запускает её заново */}
+              {Viz && (
+                <div key={`v-${active}`} className="relative min-h-[220px] flex-1">
+                  <Viz note={items[active].vizNote} />
+                </div>
+              )}
 
               <span
                 key={`t-${active}`}
