@@ -570,6 +570,289 @@ body {
   }
 }
 
+/* ============================================================
+   Бриф на /contact (components/contact/Brief.tsx): шаги слева,
+   собранный бриф справа.
+   ============================================================ */
+.brief-steps {
+  position: relative;
+}
+/* линия хода: соединяет номера шагов и заполняется пройденными */
+.brief-step {
+  position: relative;
+  margin: 0;
+  padding: 0 0 clamp(36px, 6vh, 56px) 52px;
+  border: 0;
+  min-width: 0;
+}
+.brief-step::before {
+  content: '';
+  position: absolute;
+  left: 15px;
+  top: 34px;
+  bottom: 4px;
+  width: 1px;
+  background: var(--line);
+}
+.brief-step::after {
+  content: '';
+  position: absolute;
+  left: 15px;
+  top: 34px;
+  bottom: 4px;
+  width: 1px;
+  background: var(--accent);
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.brief-step[data-done]::after {
+  transform: scaleY(1);
+}
+.brief-step:last-child::before,
+.brief-step:last-child::after {
+  display: none;
+}
+.brief-legend {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin: 0 0 18px -52px;
+  padding: 0;
+  font-size: clamp(20px, 1.8vw, 26px);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+.brief-num {
+  display: inline-grid;
+  place-items: center;
+  width: 31px;
+  height: 31px;
+  margin-right: 9px;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--fg-dim);
+  transform: translateY(-3px);
+  transition: background-color 0.4s, border-color 0.4s, color 0.4s;
+}
+.brief-step[data-done] .brief-num {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.brief-hint {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+}
+
+.brief-card {
+  position: relative;
+  display: block;
+  min-height: 104px;
+  padding: 16px 16px 18px;
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  background: rgb(var(--bg-rgb) / 0.45);
+  backdrop-filter: blur(10px);
+  text-align: left;
+  color: var(--fg);
+  cursor: pointer;
+  transition: border-color 0.35s, background-color 0.35s, transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.5s;
+}
+.brief-card:hover {
+  border-color: rgb(var(--fg-rgb) / 0.4);
+  transform: translateY(-2px);
+}
+.brief-card[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, rgb(var(--bg-rgb) / 0.6));
+  box-shadow: 0 18px 40px -18px color-mix(in srgb, var(--accent) 60%, transparent);
+}
+.brief-check {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  color: transparent;
+  transition: background-color 0.3s, border-color 0.3s, color 0.3s, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.brief-check svg {
+  width: 12px;
+  height: 12px;
+}
+.brief-card[aria-pressed='true'] .brief-check {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  transform: scale(1.1);
+}
+
+.brief-pill,
+.brief-chip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  padding: 12px 18px;
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  background: rgb(var(--bg-rgb) / 0.45);
+  backdrop-filter: blur(10px);
+  font-size: 14px;
+  color: var(--fg);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.35s, background-color 0.35s, color 0.35s;
+}
+.brief-chip {
+  border-radius: 999px;
+  padding: 10px 16px;
+}
+.brief-pill-note {
+  font-size: 12px;
+  color: var(--fg-faint);
+}
+.brief-pill:hover,
+.brief-chip:hover {
+  border-color: rgb(var(--fg-rgb) / 0.4);
+}
+.brief-pill[aria-checked='true'],
+.brief-chip[aria-pressed='true'],
+.brief-chip[aria-checked='true'] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, rgb(var(--bg-rgb) / 0.6));
+}
+.brief-card:focus-visible,
+.brief-pill:focus-visible,
+.brief-chip:focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: 3px;
+}
+
+.brief-input {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  padding: 10px 0 12px;
+  border: 0;
+  border-bottom: 1px solid var(--line-strong);
+  border-radius: 0;
+  background: transparent;
+  font-size: 16px;
+  color: var(--fg);
+  outline: none;
+  transition: border-color 0.3s;
+}
+.brief-input::placeholder {
+  color: var(--fg-faint);
+}
+.brief-input:hover {
+  border-color: var(--fg-faint);
+}
+.brief-input:focus {
+  border-color: var(--accent);
+}
+.brief-input[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+
+.brief-card-live {
+  padding: clamp(20px, 2vw, 28px);
+  border: 1px solid var(--edge);
+  border-radius: 20px;
+  background: rgb(var(--bg-rgb) / 0.62);
+  backdrop-filter: blur(22px) saturate(1.2);
+  box-shadow: 0 40px 80px -40px rgb(0 0 0 / 0.55);
+}
+@media (min-width: 640px) {
+  .brief-card {
+    min-height: 132px;
+  }
+}
+@media (max-width: 639px) {
+  .brief-step {
+    padding-left: 40px;
+  }
+  .brief-legend {
+    margin-left: -40px;
+  }
+  .brief-step::before,
+  .brief-step::after {
+    left: 13px;
+  }
+  .brief-num {
+    width: 27px;
+    height: 27px;
+    margin-right: 4px;
+  }
+}
+.brief-dock {
+  position: sticky;
+  bottom: 12px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  overflow: hidden;
+  margin-top: 8px;
+  padding: 14px 18px;
+  border: 1px solid var(--edge);
+  border-radius: 14px;
+  background: rgb(var(--bg-rgb) / 0.8);
+  backdrop-filter: blur(16px);
+  animation: brief-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.brief-dock-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--accent);
+  transform-origin: left;
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* новое значение в брифе проявляется, а не подменяется */
+.brief-value {
+  animation: brief-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.brief-preview {
+  animation: brief-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes brief-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+.brief-done {
+  animation: brief-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brief-value,
+  .brief-preview,
+  .brief-done {
+    animation: none;
+  }
+}
+
 /* Беззвучная подсказка прокрутки: штрих уходит вниз и гаснет.
    Жест понятен без слов, поэтому подписи под ним нет. */
 .scroll-cue {
