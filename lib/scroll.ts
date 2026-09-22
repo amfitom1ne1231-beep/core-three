@@ -22,15 +22,6 @@ export function scrollToY(y: number) {
   scrollTo({ top: y, behavior: 'smooth' });
 }
 
-/** Мгновенно в начало: после смены страницы под шторкой, без анимации. */
-export function scrollToTop() {
-  if (instance) {
-    instance.scrollTo(0, { immediate: true, force: true });
-    return;
-  }
-  scrollTo(0, 0);
-}
-
 export function scrollToEl(el: Element, offset = 0) {
   const y = el.getBoundingClientRect().top + scrollY + offset;
   scrollToY(y);

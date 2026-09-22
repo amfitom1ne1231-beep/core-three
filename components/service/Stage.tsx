@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ComponentType } from 'react';
 import gsap from 'gsap';
-import { isPageShown, pageShown } from '@/lib/boot';
+import { isRevealed, revealReady } from '@/lib/boot';
 import { LIVE_W, LIVE_H, type LiveProps } from '../live/kit';
 
 /**
@@ -77,8 +77,8 @@ export default function Stage({ live: Live, task }: { live: ComponentType<LivePr
       }, el);
     };
 
-    if (isPageShown()) run();
-    else pageShown().then(run);
+    if (isRevealed()) run();
+    else revealReady.then(run);
 
     return () => ctx?.revert();
   }, []);

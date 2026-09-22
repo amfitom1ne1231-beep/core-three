@@ -45,7 +45,7 @@ export default function NotFound() {
               на месте.
             </p>
             <div className="mt-10 flex flex-wrap gap-3.5">
-              <Cta href="/" dot={false}>
+              <Cta href="/">
                 На главную
               </Cta>
               <Cta href={SITE.hero.primary.href} tone="ghost">

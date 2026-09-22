@@ -79,7 +79,7 @@ export default function ServicePage({ page, children }: { page: Page; children?:
               </p>
               <div className="mt-9 flex flex-wrap gap-3.5">
                 <Cta href={`/contact?type=${page.kind}`}>Обсудить проект</Cta>
-                <Cta href="/concepts" tone="ghost" dot={false}>
+                <Cta href="/concepts" tone="ghost">
                   Посмотреть демо
                 </Cta>
               </div>

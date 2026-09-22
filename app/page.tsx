@@ -97,7 +97,7 @@ export default function Home() {
 
             <div className="mt-[clamp(28px,4vh,52px)] flex flex-wrap gap-3.5">
               <Cta href={SITE.hero.primary.href}>{SITE.hero.primary.label}</Cta>
-              <Cta href={SITE.hero.secondary.href} tone="ghost" dot={false}>
+              <Cta href={SITE.hero.secondary.href} tone="ghost">
                 {SITE.hero.secondary.label}
               </Cta>
             </div>

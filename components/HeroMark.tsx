@@ -5,7 +5,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { MARK_ARMS, MARK_CENTER } from './mark-geometry';
 import { BEVEL, FACET_FILL } from './mark-palette';
-import { isRevealed, pageShown, preloaderLeaving } from '@/lib/boot';
+import { isRevealed, preloaderLeaving } from '@/lib/boot';
 import { CORE_PHASE, CORE_SPEED, silkClock } from '@/lib/silk';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -60,11 +60,10 @@ export default function HeroMark() {
       }
 
       // 1. Перелёт из прелоадера. Если прелоадер уже отыграл (вернулись
-      // на главную по ссылке) — прямоугольник устарел, знак просто проявляется,
-      // но не раньше, чем разойдётся шторка перехода.
+      // на главную по ссылке) — прямоугольник устарел, знак просто проявляется.
       gsap.set(w, { opacity: 0 });
       const leaving: Promise<DOMRect | null> = isRevealed()
-        ? pageShown().then(() => null)
+        ? Promise.resolve(null)
         : Promise.race([preloaderLeaving, new Promise<null>((r) => setTimeout(() => r(null), 7000))]);
       leaving.then((from) => {
         const to = sc.getBoundingClientRect();
