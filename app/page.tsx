@@ -1,9 +1,9 @@
-import Anatomy from '@/components/Anatomy';
 import Atlas from '@/components/Atlas';
 import Cta from '@/components/Cta';
 import Footer from '@/components/Footer';
 import HeroMark from '@/components/HeroMark';
 import HeroSilk from '@/components/HeroSilk';
+import Journey from '@/components/Journey';
 import Manifesto from '@/components/Manifesto';
 import RevealText from '@/components/RevealText';
 import ScrollScenes from '@/components/ScrollScenes';
@@ -114,7 +114,7 @@ export default function Home() {
         </section>
 
         <Manifesto />
-        <Anatomy />
+        <Journey />
         <Atlas />
       </main>
       <Footer />
