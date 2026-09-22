@@ -108,8 +108,13 @@ export default function Header() {
            доводится до 44, при этом сам знак и строка не сдвигаются */
         className="pointer-events-auto -my-2 flex items-center gap-2.5 py-2 text-fg transition-colors duration-300 hover:text-accent"
       >
-        <Mark className="h-7 w-7" />
-        <span className="font-mono text-[11px] uppercase tracking-rail">{SITE.name}</span>
+        {/* сюда садится знак прелоадера на всех страницах, кроме главной */}
+        <span data-header-mark className="block h-7 w-7">
+          <Mark className="h-full w-full" />
+        </span>
+        <span data-header-word className="font-mono text-[11px] uppercase tracking-rail">
+          {SITE.name}
+        </span>
       </Link>
 
       <nav className="pointer-events-auto hidden items-center gap-7 md:flex">

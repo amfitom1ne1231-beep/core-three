@@ -2,7 +2,7 @@
 
 import { Fragment, useEffect, useRef } from 'react';
 import gsap from 'gsap';
-import { isRevealed, revealReady } from '@/lib/boot';
+import { isPageShown, pageShown } from '@/lib/boot';
 
 /**
  * Проявление текста через шум: порядок появления знаков берётся не слева
@@ -106,8 +106,8 @@ export default function RevealText({
         });
       };
 
-      if (isRevealed()) run();
-      else revealReady.then(run);
+      if (isPageShown()) run();
+      else pageShown().then(run);
     }, el);
 
     return () => ctx.revert();

@@ -37,6 +37,7 @@ export default function Preloader() {
     const finish = () => {
       if (finished) return;
       finished = true;
+      delete document.documentElement.dataset.booting;
       markLeaving(null);
       clearTimeout(watchdog);
       document.documentElement.style.overflow = prevOverflow;
@@ -105,7 +106,43 @@ export default function Preloader() {
       minTime.then(() => bump(0.2))
     ];
 
+    /**
+     * Куда уходит знак.
+     *
+     * На главной его подхватывает знак первого экрана: прелоадер отдаёт
+     * свой прямоугольник, и тот перелетает в hero. На остальных страницах
+     * такого знака нет, и раньше прелоадер просто гас — знак исчезал
+     * посреди экрана, а через мгновение такой же возникал в шапке. Теперь
+     * он сам улетает в шапку и садится ровно на её знак: это один и тот же
+     * предмет, который просто встал на своё место.
+     */
+    const headerMark = document.querySelector<HTMLElement>('[data-header-mark]');
+    const flyToHeader = !document.querySelector('[data-hero-mark]') && headerMark;
+    if (flyToHeader) document.documentElement.dataset.booting = '';
+
     Promise.all(steps).then(() => {
+      const to = headerMark?.getBoundingClientRect();
+      if (flyToHeader && to && to.width && to.top >= 0) {
+        const from = box.getBoundingClientRect();
+        const dx = to.left + to.width / 2 - (from.left + from.width / 2);
+        const dy = to.top + to.height / 2 - (from.top + from.height / 2);
+        const land = () => {
+          delete document.documentElement.dataset.booting;
+        };
+        gsap
+          .timeline({ onComplete: finish })
+          .to(counter.current, { opacity: 0, y: 6, duration: 0.3, ease: 'power2.in' })
+          // знак чуть собирается перед прыжком — как пружина
+          .to(box, { scale: 0.92, duration: 0.26, ease: 'power2.inOut' }, 0)
+          .to(box, { x: dx, y: dy, scale: to.width / from.width, duration: 1.05, ease: 'expo.inOut' }, 0.22)
+          // лучи на лету проворачиваются на треть оборота — силуэт тот же,
+          // а полёт читается сборкой, а не переносом картинки
+          .to(arms, { rotate: 120, duration: 1.05, ease: 'expo.inOut', svgOrigin: `${MARK_CENTER.x} ${MARK_CENTER.y}` }, 0.22)
+          .to(el, { backgroundColor: 'rgba(0,0,0,0)', duration: 0.8, ease: 'power2.inOut' }, 0.42)
+          .call(land, undefined, 1.27)
+          .to(box, { opacity: 0, duration: 0.2 }, 1.27);
+        return;
+      }
       gsap
         .timeline({ onComplete: finish })
         .to(box, { scale: 1.06, duration: 0.5, ease: 'power2.inOut' })
@@ -119,6 +156,7 @@ export default function Preloader() {
       document.removeEventListener('visibilitychange', onHide);
       ctx.revert();
       document.documentElement.style.overflow = prevOverflow;
+      delete document.documentElement.dataset.booting;
     };
   }, []);
 

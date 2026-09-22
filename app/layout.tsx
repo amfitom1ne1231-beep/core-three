@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Onest, JetBrains_Mono } from 'next/font/google';
 import CookieConsent from '@/components/CookieConsent';
+import PageTransition from '@/components/PageTransition';
 import SiteChrome from '@/components/SiteChrome';
 import SmoothScroll from '@/components/SmoothScroll';
 import { SITE } from '@/content/site';
@@ -76,6 +77,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* шапка, пульт, курсор и зерно — только вне демо концептов */}
         <SiteChrome />
         {children}
+        {/* переход живёт вне хромы: он же уводит в демо и возвращает из них */}
+        <PageTransition />
         <CookieConsent />
       </body>
     </html>

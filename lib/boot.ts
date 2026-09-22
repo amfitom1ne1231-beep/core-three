@@ -82,3 +82,39 @@ export function markLeaving(rect: DOMRect | null) {
   resolveLeave?.(rect);
   resolveLeave = null;
 }
+
+/* ------------------------------------------------------------------ */
+
+/**
+ * Ворота страницы: переход между страницами закрывает их на время, пока
+ * экран накрыт шторкой, и открывает, когда шторка разошлась.
+ *
+ * Без них входные анимации новой страницы (проявление заголовка, раскрытие
+ * кадра) отыгрывали бы под шторкой — и человек видел бы уже готовый кадр,
+ * то есть не видел бы ничего. Та же причина, по которой всё ждёт прелоадер.
+ */
+let gate: Promise<void> = Promise.resolve();
+let openGate: (() => void) | null = null;
+
+export function closePageGate() {
+  if (openGate) return;
+  gate = new Promise<void>((resolve) => {
+    openGate = resolve;
+  });
+}
+
+export function openPageGate() {
+  const open = openGate;
+  openGate = null;
+  open?.();
+}
+
+/** Страница видна целиком: прелоадер ушёл и шторка перехода открыта. */
+export function isPageShown() {
+  return revealDone && !openGate;
+}
+
+/** Обещание того же: снимки берутся в момент вызова — ждём текущие ворота. */
+export function pageShown(): Promise<void> {
+  return Promise.all([revealReady, gate]).then(() => undefined);
+}
