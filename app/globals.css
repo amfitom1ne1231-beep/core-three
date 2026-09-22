@@ -877,7 +877,7 @@ body {
 .journey-station {
   display: block;
   height: 100%;
-  padding: 18px 18px 20px;
+  padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: 16px;
   background: rgb(var(--bg-rgb) / 0.5);
@@ -887,6 +887,11 @@ body {
 }
 .journey-station:hover {
   border-color: var(--line-strong);
+}
+@media (min-width: 1024px) {
+  .journey-station {
+    padding: 18px 18px 20px;
+  }
 }
 .journey-event {
   color: var(--fg-faint);
@@ -899,7 +904,7 @@ body {
 .journey-station[aria-pressed='true'] {
   border-color: var(--accent);
   background: color-mix(in srgb, var(--accent) 9%, rgb(var(--bg-rgb) / 0.55));
-  transform: translateY(-4px);
+  transform: translateY(-2px);
   box-shadow: 0 24px 50px -28px color-mix(in srgb, var(--accent) 70%, transparent);
 }
 .journey-station[aria-pressed='true'] .journey-icon {

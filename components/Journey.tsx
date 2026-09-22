@@ -240,15 +240,21 @@ export default function Journey() {
                     data-passed={passed || guarding || undefined}
                     className="journey-station w-full text-left"
                   >
-                    <span className="flex items-center justify-between gap-3">
-                      <span className="journey-icon h-11 w-11">
+                    {/* на узком экране станция — строка: иначе пояснения под
+                        четырьмя высокими карточками уезжали за экран */}
+                    <span className="flex items-center gap-4 lg:justify-between">
+                      <span className="journey-icon h-11 w-11 shrink-0">
                         <Icon id={s.id} />
+                      </span>
+                      <span className="min-w-0 flex-1 lg:hidden">
+                        <span className="block text-[17px] font-medium leading-tight">{s.name}</span>
+                        <span className="block text-[12.5px] text-dim">{s.role}</span>
                       </span>
                       <span className="font-mono text-[10px] tracking-rail text-faint">{s.n}</span>
                     </span>
-                    <span className="mt-5 block text-[clamp(18px,1.5vw,22px)] font-medium leading-tight">{s.name}</span>
-                    <span className="mt-0.5 block text-[13px] text-dim">{s.role}</span>
-                    <span className="journey-event mt-4 block font-mono text-[10px] uppercase leading-relaxed tracking-rail">
+                    <span className="mt-5 hidden text-[clamp(18px,1.5vw,22px)] font-medium leading-tight lg:block">{s.name}</span>
+                    <span className="mt-0.5 hidden text-[13px] text-dim lg:block">{s.role}</span>
+                    <span className="journey-event mt-4 hidden font-mono text-[10px] uppercase leading-relaxed tracking-rail lg:block">
                       {s.event}
                     </span>
                   </button>
