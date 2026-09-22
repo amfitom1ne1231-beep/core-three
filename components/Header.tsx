@@ -10,6 +10,7 @@ import ThemeToggle from './ThemeToggle';
 import { setHeaderHidden } from '@/lib/chrome';
 import { contactHref } from '@/lib/lead';
 import { SITE } from '@/content/site';
+import Cta from './Cta';
 
 /**
  * Шапка прячется при движении вниз и возвращается при движении вверх:
@@ -134,13 +135,9 @@ export default function Header() {
       <ThemeToggle className="hidden md:flex" />
 
       {/* на узких экранах вместо кнопки — меню: CTA лежит внутри него */}
-      <Link
-        data-magnetic
-        href={contactHref(pathname)}
-        className="pointer-events-auto hidden border border-line px-4 py-2.5 font-mono text-[10px] uppercase tracking-rail text-fg transition-colors duration-300 hover:border-accent hover:text-accent md:block"
-      >
+      <Cta href={contactHref(pathname)} size="sm" tone="ghost" className="pointer-events-auto !hidden md:!inline-flex">
         {SITE.hero.primary.label}
-      </Link>
+      </Cta>
 
       <MobileMenu onOpenChange={onMenu} />
     </header>

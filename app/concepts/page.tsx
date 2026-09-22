@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import ConceptCards from '@/components/ConceptCards';
 import DemoBand from '@/components/concepts/DemoBand';
+import Cta from '@/components/Cta';
 import Footer from '@/components/Footer';
 import HeroSilk from '@/components/HeroSilk';
 import RevealText from '@/components/RevealText';
@@ -127,13 +127,9 @@ export default function ConceptsPage() {
               </h2>
               <p className="m-0 max-w-[44ch] text-[clamp(13px,1.1vw,16px)] leading-relaxed text-dim">{PAGE.cta.text}</p>
             </div>
-            <Link
-              data-magnetic
-              href={contactHref('/concepts')}
-              className="btn btn-lg btn-primary mt-[clamp(28px,5vh,56px)]"
-            >
+            <Cta href={contactHref('/concepts')} className="mt-[clamp(28px,5vh,56px)]">
               {SITE.hero.primary.label}
-            </Link>
+            </Cta>
           </div>
         </section>
       </main>

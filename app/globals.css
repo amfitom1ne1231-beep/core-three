@@ -279,6 +279,203 @@ body {
   cursor: wait;
 }
 
+/* ============================================================
+   Кнопка заявки (components/Cta.tsx). Звать, но не дёргать:
+   дыхание точки — состояние, блик — трижды за визит, всё остальное
+   отвечает на руку.
+   ============================================================ */
+.cta {
+  --cta-h: 50px;
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  height: var(--cta-h);
+  padding: 0 8px 0 22px;
+  overflow: hidden;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: color 0.45s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.45s;
+}
+.cta-lg {
+  --cta-h: 58px;
+  padding-left: 26px;
+  font-size: 13px;
+}
+.cta-sm {
+  --cta-h: 40px;
+  gap: 10px;
+  padding-left: 16px;
+  padding-right: 5px;
+  font-size: 10px;
+}
+.cta-primary {
+  background: var(--fg);
+  color: var(--bg);
+}
+.cta-ghost {
+  border-color: var(--line-strong);
+  color: var(--fg);
+  background: rgb(var(--bg-rgb) / 0.3);
+  backdrop-filter: blur(6px);
+}
+
+/* заливка акцентом растёт от точки слева */
+.cta-fill {
+  position: absolute;
+  z-index: -1;
+  left: 18px;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin-top: -6px;
+  border-radius: 50%;
+  background: var(--accent);
+  transform: scale(0);
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.cta:hover .cta-fill,
+.cta:focus-visible .cta-fill {
+  transform: scale(60);
+}
+.cta:hover,
+.cta:focus-visible {
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.cta-dot {
+  position: relative;
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--accent);
+  transition: background-color 0.4s;
+}
+.cta-primary .cta-dot {
+  background: #4f86c6;
+}
+.cta-dot::after {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  color: #6e9bcc;
+  opacity: 0;
+  animation: cta-breathe 3s ease-out infinite;
+}
+.cta:hover .cta-dot {
+  background: #fff;
+}
+@keyframes cta-breathe {
+  0% { transform: scale(0.4); opacity: 0.7; }
+  70%, 100% { transform: scale(1.35); opacity: 0; }
+}
+
+/* подпись перекатывается: уходит вверх, та же входит снизу */
+.cta-label {
+  position: relative;
+  display: inline-grid;
+  overflow: hidden;
+  height: 1.3em;
+  line-height: 1.3em;
+}
+.cta-label > span {
+  grid-area: 1 / 1;
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.cta-label > span + span {
+  transform: translateY(110%);
+}
+.cta:hover .cta-label > span:first-child,
+.cta:focus-visible .cta-label > span:first-child {
+  transform: translateY(-110%);
+}
+.cta:hover .cta-label > span + span,
+.cta:focus-visible .cta-label > span + span {
+  transform: translateY(0);
+}
+
+.cta-arrow {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: calc(var(--cta-h) - 12px);
+  height: calc(var(--cta-h) - 12px);
+  margin-left: 4px;
+  border-radius: 50%;
+  background: rgb(var(--bg-rgb) / 0.08);
+  border: 1px solid currentColor;
+  border-color: rgb(var(--bg-rgb) / 0.18);
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.4s, border-color 0.4s;
+}
+.cta-ghost .cta-arrow {
+  background: transparent;
+  border-color: var(--line-strong);
+}
+.cta-arrow svg {
+  width: 15px;
+  height: 15px;
+  transform: rotate(-45deg);
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.cta-sm .cta-arrow svg {
+  width: 12px;
+  height: 12px;
+}
+.cta:hover .cta-arrow,
+.cta:focus-visible .cta-arrow {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+.cta:hover .cta-arrow svg,
+.cta:focus-visible .cta-arrow svg {
+  transform: rotate(0deg);
+}
+
+/* блик: три прохода за визит и тишина */
+.cta-shine {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, rgb(var(--bg-rgb) / 0.0) 38%, rgba(110, 155, 204, 0.45) 50%, transparent 62%);
+  transform: translateX(-120%);
+  animation: cta-shine 7s cubic-bezier(0.4, 0, 0.2, 1) 2.2s 3;
+}
+@keyframes cta-shine {
+  0% { transform: translateX(-120%); }
+  18%, 100% { transform: translateX(120%); }
+}
+
+.cta:focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cta-dot::after,
+  .cta-shine {
+    animation: none;
+    display: none;
+  }
+  .cta-fill,
+  .cta-label > span,
+  .cta-arrow,
+  .cta-arrow svg {
+    transition: none;
+  }
+}
+
 /* Беззвучная подсказка прокрутки: штрих уходит вниз и гаснет.
    Жест понятен без слов, поэтому подписи под ним нет. */
 .scroll-cue {

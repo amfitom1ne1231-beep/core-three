@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
+import Cta from '@/components/Cta';
 import Footer from '@/components/Footer';
 import Material from '@/components/Material';
 import Neighbors from '@/components/service/Neighbors';
@@ -45,20 +45,12 @@ export default function NotFound() {
               на месте.
             </p>
             <div className="mt-10 flex flex-wrap gap-3.5">
-              <Link
-                data-magnetic
-                href="/"
-                className="btn btn-lg btn-primary"
-              >
+              <Cta href="/" dot={false}>
                 На главную
-              </Link>
-              <Link
-                data-magnetic
-                href={SITE.hero.primary.href}
-                className="btn btn-lg btn-ghost"
-              >
+              </Cta>
+              <Cta href={SITE.hero.primary.href} tone="ghost">
                 {SITE.hero.primary.label}
-              </Link>
+              </Cta>
             </div>
           </div>
         </section>

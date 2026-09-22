@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import Cta from './Cta';
 import ThemeToggle from './ThemeToggle';
 import { contactHref } from '@/lib/lead';
 import { lockScroll } from '@/lib/scroll';
@@ -212,13 +213,9 @@ export default function MobileMenu({ onOpenChange }: { onOpenChange?: (open: boo
         style={{ animation: 'ct-veil .3s ease 440ms both' }}
       >
         {/* тип проекта подставляется разделом, из которого открыли меню */}
-        <Link
-          href={contactHref(pathname)}
-          onClick={() => close(false)}
-          className="btn btn-lg btn-primary w-full"
-        >
+        <Cta href={contactHref(pathname)} onClick={() => close(false)} className="w-full justify-between">
           {SITE.hero.primary.label}
-        </Link>
+        </Cta>
 
         <div className="mt-6 flex items-center justify-between gap-4 border-t border-line pt-5">
           <span className="rail-label">Тема</span>

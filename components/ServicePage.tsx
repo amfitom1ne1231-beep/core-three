@@ -13,6 +13,7 @@ import Process from './service/Process';
 import Stage from './service/Stage';
 import type { ServicePage as Page } from '@/content/services';
 import { SITE } from '@/content/site';
+import Cta from './Cta';
 
 /**
  * Страница направления. Четыре штуки на одном шаблоне: отличается
@@ -77,20 +78,10 @@ export default function ServicePage({ page, children }: { page: Page; children?:
                 {page.lead}
               </p>
               <div className="mt-9 flex flex-wrap gap-3.5">
-                <Link
-                  data-magnetic
-                  href={`/contact?type=${page.kind}`}
-                  className="btn btn-lg btn-primary"
-                >
-                  Обсудить проект
-                </Link>
-                <Link
-                  data-magnetic
-                  href="/concepts"
-                  className="btn btn-lg btn-ghost bg-bg/30 backdrop-blur-sm"
-                >
+                <Cta href={`/contact?type=${page.kind}`}>Обсудить проект</Cta>
+                <Cta href="/concepts" tone="ghost" dot={false}>
                   Посмотреть демо
-                </Link>
+                </Cta>
               </div>
 
               <div className="scroll-cue mt-[clamp(28px,5vh,56px)] hidden lg:block" aria-hidden />

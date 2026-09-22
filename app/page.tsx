@@ -1,5 +1,6 @@
 import Anatomy from '@/components/Anatomy';
 import Atlas from '@/components/Atlas';
+import Cta from '@/components/Cta';
 import Footer from '@/components/Footer';
 import HeroMark from '@/components/HeroMark';
 import HeroSilk from '@/components/HeroSilk';
@@ -95,20 +96,10 @@ export default function Home() {
             />
 
             <div className="mt-[clamp(28px,4vh,52px)] flex flex-wrap gap-3.5">
-              <a
-                data-magnetic
-                href={SITE.hero.primary.href}
-                className="btn btn-lg btn-primary"
-              >
-                {SITE.hero.primary.label}
-              </a>
-              <a
-                data-magnetic
-                href={SITE.hero.secondary.href}
-                className="btn btn-lg btn-ghost bg-bg/30 backdrop-blur-sm"
-              >
+              <Cta href={SITE.hero.primary.href}>{SITE.hero.primary.label}</Cta>
+              <Cta href={SITE.hero.secondary.href} tone="ghost" dot={false}>
                 {SITE.hero.secondary.label}
-              </a>
+              </Cta>
             </div>
 
             {/* Подсказка прокрутки без слов: штрих уходит вниз и возвращается.
