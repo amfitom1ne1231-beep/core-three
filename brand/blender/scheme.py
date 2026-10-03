@@ -1,35 +1,26 @@
 """
-Схема «Путь одного заказа» — сцена для главной (components/Journey.tsx).
+Схема «Путь одного заказа» — сцена для главной.
 
-Сейчас это проба: кусок плиты, два модуля — «Сайт» и «Каталог», —
-канал между ними, заход заказа с края плиты, выход к следующей станции
-и полоса обхода мониторинга по краю. Если проба ляжет, сюда добавятся
-остальные три станции и вторая раскладка — для телефона.
+Образ выбран по пробе (BRIEF.md, раздел 25): чёрное полированное стекло
+и студийный свет, как у предметной съёмки Apple; луч с дымкой из
+«Kling» рисует браузер поверх, живым. Станции — модули знака: синий корпус,
+стеклянная крышка, под стеклом светится значок. Пазы — световые вставки
+вровень с плитой. В светлой теме — белое глянцевое стекло без дымки.
 
-Запуск (без интерфейса), отдельно на каждую тему:
+Запуск (без интерфейса), на каждую тему:
   /Applications/Blender.app/Contents/MacOS/Blender -b -P brand/blender/scheme.py -- \
-      --theme dark --out public/scheme/probe [--width 1800] [--samples 96]
+      --theme dark --out public/scheme [--width 1800] [--samples 256] [--still путь.png] [--map-only]
 
-Почему слоями, а не одной картинкой. Ток, жетон заказа, подписи и
-подсветку рисует браузер — так схема кликается, читается на любом
-экране и не весит мегабайты. Чтобы ток бежал под модулями, а не
-поверх них, сцена режется на слои и браузер вкладывает свой ток
-между ними:
+Что получается. Сцена рендерится целиком — основа со всеми отражениями
+(base). Для каждой станции и каждого паза — та же сцена, где горит
+только он, обрезанная по своему участку (lit-<id>). Шум у всех рендеров
+одного зерна, поэтому вне изменившегося света пиксели совпадают с
+основой, и вставку на ней не видно. Браузер проявляет вариант «паз
+горит» маской, бегущей по пазу, — это и есть ток: настоящий свет
+с отражением в стекле, а не нарисованная поверх линия.
 
-  plate            плита с пазами и тенью под ней — во весь кадр
-  shadow-<id>      тень модуля на плите — во весь кадр, почти пустой
-  ── здесь браузер рисует ток ──
-  mod-<id>-off     модуль, значок погашен — обрезан по модулю
-  mod-<id>-on      модуль, значок горит
-  glow-<id>        свечение значка на чёрном — кладётся экраном (screen)
-  ── здесь браузер рисует подписи и жетон ──
-
-Камера ортографическая и смотрит строго по изометрии (1, −1, 1): плоскость
-плиты проецируется аффинно, поэтому координаты пазов, посчитанные здесь,
-совпадают с картинкой до пикселя. Их и пишет map.json.
-
-Оси на экране: +X уходит вправо-вниз, +Y — вправо-вверх под 30°. Цепочка
-станций идёт зигзагом +X, +Y, +X… и в целом читается слева направо.
+map.json — те же точки в пикселях кадра: пазы, станции, подписи,
+области нажатия и кадры вариантов.
 """
 
 import json
@@ -43,8 +34,6 @@ import bpy
 from bpy_extras.object_utils import world_to_camera_view
 from mathutils import Vector
 
-# ---------------------------------------------------------------- аргументы
-
 argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
 
 
@@ -53,54 +42,54 @@ def arg(name, default):
 
 
 THEME = arg('--theme', 'dark')
-OUT = os.path.join(arg('--out', 'public/scheme/probe'), THEME)
+OUT = os.path.join(arg('--out', 'public/scheme'), THEME)
 WIDTH = int(arg('--width', '1800'))
-SAMPLES = int(arg('--samples', '96'))
-ONLY = arg('--only', None)  # отладка: отрендерить один слой
+SAMPLES = int(arg('--samples', '256'))
+STILL = arg('--still', None)  # один кадр «как будет» — для поиска образа
+# только map.json, без рендера: когда поменялись подписи, а не свет
+MAP_ONLY = '--map-only' in argv
+DARK = THEME == 'dark'
 os.makedirs(OUT, exist_ok=True)
 
 # ---------------------------------------------------------------- размеры, метры
 
-M = 1.0       # сторона модуля
-H = 0.62      # высота корпуса
-CAP = 0.07    # серебряная крышка сверху
-PL = 0.05     # серебряный цоколь, на котором модуль стоит
-PT = 0.30     # толщина плиты
-GW = 0.15     # ширина паза
-GD = 0.06     # глубина паза
-RIM = 0.26    # отступ полосы обхода от края плиты
-GLYPH = 0.64  # размер значка на крышке
-STROKE = 1.8  # толщина штриха значка, в единицах его сетки 24×24
+M, H = 1.0, 0.72         # модуль: сторона и высота корпуса
+PL = 0.05                # серебряный цоколь
+GLASS = 0.07             # стеклянная крышка
+GW, GD = 0.12, 0.05      # паз: ширина и глубина
+INLAY = -0.006           # верх световой вставки — почти вровень с плитой
+GLYPH, STROKE = 0.62, 1.6
+R = M / 2 + 0.06         # от центра модуля до грани цоколя
 
-# станции пробы: центр на плите и значок (те же, что в Journey.tsx)
+# станции по ходу заказа; мониторинг — дозорная колонна над контуром
 STATIONS = [
-    {'id': 'site', 'n': '01', 'name': 'Сайт', 'at': (0.0, 0.0)},
-    {'id': 'catalog', 'n': '02', 'name': 'Каталог', 'at': (3.4, 0.0)},
+    ('site', (0.0, 0.0), 1.0),
+    ('catalog', (3.2, 0.0), 1.0),
+    ('bot', (3.2, 2.9), 1.0),
+    ('money', (6.4, 2.9), 1.0),
+    ('watch', (-0.3, 3.5), 1.5),
 ]
-X0, X1 = -2.0, 3.4 + M / 2 + 1.2
-Y0, Y1 = -1.35, 2.7
+CHANNELS = {
+    'in': [(-4.5, 0.0), (-R, 0.0)],
+    'ab': [(R, 0.0), (3.2 - R, 0.0)],
+    'bc': [(3.2, R), (3.2, 2.9 - R)],
+    'cd': [(3.2 + R, 2.9), (6.4 - R, 2.9)],
+    'out': [(6.4, 2.9 + R), (6.4, 9.0)],
+    # от дозорной колонны в контур; не «watch» — так зовут саму станцию,
+    # и вариант паза затирал вариант колонны
+    'guard': [(-0.3, 3.5 - R), (-0.3, 2.35)],
+}
+LOOP = [(-1.25, -1.2), (7.55, -1.2), (7.55, 2.35), (-1.25, 2.35), (-1.25, -1.2)]
 
 ICONS = {
-    # точки «h.01» из иконок сайта заменены кружками: короткий штрих
-    # превратился бы в щель, а не в точку
-    'site': """
-      <rect x="3" y="4.5" width="18" height="13" rx="2"/>
-      <path d="M3 8.5h18M9 20h6"/>
-      <circle cx="6" cy="6.5" r="0.5"/><circle cx="8.5" cy="6.5" r="0.5"/>""",
-    'catalog': """
-      <rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/>
-      <rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/>
-      <rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/>
-      <path d="M14 17h6M17 14v6"/>""",
-    'bot': """
-      <path d="M4 5.5h16a1.5 1.5 0 0 1 1.5 1.5v8.5A1.5 1.5 0 0 1 20 17H10l-4.5 3.5V17H4a1.5 1.5 0 0 1-1.5-1.5V7A1.5 1.5 0 0 1 4 5.5Z"/>
-      <circle cx="8" cy="11.3" r="0.6"/><circle cx="12" cy="11.3" r="0.6"/><circle cx="16" cy="11.3" r="0.6"/>""",
-    'money': """
-      <rect x="2.5" y="5.5" width="19" height="13" rx="2"/>
-      <path d="M2.5 9.5h19M6 14.5h4M14.5 14.5l1.5 1.5 3-3"/>""",
-    'watch': """
-      <path d="M12 3 4.5 6v5.5c0 4.4 3.1 8.1 7.5 9.5 4.4-1.4 7.5-5.1 7.5-9.5V6Z"/>
-      <path d="M8 12h2l1.3-2.5 2 5L14.5 12H16"/>"""
+    'site': '<rect x="3" y="4.5" width="18" height="13" rx="2"/><path d="M3 8.5h18M9 20h6"/>'
+            '<circle cx="6" cy="6.5" r="0.5"/><circle cx="8.5" cy="6.5" r="0.5"/>',
+    'catalog': '<rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/>'
+               '<rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><path d="M14 17h6M17 14v6"/>',
+    'bot': '<path d="M4 5.5h16a1.5 1.5 0 0 1 1.5 1.5v8.5A1.5 1.5 0 0 1 20 17H10l-4.5 3.5V17H4a1.5 1.5 0 0 1-1.5-1.5V7A1.5 1.5 0 0 1 4 5.5Z"/>'
+           '<circle cx="8" cy="11.3" r="0.6"/><circle cx="12" cy="11.3" r="0.6"/><circle cx="16" cy="11.3" r="0.6"/>',
+    'money': '<rect x="2.5" y="5.5" width="19" height="13" rx="2"/><path d="M2.5 9.5h19M6 14.5h4M14.5 14.5l1.5 1.5 3-3"/>',
+    'watch': '<path d="M12 3 4.5 6v5.5c0 4.4 3.1 8.1 7.5 9.5 4.4-1.4 7.5-5.1 7.5-9.5V6Z"/><path d="M8 12h2l1.3-2.5 2 5L14.5 12H16"/>',
 }
 
 # ---------------------------------------------------------------- сцена
@@ -116,90 +105,104 @@ try:
     for d in prefs.devices:
         d.use = True
     scene.cycles.device = 'GPU'
-except Exception as e:  # без GPU просто дольше
+except Exception as e:
     print('GPU недоступен:', e)
 scene.cycles.samples = SAMPLES
 scene.cycles.use_denoising = True
-scene.cycles.max_bounces = 6
+# одно зерно на все рендеры: вне изменившегося света шум совпадает
+# с основой до пикселя, и вставку варианта на ней не видно
+scene.cycles.seed = 7
+scene.cycles.use_animated_seed = False
+scene.cycles.max_bounces = 8
+scene.cycles.transmission_bounces = 8
+scene.cycles.volume_bounces = 1
+# светлячки и каустики стекла — источник редких ярких пикселей
+scene.cycles.sample_clamp_indirect = 4.0
+scene.cycles.caustics_reflective = False
+scene.cycles.caustics_refractive = False
 scene.view_settings.view_transform = 'AgX'
 scene.view_settings.look = 'AgX - Medium High Contrast'
-scene.render.film_transparent = True
+scene.render.resolution_x = WIDTH
+scene.render.resolution_y = WIDTH // 2
+W, HH = WIDTH, WIDTH // 2
 
 
-def srgb(hexstr, a=1.0):
+def srgb(hexstr):
     h = hexstr.lstrip('#')
     c = [int(h[i:i + 2], 16) / 255 for i in (0, 2, 4)]
-    return (*[x / 12.92 if x <= 0.04045 else ((x + 0.055) / 1.055) ** 2.4 for x in c], a)
+    return (*[x / 12.92 if x <= 0.04045 else ((x + 0.055) / 1.055) ** 2.4 for x in c], 1.0)
 
 
-def principled(name, color, rough, metallic=0.0, aniso=0.0, coat=0.0):
+def bsdf(name, color, rough, metallic=0.0, coat=0.0, aniso=0.0, spec=0.5, transmission=0.0, ior=1.45):
     m = bpy.data.materials.new(name)
     m.use_nodes = True
     b = m.node_tree.nodes['Principled BSDF']
     b.inputs['Base Color'].default_value = srgb(color)
-    b.inputs['Metallic'].default_value = metallic
     b.inputs['Roughness'].default_value = rough
-    for key in ('Anisotropic', 'Anisotropy'):
+    b.inputs['Metallic'].default_value = metallic
+    b.inputs['IOR'].default_value = ior
+    for key, val in (('Coat Weight', coat), ('Anisotropic', aniso), ('Specular IOR Level', spec),
+                     ('Transmission Weight', transmission)):
         if key in b.inputs:
-            b.inputs[key].default_value = aniso
-    for key in ('Coat Weight', 'Clearcoat'):
-        if key in b.inputs:
-            b.inputs[key].default_value = coat
+            b.inputs[key].default_value = val
     return m
 
 
-def stone(name, color, rough, bump=0.12, spec=0.12):
-    """Матовая плита: тот же «тёмный камень», что у материала первого экрана.
-
-    Блик срезан: при обычном плита отражала небо студии и выходила сизой,
-    как шифер, а не тёмной, как камень на первом экране.
-    """
-    m = principled(name, color, rough)
+def emission(name, color, strength):
+    m = bpy.data.materials.new(name)
+    m.use_nodes = True
     nt = m.node_tree
-    b = nt.nodes['Principled BSDF']
-    for key in ('Specular IOR Level', 'Specular'):
-        if key in b.inputs:
-            b.inputs[key].default_value = spec
-    noise = nt.nodes.new('ShaderNodeTexNoise')
-    noise.inputs['Scale'].default_value = 9.0
-    noise.inputs['Detail'].default_value = 8.0
-    noise.inputs['Roughness'].default_value = 0.62
-    bmp = nt.nodes.new('ShaderNodeBump')
-    bmp.inputs['Strength'].default_value = bump
-    bmp.inputs['Distance'].default_value = 0.02
-    nt.links.new(noise.outputs['Fac'], bmp.inputs['Height'])
-    nt.links.new(bmp.outputs['Normal'], b.inputs['Normal'])
-    # лёгкая неровность цвета — камень, а не пластик
-    mix = nt.nodes.new('ShaderNodeMixRGB')
-    mix.blend_type = 'MULTIPLY'
-    mix.inputs['Fac'].default_value = 0.18
-    mix.inputs['Color1'].default_value = srgb(color)
-    nt.links.new(noise.outputs['Fac'], mix.inputs['Color2'])
-    nt.links.new(mix.outputs['Color'], b.inputs['Base Color'])
+    nt.nodes.remove(nt.nodes['Principled BSDF'])
+    e = nt.nodes.new('ShaderNodeEmission')
+    e.inputs['Color'].default_value = srgb(color)
+    e.inputs['Strength'].default_value = strength
+    nt.links.new(e.outputs[0], nt.nodes['Material Output'].inputs['Surface'])
     return m
 
 
-DARK = THEME == 'dark'
-# модули одинаковы в обеих темах: синий анодированный и матовое серебро знака
-BLUE = principled('blue', '#1b467f', 0.34, metallic=0.75, aniso=0.3, coat=0.35)
-SILVER = principled('silver', '#b3bac2', 0.26, metallic=1.0, aniso=0.55)
-PLATE = stone('plate', '#0b0e14' if DARK else '#e4e8ee', 0.74 if DARK else 0.6, spec=0.1 if DARK else 0.25)
-GROOVE = principled('groove', '#05070a' if DARK else '#c9d0d9', 0.42, metallic=0.4 if DARK else 0.1)
-# значок: погашен — тёмная гравировка; горит — свет акцента из глубины паза
-GLYPH_MAT = principled('glyph', '#0a0d12', 0.5, metallic=0.3)
-# В тёмной теме значок светится почти белым с голубым, в светлой — насыщенным
-# синим: светлое свечение на серебряной крышке при дневном свете не видно.
-GLOW, GLOW_POWER = ('#8fb8ea', 7.0) if DARK else ('#2f6fd6', 4.0)
+def set_strength(mat, value):
+    mat.node_tree.nodes['Emission'].inputs['Strength'].default_value = value
+
+
+# свет тока: в тёмной теме — холодный голубой, в светлой — насыщенный синий
+# (светлое свечение на белом стекле днём не видно)
+ACCENT = '#8fc0ff' if DARK else '#2f6fd6'
+IDLE, HOT = (0.9, 60.0) if DARK else (1.4, 14.0)
+GLYPH_IDLE, GLYPH_HOT = (1.6, 26.0) if DARK else (1.2, 9.0)
+
+PLATE = bsdf('plate', '#06080c' if DARK else '#e7ebf0', 0.16 if DARK else 0.12, spec=0.7 if DARK else 0.5)
+nt = PLATE.node_tree
+noise = nt.nodes.new('ShaderNodeTexNoise')
+noise.inputs['Scale'].default_value = 3.5
+mr = nt.nodes.new('ShaderNodeMapRange')
+mr.inputs['To Min'].default_value = 0.08 if DARK else 0.06
+mr.inputs['To Max'].default_value = 0.26 if DARK else 0.2
+nt.links.new(noise.outputs['Fac'], mr.inputs['Value'])
+nt.links.new(mr.outputs['Result'], nt.nodes['Principled BSDF'].inputs['Roughness'])
+
+GROOVE = bsdf('groove', '#020304' if DARK else '#c3cad3', 0.35, metallic=0.6 if DARK else 0.2)
+BLUE = bsdf('blue', '#163d73', 0.28, metallic=0.85, coat=0.6)
+SILVER = bsdf('silver', '#c4cad1', 0.18, metallic=1.0, aniso=0.6)
+FROST = bsdf('frost', '#e9f1fb', 0.32, transmission=1.0, ior=1.45, spec=0.5)
+# плата под стеклом: в светлой теме светлая — тёмная на белом стекле
+# делала крышки тяжёлыми серыми плитками
+BOARD = bsdf('board', '#0b0f15' if DARK else '#dfe5ec', 0.5, metallic=0.2)
+
+# у каждого источника свой материал: варианты включают их по одному
+LINE = {k: emission(f'line_{k}', ACCENT, IDLE) for k in CHANNELS}
+LINE['loop'] = emission('line_loop', ACCENT, IDLE * 0.7)
+GLYPHS = {sid: emission(f'glyph_{sid}', ACCENT, GLYPH_IDLE) for sid, _, _ in STATIONS}
+RINGS = {sid: emission(f'ring_{sid}', ACCENT, 0.0) for sid, _, _ in STATIONS}
 
 # ---------------------------------------------------------------- геометрия
 
 
-def link(obj):
-    scene.collection.objects.link(obj)
-    return obj
+def link(o):
+    scene.collection.objects.link(o)
+    return o
 
 
-def box(name, lo, hi, mat, bevel=0.02, segments=3):
+def box(name, lo, hi, mat, bevel=0.0, seg=4):
     mesh = bpy.data.meshes.new(name)
     bm = bmesh.new()
     bmesh.ops.create_cube(bm, size=1.0)
@@ -209,97 +212,73 @@ def box(name, lo, hi, mat, bevel=0.02, segments=3):
                        (v.co.z + 0.5) * (hi[2] - lo[2]) + lo[2]))
     bm.to_mesh(mesh)
     bm.free()
-    obj = link(bpy.data.objects.new(name, mesh))
-    obj.data.materials.append(mat)
+    o = link(bpy.data.objects.new(name, mesh))
+    o.data.materials.append(mat)
     if bevel:
-        mod = obj.modifiers.new('bevel', 'BEVEL')
-        mod.width = bevel
-        mod.segments = segments
-        mod.limit_method = 'ANGLE'
-        mod.harden_normals = True
-    return obj
+        b = o.modifiers.new('bevel', 'BEVEL')
+        b.width, b.segments, b.limit_method, b.harden_normals = bevel, seg, 'ANGLE', True
+    return o
 
 
-def cut(target, cutter, mode='TRANSFER'):
-    mod = target.modifiers.new(f'cut_{cutter.name}', 'BOOLEAN')
-    mod.operation = 'DIFFERENCE'
-    mod.solver = 'EXACT'
-    mod.object = cutter
-    mod.use_self = True
-    if hasattr(mod, 'material_mode'):
-        mod.material_mode = mode
-    # резец не рендерится, но остаётся в сцене: булева операция берёт его
-    # форму при каждом пересчёте
-    cutter.hide_render = True
-    cutter.display_type = 'WIRE'
-    return mod
+def apply_mods(o):
+    dg = bpy.context.evaluated_depsgraph_get()
+    mesh = bpy.data.meshes.new_from_object(o.evaluated_get(dg))
+    o.modifiers.clear()
+    o.data = mesh
 
 
-# --- плита
-
-plate = box('plate', (X0, Y0, -PT), (X1, Y1, 0.0), PLATE, bevel=0.035)
-
-# земля под плитой — только ловит тень, чтобы плита стояла, а не висела
-ground = box('ground', (X0 - 12, Y0 - 12, -PT - 0.002), (X1 + 12, Y1 + 12, -PT - 0.001), GROOVE, bevel=0)
-ground.is_shadow_catcher = True
+plate = box('plate', (-12, -12, -0.4), (18, 18, 0.0), PLATE)
+cut_parts = []
 
 
-def face_point(st, side):
-    """Середина грани цоколя: откуда выходит и куда приходит паз."""
-    cx, cy = st['at']
-    r = M / 2 + 0.06
-    return {'+x': (cx + r, cy), '-x': (cx - r, cy), '+y': (cx, cy + r), '-y': (cx, cy - r)}[side]
-
-
-A, B = STATIONS
-# Пазы — ломаные по осям. Порядок точек — по ходу заказа: заход с края
-# плиты в «Сайт», от «Сайта» к «Каталогу», от «Каталога» к следующей станции.
-CHANNELS = {
-    'in': [(X0, 0.0), face_point(A, '-x')],
-    'ab': [face_point(A, '+x'), face_point(B, '-x')],
-    'out': [face_point(B, '+y'), (B['at'][0], Y1)],
-}
-# полоса обхода мониторинга: замкнутый контур вдоль края плиты
-RIM_PATH = [(X0 + RIM, Y0 + RIM), (X1 - RIM, Y0 + RIM), (X1 - RIM, Y1 - RIM), (X0 + RIM, Y1 - RIM), (X0 + RIM, Y0 + RIM)]
-
-
-def groove_cutters(points, width, name):
-    objs = []
+def groove(points, width, light_mat, name):
+    """Прорезь в плите и световая вставка в ней — почти вровень с поверхностью:
+    жила на дне паза при взгляде под 27° пряталась за стенками."""
     for i, (p, q) in enumerate(zip(points, points[1:])):
         lo = (min(p[0], q[0]) - width / 2, min(p[1], q[1]) - width / 2, -GD)
-        hi = (max(p[0], q[0]) + width / 2, max(p[1], q[1]) + width / 2, 0.2)
-        objs.append(box(f'{name}_{i}', lo, hi, GROOVE, bevel=0))
-    return objs
+        hi = (max(p[0], q[0]) + width / 2, max(p[1], q[1]) + width / 2, 0.3)
+        cut_parts.append(box(f'cut_{name}_{i}', lo, hi, GROOVE))
+        w2 = width * 0.24
+        along_x = p[1] == q[1]
+        box(f'line_{name}_{i}',
+            (lo[0] if along_x else p[0] - w2, p[1] - w2 if along_x else lo[1], INLAY - 0.008),
+            (hi[0] if along_x else p[0] + w2, p[1] + w2 if along_x else hi[1], INLAY), light_mat)
 
 
-cutters = []
 for key, pts in CHANNELS.items():
-    cutters += groove_cutters(pts, GW, key)
-cutters += groove_cutters(RIM_PATH, GW * 0.6, 'rim')
-# все резцы — одним объектом: один булев проход вместо десятка
-bpy.ops.object.select_all(action='DESELECT')
-for c in cutters:
-    c.select_set(True)
-bpy.context.view_layer.objects.active = cutters[0]
-bpy.ops.object.join()
-cut(plate, cutters[0])
+    groove(pts, GW, LINE[key], key)
+groove(LOOP, GW * 0.7, LINE['loop'], 'loop')
 
-# --- модули
+bpy.ops.object.select_all(action='DESELECT')
+for c in cut_parts:
+    c.select_set(True)
+bpy.context.view_layer.objects.active = cut_parts[0]
+bpy.ops.object.join()
+cutter = cut_parts[0]
+mod = plate.modifiers.new('cut', 'BOOLEAN')
+mod.operation, mod.solver, mod.object = 'DIFFERENCE', 'EXACT', cutter
+# резцы пересекаются друг с другом; без этого точная булева операция
+# молча возвращала пустую плиту
+mod.use_self = True
+if hasattr(mod, 'material_mode'):
+    mod.material_mode = 'TRANSFER'
+apply_mods(plate)
+assert len(plate.data.polygons) > 0, 'плита пустая после вырезания пазов'
+bpy.data.objects.remove(cutter)
 
 
 def import_icon(icon_id):
-    """Значок из сетки 24×24 — в кривые Blender, по рамке-эталону."""
     path = os.path.join(bpy.app.tempdir, f'{icon_id}.svg')
     with open(path, 'w') as f:
-        f.write('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" '
-                'fill="none" stroke="#000"><path id="frame" d="M0 0H24V24H0Z"/>' + ICONS[icon_id] + '</svg>')
+        f.write('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#000">'
+                '<path id="frame" d="M0 0H24V24H0Z"/>' + ICONS[icon_id] + '</svg>')
     before = set(bpy.data.objects)
     bpy.ops.import_curve.svg(filepath=path)
     new = [o for o in bpy.data.objects if o not in before]
     frame = next(o for o in new if o.name.startswith('frame'))
     fb = [frame.matrix_world @ Vector(c) for c in frame.bound_box]
     fx0, fy0 = min(v.x for v in fb), min(v.y for v in fb)
-    unit = (max(v.x for v in fb) - fx0) / 24  # метров на единицу сетки после импорта
+    unit = (max(v.x for v in fb) - fx0) / 24
     for o in new:
         for coll in list(o.users_collection):
             coll.objects.unlink(o)
@@ -307,20 +286,19 @@ def import_icon(icon_id):
     return [o for o in new if o is not frame], (fx0, fy0, unit)
 
 
-def glyph_cutter(icon_id, center, top):
+def glyph(icon_id, center, z, mat):
+    """Значок светящейся жилой на плате под стеклом крышки."""
     curves, (fx0, fy0, unit) = import_icon(icon_id)
-    s = GLYPH / 24  # метров на единицу сетки на крышке
     parts = []
     for c in curves:
         link(c)
         c.data.bevel_depth = STROKE / 2 * unit
-        c.data.bevel_resolution = 3
+        c.data.bevel_resolution = 2
         c.data.use_fill_caps = True
         c.data.dimensions = '3D'
-        bpy.context.view_layer.objects.active = c
-        for o in bpy.context.selected_objects:
-            o.select_set(False)
+        bpy.ops.object.select_all(action='DESELECT')
         c.select_set(True)
+        bpy.context.view_layer.objects.active = c
         bpy.ops.object.convert(target='MESH')
         parts.append(bpy.context.view_layer.objects.active)
     bpy.ops.object.select_all(action='DESELECT')
@@ -329,279 +307,206 @@ def glyph_cutter(icon_id, center, top):
     bpy.context.view_layer.objects.active = parts[0]
     bpy.ops.object.join()
     g = parts[0]
-    # из сетки значка — на крышку: центр к центру, масштаб к GLYPH,
-    # ось x значка вдоль +X мира, «верх» значка вдоль +Y
+    s = GLYPH / 24
     k = s / unit
     mw = g.matrix_world.copy()
     for v in g.data.vertices:
         w = mw @ v.co
-        x = (w.x - fx0) / unit - 12
-        y = (w.y - fy0) / unit - 12
-        v.co = Vector((center[0] + x * s, center[1] + y * s, top + w.z * k))
+        v.co = Vector((center[0] + ((w.x - fx0) / unit - 12) * s, center[1] + ((w.y - fy0) / unit - 12) * s, z + w.z * k * 0.4))
     g.matrix_world = g.matrix_world.Identity(4)
     g.data.materials.clear()
-    g.data.materials.append(GLYPH_MAT)
-    g.name = f'glyph_{icon_id}'
+    g.data.materials.append(mat)
     return g
 
 
-MODULES = {}
-for st in STATIONS:
-    cx, cy = st['at']
+TOPS = {}
+for sid, (cx, cy), tall in STATIONS:
     r = M / 2
-    plinth = box(f'plinth_{st["id"]}', (cx - r - 0.06, cy - r - 0.06, 0.0), (cx + r + 0.06, cy + r + 0.06, PL), SILVER, bevel=0.012)
-    body = box(f'body_{st["id"]}', (cx - r, cy - r, PL), (cx + r, cy + r, PL + H), BLUE, bevel=0.03)
-    top = PL + H + CAP
-    cap = box(f'cap_{st["id"]}', (cx - r + 0.03, cy - r + 0.03, PL + H), (cx + r - 0.03, cy + r - 0.03, top), SILVER, bevel=0.018)
-    cut(cap, glyph_cutter(st['id'], (cx, cy), top))
-    MODULES[st['id']] = [plinth, body, cap]
+    top = PL + H * tall
+    TOPS[sid] = top
+    box(f'plinth_{sid}', (cx - R, cy - R, 0.0), (cx + R, cy + R, PL), SILVER, bevel=0.012)
+    box(f'body_{sid}', (cx - r, cy - r, PL), (cx + r, cy + r, top), BLUE, bevel=0.06, seg=6)
+    box(f'board_{sid}', (cx - r + 0.06, cy - r + 0.06, top), (cx + r - 0.06, cy + r - 0.06, top + 0.01), BOARD)
+    glyph(sid, (cx, cy), top + 0.012, GLYPHS[sid])
+    box(f'glass_{sid}', (cx - r + 0.03, cy - r + 0.03, top), (cx + r - 0.03, cy + r - 0.03, top + GLASS), FROST, bevel=0.02, seg=4)
+    # световое кольцо по шву корпуса и крышки: горит, когда станция активна
+    box(f'ring_{sid}', (cx - r - 0.004, cy - r - 0.004, top - 0.018), (cx + r + 0.004, cy + r + 0.004, top - 0.006), RINGS[sid], bevel=0.01)
 
+# ---------------------------------------------------------------- свет
 
-def bake(objs):
-    """Модификаторы — в сетку. Точная булева операция медленная, а без
-    этого Blender пересчитывал её перед каждым слоем."""
-    dg = bpy.context.evaluated_depsgraph_get()
-    for o in objs:
-        if not o.modifiers:
-            continue
-        mesh = bpy.data.meshes.new_from_object(o.evaluated_get(dg))
-        o.modifiers.clear()
-        o.data = mesh
-
-
-bake([plate] + [o for objs in MODULES.values() for o in objs])
-for o in list(scene.objects):
-    if o.type == 'MESH' and o.display_type == 'WIRE':
-        bpy.data.objects.remove(o)
-
-# ---------------------------------------------------------------- свет и мир
-
-world = bpy.data.worlds.new('studio')
+world = bpy.data.worlds.new('w')
 scene.world = world
 world.use_nodes = True
-wn, wl = world.node_tree.nodes, world.node_tree.links
-bg = wn['Background']
-tc, sep = wn.new('ShaderNodeTexCoord'), wn.new('ShaderNodeSeparateXYZ')
-ramp, mp = wn.new('ShaderNodeValToRGB'), wn.new('ShaderNodeMapRange')
-ramp.color_ramp.elements[0].position = 0.35
-ramp.color_ramp.elements[0].color = (0.004, 0.005, 0.009, 1) if DARK else (0.25, 0.27, 0.30, 1)
-ramp.color_ramp.elements[1].position = 0.85
-ramp.color_ramp.elements[1].color = (0.30, 0.36, 0.46, 1) if DARK else (0.95, 0.96, 0.98, 1)
-mp.inputs['From Min'].default_value = -1
-mp.inputs['From Max'].default_value = 1
-wl.new(tc.outputs['Generated'], sep.inputs[0])
-wl.new(sep.outputs['Z'], mp.inputs['Value'])
-wl.new(mp.outputs['Result'], ramp.inputs['Fac'])
-wl.new(ramp.outputs['Color'], bg.inputs['Color'])
-bg.inputs['Strength'].default_value = 0.9 if DARK else 0.8
+bg = world.node_tree.nodes['Background']
+bg.inputs['Color'].default_value = srgb('#0a0c10' if DARK else '#f2f4f7')
+bg.inputs['Strength'].default_value = 0.25 if DARK else 0.9
 
-VIEW = Vector((1, -1, 1)).normalized()   # откуда смотрит камера
-RIGHT = Vector((1, 1, 0)).normalized()    # вправо на экране
-UP = RIGHT.cross(-VIEW).normalized()      # вверх на экране
-CENTER = Vector(((X0 + X1) / 2, (Y0 + Y1) / 2, 0.2))
+CENTER = Vector((3.0, 1.6, 0.4))
 
 
-def area(name, offset, size, energy, color):
+def aim(o, target):
+    o.rotation_euler = (Vector(target) - o.location).to_track_quat('-Z', 'Y').to_euler()
+
+
+def area(name, loc, size, energy, color, size_y=None, target=CENTER):
     ld = bpy.data.lights.new(name, 'AREA')
-    ld.size, ld.energy, ld.color = size, energy, srgb(color)[:3]
+    ld.shape = 'RECTANGLE'
+    ld.size, ld.size_y = size, size_y or size
+    ld.energy, ld.color = energy, srgb(color)[:3]
     o = link(bpy.data.objects.new(name, ld))
-    o.location = CENTER + offset
-    o.rotation_euler = (CENTER - o.location).to_track_quat('-Z', 'Y').to_euler()
+    o.location = loc
+    aim(o, target)
     return o
 
 
-# ключ слева сверху по экрану, заполняющий справа, контровой акцентом сзади
-area('key', -RIGHT * 6 + UP * 5 + VIEW * 4, 5.0, 2600 if DARK else 1800, '#f2f5fa')
-area('fill', RIGHT * 7 + VIEW * 5, 7.0, 700 if DARK else 900, '#c7d6ea')
-area('rim', -VIEW * 6 + UP * 4, 5.0, 2400 if DARK else 900, '#6e9bcc')
-area('top', Vector((0, 0, 9)), 6.0, 900 if DARK else 1100, '#ffffff')
+# студия: мягкий верхний свет сзади, полосы по бокам — грани корпусов,
+# слабое заполнение спереди. Широкая панель сзади стоит под углом взгляда
+# камеры — её отражение и есть длинный блик по стеклу плиты
+area('top', (3.0, 5.5, 8.0), 9, 5200 if DARK else 2600, '#f4f8ff', size_y=2.5)
+area('strip_l', (-7, 1.5, 3.0), 0.6, 600 if DARK else 700, '#dfe9ff', size_y=8)
+area('strip_r', (12, 3.5, 3.0), 0.6, 1600 if DARK else 900, '#cfe0ff', size_y=8)
+area('fill', (6, -9, 5), 8, 500 if DARK else 900, '#c8d6ea')
+area('mirror', (-7.0, 11.0, 6.5), 16, 1100 if DARK else 600, '#e8f0ff', size_y=3.5)
+
+# Луч и дымка из «Kling» в рендер не входят: запечённые, они либо не
+# видны, либо заливают чёрное стекло серым — и в любом случае стоят на
+# месте. Их рисует браузер поверх: наклонный столб света, который
+# медленно дышит, и пылинки, плывущие в нём (components/scheme).
 
 # ---------------------------------------------------------------- камера
 
-corners = [Vector((x, y, z)) for x in (X0, X1) for y in (Y0, Y1) for z in (-PT, PL + H + CAP)]
-xs = [c.dot(RIGHT) for c in corners]
-ys = [c.dot(UP) for c in corners]
-MARGIN = 0.35
-span_x = max(xs) - min(xs) + 2 * MARGIN
-span_y = max(ys) - min(ys) + 2 * MARGIN
-mid = RIGHT * ((max(xs) + min(xs)) / 2) + UP * ((max(ys) + min(ys)) / 2)
-
 cam_data = bpy.data.cameras.new('cam')
-cam_data.type = 'ORTHO'
-cam_data.ortho_scale = span_x
-cam_data.sensor_fit = 'HORIZONTAL'
+cam_data.lens = 85
+cam_data.sensor_width = 36
+cam_data.dof.use_dof = True
+# Модули — метр в стороне, и при честной диафрагме вся сцена резкая.
+# «Макро»-диафрагма даёт глубину предметной съёмки: средняя станция
+# резкая, дальний край плиты уходит в мягкость
+cam_data.dof.aperture_fstop = 0.3
 cam = link(bpy.data.objects.new('cam', cam_data))
-cam.location = mid + VIEW * 30
-cam.rotation_euler = (-VIEW).to_track_quat('-Z', 'Y').to_euler()
+target = Vector((3.0, 1.45, 0.3))
+el, dist = math.radians(27), 23.0
+dirv = Vector((math.cos(el) / math.sqrt(2), -math.cos(el) / math.sqrt(2), math.sin(el)))
+cam.location = target + dirv * dist
+aim(cam, target)
+focus = link(bpy.data.objects.new('focus', None))
+focus.location = (2.6, 0.9, 0.5)
+cam_data.dof.focus_object = focus
 scene.camera = cam
-W = WIDTH
-HH = int(round(WIDTH * span_y / span_x / 2) * 2)
-scene.render.resolution_x, scene.render.resolution_y = W, HH
-scene.render.resolution_percentage = 100
+# матрица камеры обновляется при пересчёте сцены; рендер делает это сам,
+# а в режиме «только карта» проекция без этого считалась от нуля
+bpy.context.view_layer.update()
 
 
 def px(p):
-    """Точка мира → пиксель кадра (от левого верхнего угла)."""
     v = world_to_camera_view(scene, cam, Vector(p))
     return [round(v.x * W, 1), round((1 - v.y) * HH, 1)]
 
 
-# ---------------------------------------------------------------- слои
+# ---------------------------------------------------------------- рендер
 
-def set_visible(objs_on):
-    for o in scene.objects:
-        if o.type == 'MESH':
-            o.hide_render = o not in objs_on
-
-
-def evaluated_box(objs):
-    dg = bpy.context.evaluated_depsgraph_get()
-    pts = []
-    for o in objs:
-        e = o.evaluated_get(dg)
-        pts += [e.matrix_world @ Vector(c) for c in e.bound_box]
-    vs = [world_to_camera_view(scene, cam, p) for p in pts]
-    return min(v.x for v in vs), max(v.x for v in vs), min(v.y for v in vs), max(v.y for v in vs)
-
-
-def crop_to(objs, pad_px):
-    x0, x1, y0, y1 = evaluated_box(objs)
-    l = max(0, math.floor(x0 * W - pad_px))
-    r = min(W, math.ceil(x1 * W + pad_px))
-    b = max(0, math.floor(y0 * HH - pad_px))
-    t = min(HH, math.ceil(y1 * HH + pad_px))
-    scene.render.use_border = True
-    scene.render.use_crop_to_border = True
-    scene.render.border_min_x, scene.render.border_max_x = l / W, r / W
-    scene.render.border_min_y, scene.render.border_max_y = b / HH, t / HH
-    return {'x': l, 'y': HH - t, 'w': r - l, 'h': t - b}
-
-
-def full_frame():
-    scene.render.use_border = False
-    scene.render.use_crop_to_border = False
-    return {'x': 0, 'y': 0, 'w': W, 'h': HH}
-
-
-def render(name, rgba=True, quality=88):
-    if ONLY and ONLY != name:
+def render(name, crop=None, quality=86):
+    if MAP_ONLY:
         return
+    if crop:
+        l, t, w, h = crop['x'], crop['y'], crop['w'], crop['h']
+        scene.render.use_border = True
+        scene.render.use_crop_to_border = True
+        scene.render.border_min_x, scene.render.border_max_x = l / W, (l + w) / W
+        scene.render.border_min_y, scene.render.border_max_y = (HH - t - h) / HH, (HH - t) / HH
+    else:
+        scene.render.use_border = False
+        scene.render.use_crop_to_border = False
     s = scene.render.image_settings
-    s.file_format = 'WEBP'
-    s.color_mode = 'RGBA' if rgba else 'RGB'
-    s.quality = quality
+    s.file_format, s.color_mode, s.quality = 'WEBP', 'RGB', quality
     scene.render.filepath = os.path.join(OUT, f'{name}.webp')
     bpy.ops.render.render(write_still=True)
     print('слой', name)
 
 
-def glyph_lit(on):
-    nt = GLYPH_MAT.node_tree
-    b = nt.nodes['Principled BSDF']
-    if on:
-        b.inputs['Emission Color'].default_value = srgb(GLOW)
-        b.inputs['Emission Strength'].default_value = GLOW_POWER
-    else:
-        b.inputs['Emission Strength'].default_value = 0.0
+def box_px(points, pad):
+    ps = [px(p) for p in points]
+    l = max(0, math.floor(min(p[0] for p in ps) - pad))
+    r = min(W, math.ceil(max(p[0] for p in ps) + pad))
+    t = max(0, math.floor(min(p[1] for p in ps) - pad))
+    b = min(HH, math.ceil(max(p[1] for p in ps) + pad))
+    return {'x': l, 'y': t, 'w': r - l, 'h': b - t}
 
 
-HOLDOUT = {}
+def hull(points):
+    """Выпуклая оболочка — область нажатия модуля на экране."""
+    pts = sorted(set(map(tuple, points)))
+    if len(pts) < 3:
+        return [list(p) for p in pts]
+
+    def cross(o, a, b):
+        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+
+    lower, upper = [], []
+    for p in pts:
+        while len(lower) >= 2 and cross(lower[-2], lower[-1], p) <= 0:
+            lower.pop()
+        lower.append(p)
+    for p in reversed(pts):
+        while len(upper) >= 2 and cross(upper[-2], upper[-1], p) <= 0:
+            upper.pop()
+        upper.append(p)
+    return [list(p) for p in lower[:-1] + upper[:-1]]
 
 
-def holdout_all(on):
-    """Свечение рендерится на чёрном: всё, кроме света значка, — пустота."""
-    for m in (BLUE, SILVER, PLATE, GROOVE):
-        nt = m.node_tree
-        out = nt.nodes['Material Output']
-        if on:
-            h = nt.nodes.new('ShaderNodeHoldout')
-            HOLDOUT[m.name] = [l.from_socket for l in out.inputs['Surface'].links]
-            nt.links.new(h.outputs[0], out.inputs['Surface'])
-        else:
-            for l in list(out.inputs['Surface'].links):
-                nt.links.remove(l)
-            for sock in HOLDOUT.get(m.name, []):
-                nt.links.new(sock, out.inputs['Surface'])
+if STILL:
+    # кадр «как будет»: горит «Сайт», по «Сайт → Каталог» идёт ток
+    set_strength(GLYPHS['site'], GLYPH_HOT)
+    set_strength(RINGS['site'], GLYPH_HOT * 0.5)
+    set_strength(LINE['ab'], HOT * 0.4)
+    scene.render.image_settings.file_format = 'PNG'
+    scene.render.filepath = STILL
+    bpy.ops.render.render(write_still=True)
+    sys.exit(0)
 
+layers = {'base': {'x': 0, 'y': 0, 'w': W, 'h': HH}}
+render('base', quality=88)
 
-layers = {}
-all_modules = [o for objs in MODULES.values() for o in objs]
-
-# плита: без модулей, с тенью под собой
-set_visible([plate, ground])
-plate.is_shadow_catcher = False
-layers['plate'] = full_frame()
-render('plate', quality=90)
-
-# Тени модулей: плита ловит тень, сам модуль камере не виден. Слой — во
-# весь кадр: ловец чуть затемняет плиту и вдали от модуля (заслонённое
-# небо студии), и у обрезанного слоя проступал прямоугольник. Вес держит
-# сжатие: в тени нет мелких деталей.
-for sid, objs in MODULES.items():
-    set_visible([plate] + objs)
-    plate.is_shadow_catcher = True
-    for o in objs:
-        o.visible_camera = False
-    layers[f'shadow-{sid}'] = full_frame()
-    render(f'shadow-{sid}', quality=70)
-    for o in objs:
-        o.visible_camera = True
-plate.is_shadow_catcher = False
-full_frame()
-
-# модули: плита камере не видна, но отражается в серебре и подсвечивает снизу
-plate.visible_camera = False
-for sid, objs in MODULES.items():
-    set_visible([plate] + objs)
-    box_px = crop_to(objs, 10)
-    for state in ('off', 'on'):
-        glyph_lit(state == 'on')
-        layers[f'mod-{sid}-{state}'] = box_px
-        render(f'mod-{sid}-{state}')
-    # свечение: тот же кадр, всё остальное — чёрное
-    scene.render.film_transparent = False
-    world_strength = bg.inputs['Strength'].default_value
-    bg.inputs['Strength'].default_value = 0.0
-    holdout_all(True)
-    layers[f'glow-{sid}'] = box_px
-    render(f'glow-{sid}', rgba=False, quality=82)
-    holdout_all(False)
-    bg.inputs['Strength'].default_value = world_strength
-    scene.render.film_transparent = True
-    glyph_lit(False)
-plate.visible_camera = True
-
-# ---------------------------------------------------------------- карта
-
-FLOOR = -GD + 0.005  # ток бежит по дну паза
-modules_map = {}
-for st in STATIONS:
-    cx, cy = st['at']
-    r = M / 2
-    top = PL + H + CAP
-    modules_map[st['id']] = {
-        'n': st['n'],
-        'name': st['name'],
-        # центр крышки — сюда ложится выноска; правый угол — подпись
+modules = {}
+for sid, (cx, cy), tall in STATIONS:
+    r, top = M / 2, TOPS[sid] + GLASS
+    corners = [(cx + dx * r, cy + dy * r, z) for dx in (-1, 1) for dy in (-1, 1) for z in (0.0, top)]
+    # отражение горящей крышки уходит в стекло под модулем — вариант
+    # захватывает и его
+    mirror = [(x, y, -z) for x, y, z in corners]
+    crop = box_px(corners + mirror, 40)
+    set_strength(GLYPHS[sid], GLYPH_HOT)
+    set_strength(RINGS[sid], GLYPH_HOT * 0.5)
+    layers[f'lit-{sid}'] = crop
+    render(f'lit-{sid}', crop)
+    set_strength(GLYPHS[sid], GLYPH_IDLE)
+    set_strength(RINGS[sid], 0.0)
+    modules[sid] = {
         'top': px((cx, cy, top)),
-        'right': px((cx + r, cy + r, top)),
+        # подпись справа от модуля (у правого края кадра — слева), выноска —
+        # над дальним углом крышки
+        'label': px((cx + r, cy + r, top * 0.55)),
+        'labelLeft': px((cx - r, cy - r, top * 0.55)),
         'peak': px((cx - r, cy + r, top)),
-        'base': px((cx, cy, 0)),
-        # контур модуля на экране — область нажатия
-        'hit': [px((cx + dx * r, cy + dy * r, z)) for dx, dy, z in
-                ((-1, -1, top), (-1, 1, top), (1, 1, top), (1, 1, 0), (1, -1, 0), (-1, -1, 0))]
+        'hit': hull([px(c) for c in corners]),
     }
+
+for key, pts in list(CHANNELS.items()) + [('loop', LOOP)]:
+    pts3 = [(x, y, INLAY) for x, y in pts]
+    spill = [(x, y, z) for x, y, _ in pts3 for z in (-0.6, 0.6)]
+    crop = box_px(pts3 + spill, 30)
+    set_strength(LINE[key], HOT if key != 'loop' else HOT * 0.35)
+    layers[f'lit-{key}'] = crop
+    render(f'lit-{key}', crop)
+    set_strength(LINE[key], IDLE if key != 'loop' else IDLE * 0.7)
 
 data = {
     'theme': THEME,
     'size': [W, HH],
     'layers': layers,
-    'modules': modules_map,
-    'channels': {k: [px((x, y, FLOOR)) for x, y in pts] for k, pts in CHANNELS.items()},
-    'rim': [px((x, y, FLOOR)) for x, y in RIM_PATH],
-    # единичные оси мира в пикселях — чтобы рисовать в той же изометрии
-    'axes': {k: [b - a for a, b in zip(px((0, 0, 0)), px(v))] for k, v in
-             (('x', (1, 0, 0)), ('y', (0, 1, 0)), ('z', (0, 0, 1)))}
+    'modules': modules,
+    'channels': {k: [px((x, y, INLAY)) for x, y in pts] for k, pts in CHANNELS.items()},
+    'loop': [px((x, y, INLAY)) for x, y in LOOP],
 }
 with open(os.path.join(OUT, 'map.json'), 'w') as f:
     json.dump(data, f, ensure_ascii=False, indent=1)

@@ -1425,76 +1425,99 @@ html.has-cursor :is(input:not([type='checkbox']):not([type='radio']):not([type='
 }
 
 /* ============================================================
-   Схема из Blender (components/scheme): ток поверх рендера.
-   Единицы — пиксели кадра рендера (viewBox), а не экрана.
+   Схема из Blender (components/scheme/OrderScheme.tsx).
+   Свет — в рендере; здесь только то, что двигается.
    ============================================================ */
-:root {
-  --scheme-core: #dcebff;
-  --scheme-glow: rgb(110 155 204 / 0.85);
-  --scheme-idle: rgb(110 155 204 / 0.32);
+
+/* края рендера растворяются в фон страницы — по всем четырём сторонам */
+.os-fade {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent),
+    linear-gradient(180deg, transparent, #000 9%, #000 86%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent),
+    linear-gradient(180deg, transparent, #000 9%, #000 86%, transparent);
+  mask-composite: intersect;
 }
-:root[data-theme='light'] {
-  --scheme-core: #ffffff;
-  --scheme-glow: rgb(29 78 134 / 0.9);
-  --scheme-idle: rgb(29 78 134 / 0.28);
+
+/* обход мониторинга: маска-отрезок бежит по контуру */
+.os-scan {
+  stroke-dasharray: 0.08 0.92;
+  animation: os-scan 16s linear infinite;
 }
-.scheme-idle {
-  fill: none;
-  stroke: var(--scheme-idle);
-  stroke-width: 5;
-  stroke-linecap: round;
-  stroke-dasharray: 2 26;
-  animation: scheme-flow 1.6s linear infinite;
-}
-@keyframes scheme-flow {
-  to {
-    stroke-dashoffset: -28;
-  }
-}
-.scheme-rim {
-  fill: none;
-  stroke: var(--scheme-idle);
-  stroke-width: 3;
-  stroke-linecap: round;
-  stroke-dasharray: 0.06 0.94;
-  animation: scheme-scan 14s linear infinite;
-}
-@keyframes scheme-scan {
+@keyframes os-scan {
   to {
     stroke-dashoffset: -1;
   }
 }
-.scheme-pulse {
-  opacity: 0;
-  transition: opacity 0.6s ease;
+.os-breathe {
+  animation: os-breathe 6s ease-in-out infinite;
 }
-.scheme-pulse[data-moving] {
-  opacity: 1;
-  transition-duration: 0.15s;
+@keyframes os-breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 0.95;
+  }
 }
-.scheme-pulse-trail,
-.scheme-pulse-glow,
-.scheme-pulse-core {
-  fill: none;
-  stroke-linecap: round;
-  stroke-dasharray: 0 2;
+
+/* Луч из «Kling»: наклонный столб света сверху-сзади в середину сцены.
+   Медленно дышит и чуть смещается — живой, а не запечённый. */
+.os-beam {
+  position: absolute;
+  left: 34%;
+  top: -30%;
+  width: 22%;
+  height: 120%;
+  background: linear-gradient(180deg, rgb(150 196 255 / 0.34), rgb(110 155 204 / 0.1) 70%, transparent);
+  filter: blur(28px);
+  transform: rotate(-18deg);
+  transform-origin: 50% 0;
+  mix-blend-mode: screen;
+  animation: os-beam 11s ease-in-out infinite;
 }
-.scheme-pulse-trail {
-  stroke: var(--scheme-glow);
-  stroke-width: 14;
-  opacity: 0.4;
+@keyframes os-beam {
+  0%,
+  100% {
+    opacity: 0.75;
+    transform: rotate(-18deg) translateX(0);
+  }
+  50% {
+    opacity: 1;
+    transform: rotate(-16deg) translateX(2%);
+  }
 }
-.scheme-pulse-glow {
-  stroke: var(--scheme-glow);
-  stroke-width: 30;
+/* пылинки в луче: всплывают и гаснут, каждая в свой срок */
+.os-dust {
+  position: absolute;
+  border-radius: 50%;
+  background: rgb(200 228 255 / 0.85);
+  mix-blend-mode: screen;
+  animation: os-dust linear infinite;
 }
-.scheme-pulse-core {
-  stroke: var(--scheme-core);
-  stroke-width: 7;
+@keyframes os-dust {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.9;
+  }
+  85% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translate(18px, -60px);
+    opacity: 0;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .scheme-idle,
-  .scheme-rim {
+  .os-scan,
+  .os-breathe,
+  .os-beam,
+  .os-dust {
     animation: none;
   }
 }
+
