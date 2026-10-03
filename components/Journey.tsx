@@ -1,311 +1,241 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import Link from 'next/link';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import OrderScheme from '@/components/scheme/OrderScheme';
+import OrderScreens from '@/components/scheme/OrderScreens';
 import { SITE } from '@/content/site';
 
 gsap.registerPlugin(ScrollTrigger);
 
-type Station = (typeof SITE.journey.stations)[number];
-
-/** Сколько держится станция, пока путь проигрывается сам. */
-const STEP_MS = 4200;
-
-/** Значки станций: штрих в сетке 24×24, наследуют цвет состояния. */
-function Icon({ id }: { id: string }) {
-  const common = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.5, strokeLinecap: 'round', strokeLinejoin: 'round' } as const;
-  switch (id) {
-    case 'site':
-      return (
-        <svg viewBox="0 0 24 24" {...common}>
-          <rect x="3" y="4.5" width="18" height="13" rx="2" />
-          <path d="M3 8.5h18M6 6.5h.01M8.5 6.5h.01M9 20h6" />
-        </svg>
-      );
-    case 'catalog':
-      return (
-        <svg viewBox="0 0 24 24" {...common}>
-          <rect x="3.5" y="3.5" width="7" height="7" rx="1.5" />
-          <rect x="13.5" y="3.5" width="7" height="7" rx="1.5" />
-          <rect x="3.5" y="13.5" width="7" height="7" rx="1.5" />
-          <path d="M14 17h6M17 14v6" />
-        </svg>
-      );
-    case 'bot':
-      return (
-        <svg viewBox="0 0 24 24" {...common}>
-          <path d="M4 5.5h16a1.5 1.5 0 0 1 1.5 1.5v8.5A1.5 1.5 0 0 1 20 17H10l-4.5 3.5V17H4a1.5 1.5 0 0 1-1.5-1.5V7A1.5 1.5 0 0 1 4 5.5Z" />
-          <path d="M8 11.3h.01M12 11.3h.01M16 11.3h.01" strokeWidth="2.2" />
-        </svg>
-      );
-    case 'money':
-      return (
-        <svg viewBox="0 0 24 24" {...common}>
-          <rect x="2.5" y="5.5" width="19" height="13" rx="2" />
-          <path d="M2.5 9.5h19M6 14.5h4M14.5 14.5l1.5 1.5 3-3" />
-        </svg>
-      );
-    default:
-      return (
-        <svg viewBox="0 0 24 24" {...common}>
-          <path d="M12 3 4.5 6v5.5c0 4.4 3.1 8.1 7.5 9.5 4.4-1.4 7.5-5.1 7.5-9.5V6Z" />
-          <path d="M8 12h2l1.3-2.5 2 5L14.5 12H16" />
-        </svg>
-      );
-  }
-}
+/** Сколько держится кадр, пока путь проигрывается сам. */
+const STEP_MS = 7000;
 
 /**
- * Путь одного заказа — схема, которую понимает не только разработчик.
+ * Путь одного заказа — схема-презентация из пяти кадров.
  *
- * Прежняя «анатомия» была честной, но на чужом языке: фронт, API, CMS,
- * событие. Основатель смотрел на пять рамок и не видел в них себя.
- * Теперь схема рассказывает историю одного заказа: клиентка находит
- * сайт, выбирает в каталоге, оформляет в боте, платит — жетон её заказа
- * едет по линии, — а мониторинг полосой сверху стережёт всю цепочку.
- * На каждой станции простыми словами: что это даёт клиенту, что даёт
- * вам и какое наше направление это собирает. Технические слова остались
- * мелкой строкой — для тех, кто их ищет.
+ * Прежняя схема показывала всё сразу — пять станций на одном плане —
+ * и на вопрос «что тут происходит и куда оно идёт» не отвечала. Теперь
+ * на каждый вопрос свой слой:
  *
- * Станции сменяются сами, пока схема на экране, и замирают от первого
- * наведения или клика; пауза — той же кнопкой, что в карусели.
+ *  - «куда» — линия пути над кадром: поиск → сайт → каталог → бот →
+ *    оплата → деньги, слева направо, со стрелками и жетоном заказа;
+ *    мониторинг — скоба под всей цепочкой. Она же переключает кадры;
+ *  - «что» — кадр: крупный план станции из Blender и живой экран
+ *    того, что в эту секунду видит клиентка, одной фразой подписано;
+ *  - «зачем» — строка под кадром: что это даёт вам и какое наше
+ *    направление это собирает.
+ *
+ * Кадры сменяются сами, пока схема на экране; пауза и стрелки —
+ * в шапке. Под курсором показ не замирает: кадр занимает пол-экрана,
+ * курсор почти всегда над ним, и схема стояла бы на первом шаге.
+ * Часы показа — CSS-анимация полоски времени: её конец и есть смена
+ * кадра, а пауза замораживает вместе с ней свет в кадре (`--os-play`).
  */
 export default function Journey() {
   const section = useRef<HTMLElement>(null);
+  const stage = useRef<HTMLDivElement>(null);
   const [at, setAt] = useState(0);
   const [held, setHeld] = useState(false);
   const [inView, setInView] = useState(false);
+  // кадры грузятся, когда схема подошла к экрану, а не вместе со страницей
+  const [near, setNear] = useState(false);
 
-  const { label, title, titleAccent, lead, order, stations } = SITE.journey;
+  const { label, title, titleAccent, lead, order, route, stations } = SITE.journey;
   const track = stations.slice(0, 4);
   const watch = stations[4];
-  const active: Station = stations[at];
+  const active = stations[at];
   const guarding = at === 4;
+  const running = inView && !held;
 
-  // автосмена — только на экране и пока схему не начали рассматривать
   useEffect(() => {
     const el = section.current;
     if (!el) return;
-    const st = ScrollTrigger.create({
-      trigger: el,
-      start: 'top 70%',
-      end: 'bottom 30%',
+    // показ идёт, пока на экране сам кадр, а не только заголовок секции:
+    // иначе первый шаг отыграл бы, пока до него ещё листают
+    const show = ScrollTrigger.create({
+      trigger: stage.current,
+      start: 'top 80%',
+      end: 'bottom 20%',
       onToggle: (self) => setInView(self.isActive)
     });
-    return () => st.kill();
+    const load = ScrollTrigger.create({ trigger: el, start: 'top bottom+=900', once: true, onEnter: () => setNear(true) });
+    return () => {
+      show.kill();
+      load.kill();
+    };
   }, []);
 
-  useEffect(() => {
-    if (!inView || held) return;
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const id = window.setInterval(() => setAt((v) => (v + 1) % stations.length), STEP_MS);
-    return () => window.clearInterval(id);
-  }, [inView, held, stations.length]);
+  const step = useCallback((by: number) => setAt((v) => (v + by + stations.length) % stations.length), [stations.length]);
 
-  // вход: станции встают по ходу заказа, линия протягивается за ними
-  useEffect(() => {
-    const el = section.current;
-    if (!el) return;
-    const ctx = gsap.context(() => {
-      const mm = gsap.matchMedia();
-      mm.add('(prefers-reduced-motion: no-preference)', () => {
-        const once = { trigger: el.querySelector('[data-stage]'), start: 'top 80%', once: true } as const;
-        gsap.from('[data-st]', { opacity: 0, y: 16, duration: 0.6, ease: 'power3.out', stagger: 0.1, scrollTrigger: once });
-        gsap.from('[data-rail]', { scaleX: 0, duration: 1.1, ease: 'power3.inOut', scrollTrigger: once });
-        gsap.from('[data-watch]', { opacity: 0, y: -10, duration: 0.7, ease: 'power3.out', delay: 0.5, scrollTrigger: once });
-      });
-    }, el);
-    return () => ctx.revert();
-  }, []);
-
-  const pick = (i: number) => {
-    setAt(i);
-    setHeld(true);
+  // стрелки листают кадры, пока фокус на линии пути или на управлении
+  const onKey = (e: KeyboardEvent) => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    e.preventDefault();
+    step(e.key === 'ArrowRight' ? 1 : -1);
   };
 
-  // жетон стоит над станцией; на охране — уезжает в конец линии
-  const tokenLeft = guarding ? 100 : (at / (track.length - 1)) * 100;
+  // доля линии, пройденная заказом: узлов шесть — поиск, четыре станции, деньги
+  const passed = guarding ? 1 : (at + 1) / 5;
+
+  const round =
+    'flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line text-fg transition-colors duration-300 hover:border-accent hover:text-accent';
 
   return (
     <section ref={section} data-chapter="anatomy" className="relative z-10 w-full" aria-label="Как это устроено">
-      <div data-recede className="flex flex-col gap-[clamp(28px,5vh,56px)] px-4 section-y sm:px-8 lg:px-[72px]">
-        <div className="grid gap-6 lg:grid-cols-[1fr_minmax(0,420px)] lg:items-end">
+      <div data-recede className="flex flex-col gap-[clamp(22px,3.6vh,40px)] px-4 section-y sm:px-8 lg:px-[72px]">
+        <div className="grid gap-6 lg:grid-cols-[1fr_minmax(0,460px)] lg:items-end">
           <div>
-            <div className="flex items-center justify-between gap-4">
-              <span className="rail-label">{label}</span>
-              <button
-                type="button"
-                onClick={() => setHeld((v) => !v)}
-                aria-label={held ? 'Продолжить показ' : 'Остановить показ'}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line text-fg transition-colors duration-300 hover:border-accent hover:text-accent lg:hidden"
-              >
-                <PauseIcon held={held} />
-              </button>
-            </div>
+            <span className="rail-label">{label}</span>
             <h2 data-skew className="display m-0 mt-4 text-[clamp(30px,5vw,80px)]">
               {title} <span className="title-accent">{titleAccent}</span>
             </h2>
           </div>
           <div className="flex items-end justify-between gap-6">
             <p className="m-0 max-w-[40ch] text-[clamp(14px,1.1vw,16px)] leading-relaxed text-dim">{lead}</p>
-            <button
-              type="button"
-              onClick={() => setHeld((v) => !v)}
-              aria-label={held ? 'Продолжить показ' : 'Остановить показ'}
-              className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line text-fg transition-colors duration-300 hover:border-accent hover:text-accent lg:flex"
-            >
-              <PauseIcon held={held} />
-            </button>
+            <div className="flex gap-2" onKeyDown={onKey}>
+              <button type="button" onClick={() => step(-1)} aria-label="Предыдущий кадр" className={`${round} max-sm:hidden`}>
+                <Arrow back />
+              </button>
+              <button type="button" onClick={() => setHeld((v) => !v)} aria-label={held ? 'Продолжить показ' : 'Остановить показ'} className={round}>
+                <PauseIcon held={held} />
+              </button>
+              <button type="button" onClick={() => step(1)} aria-label="Следующий кадр" className={`${round} max-sm:hidden`}>
+                <Arrow />
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* ---------------- схема ---------------- */}
-        <div
-          data-stage
-          className="journey relative overflow-hidden rounded-[22px] border border-line bg-elev"
-          onMouseEnter={() => setHeld(true)}
-        >
-          <div className="journey-grid pointer-events-none absolute inset-0" aria-hidden />
+        {/* ---------------- линия пути ---------------- */}
+        <div className="route" role="group" aria-label="Путь заказа: шаги" onKeyDown={onKey}>
+          <span className="route-token" style={{ '--at': passed } as CSSProperties} aria-hidden>
+            <b className="route-ava">{order.who[0]}</b>
+            <span className="max-sm:hidden">{order.who} ·</span> {order.id}
+            <span className="text-dim max-sm:hidden">{guarding ? 'под присмотром' : order.sum}</span>
+          </span>
 
-          {/* охрана: полоса мониторинга над всей цепочкой */}
-          <button
-            type="button"
-            data-watch
-            onClick={() => pick(4)}
-            aria-pressed={guarding}
-            className="journey-watch relative mx-[clamp(16px,3vw,44px)] mt-[clamp(18px,3vw,32px)] flex w-[calc(100%-2*clamp(16px,3vw,44px))] items-center gap-4 rounded-[14px] px-4 py-3 text-left"
-          >
-            <span className="journey-icon h-10 w-10 shrink-0">
-              <Icon id="watch" />
-            </span>
-            <span className="min-w-0">
-              <span className="flex items-baseline gap-2">
-                <span className="font-mono text-[10px] tracking-rail text-faint">{watch.n}</span>
-                <span className="text-[15px] font-medium">{watch.name}</span>
-                <span className="hidden text-[13px] text-dim sm:inline">· {watch.role}</span>
-              </span>
-              <span className="mt-0.5 block truncate font-mono text-[10px] uppercase tracking-rail text-faint">{watch.event}</span>
-            </span>
-            {/* пульс проверок бежит по всей ширине — над каждой станцией */}
-            <span className="journey-pulse ml-auto hidden h-6 flex-1 md:block" aria-hidden>
-              <svg viewBox="0 0 400 24" preserveAspectRatio="none" className="h-full w-full">
-                <path
-                  d="M0 12 H70 l6 -8 6 16 6 -8 H170 l6 -8 6 16 6 -8 H270 l6 -8 6 16 6 -8 H400"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.4"
-                  vectorEffect="non-scaling-stroke"
-                  pathLength={1}
-                />
+          <div className="route-rail" aria-hidden>
+            <i className="route-fill" style={{ transform: `scaleX(${passed})` }} />
+            {[0, 1, 2, 3, 4].map((i) => (
+              <svg key={i} viewBox="0 0 8 10" className="route-arrow" data-passed={i / 5 < passed || undefined} style={{ left: `${(i + 0.5) * 20}%` }}>
+                <path d="M1.5 1 6 5 1.5 9" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-            </span>
-          </button>
-
-          {/* линия пути с жетоном заказа */}
-          <div className="relative mx-[clamp(16px,3vw,44px)] mt-[clamp(28px,4vw,48px)] hidden lg:block">
-            <div className="relative mx-[12.5%] h-10">
-              <i data-rail className="absolute left-0 right-0 top-1/2 block h-px origin-left bg-line-strong" aria-hidden />
-              <i
-                className="absolute left-0 top-1/2 block h-px origin-left bg-accent transition-transform duration-[900ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
-                style={{ right: 0, transform: `scaleX(${tokenLeft / 100})` }}
-                aria-hidden
-              />
-              <span
-                className="journey-token absolute top-1/2 -translate-x-1/2 -translate-y-1/2 transition-[left] duration-[900ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
-                style={{ left: `${tokenLeft}%` }}
-                aria-hidden
-              >
-                <b className="journey-ava">{order.who[0]}</b>
-                <span className="whitespace-nowrap">
-                  {order.who} · {order.id}
-                </span>
-                <span className="text-dim">{guarding ? 'под присмотром' : order.sum}</span>
-              </span>
-            </div>
+            ))}
           </div>
 
-          {/* станции */}
-          <ol className="relative m-0 grid list-none gap-2.5 p-[clamp(16px,3vw,44px)] pt-5 lg:grid-cols-4 lg:gap-4">
-            {track.map((s, i) => {
-              const on = at === i;
-              const passed = !guarding && i < at;
-              return (
-                <li key={s.id} data-st>
-                  <button
-                    type="button"
-                    onClick={() => pick(i)}
-                    aria-pressed={on}
-                    data-passed={passed || guarding || undefined}
-                    className="journey-station w-full text-left"
-                  >
-                    {/* на узком экране станция — строка: иначе пояснения под
-                        четырьмя высокими карточками уезжали за экран */}
-                    <span className="flex items-center gap-4 lg:justify-between">
-                      <span className="journey-icon h-11 w-11 shrink-0">
-                        <Icon id={s.id} />
-                      </span>
-                      <span className="min-w-0 flex-1 lg:hidden">
-                        <span className="block text-[17px] font-medium leading-tight">{s.name}</span>
-                        <span className="block text-[12.5px] text-dim">{s.role}</span>
-                      </span>
-                      <span className="font-mono text-[10px] tracking-rail text-faint">{s.n}</span>
-                    </span>
-                    <span className="mt-5 hidden text-[clamp(18px,1.5vw,22px)] font-medium leading-tight lg:block">{s.name}</span>
-                    <span className="mt-0.5 hidden text-[13px] text-dim lg:block">{s.role}</span>
-                    <span className="journey-event mt-4 hidden font-mono text-[10px] uppercase leading-relaxed tracking-rail lg:block">
-                      {s.event}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
+          <ol className="m-0 grid list-none grid-cols-6 p-0">
+            <li className="route-end" data-passed>
+              <i className="route-dot" aria-hidden />
+              <span>{route.from}</span>
+            </li>
+            {track.map((s, i) => (
+              <li key={s.id}>
+                <button
+                  type="button"
+                  onClick={() => setAt(i)}
+                  aria-pressed={at === i}
+                  data-passed={guarding || i < at || undefined}
+                  className="route-node"
+                >
+                  <i className="route-dot" aria-hidden />
+                  <span className="route-name">
+                    <b className="max-sm:hidden">{s.n}</b>
+                    <span className="sm:hidden">{s.short}</span>
+                    <span className="max-sm:hidden">{s.name}</span>
+                  </span>
+                </button>
+              </li>
+            ))}
+            <li className="route-end" data-passed={guarding || undefined}>
+              <i className="route-dot" aria-hidden />
+              <span>
+                {route.to}
+                <span className="max-sm:hidden"> {route.toTail}</span>
+              </span>
+            </li>
           </ol>
 
-          {/* что это даёт — простыми словами */}
-          <div
-            key={active.id}
-            className="journey-detail relative grid gap-6 border-t border-line p-[clamp(16px,3vw,44px)] md:grid-cols-[1fr_1fr_minmax(0,0.8fr)]"
-            aria-live="polite"
-          >
-            <div>
-              <span className="rail-label">Клиенту</span>
-              <p className="m-0 mt-2.5 text-[clamp(14px,1.1vw,16px)] leading-relaxed">{active.client}</p>
-            </div>
-            <div>
-              <span className="rail-label">Вам</span>
-              <p className="m-0 mt-2.5 text-[clamp(14px,1.1vw,16px)] leading-relaxed">{active.you}</p>
-            </div>
-            <div className="flex flex-col justify-between gap-4">
-              <div>
-                <span className="rail-label">Собираем</span>
-                <Link
-                  href={active.service.href}
-                  className="group mt-2.5 flex items-center gap-2 text-[clamp(15px,1.2vw,18px)] font-medium text-fg transition-colors duration-300 hover:text-accent"
-                >
-                  {active.service.label}
-                  <svg viewBox="0 0 16 16" className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
-                    <path d="M3 8h9.5M8.5 3.5 13 8l-4.5 4.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </Link>
-              </div>
-              <span className="font-mono text-[10px] uppercase leading-relaxed tracking-rail text-faint">{active.tech}</span>
-            </div>
-            {/* таймер станции: видно, что она сменится сама */}
-            <i
-              className="absolute left-0 top-0 block h-px origin-left bg-accent"
-              style={{
-                width: '100%',
-                transform: 'scaleX(0)',
-                animation: held || !inView ? 'none' : `journey-timer ${STEP_MS}ms linear both`
-              }}
-              aria-hidden
-            />
+          {/* мониторинг — не станция на пути, а скоба под всей цепочкой */}
+          <button type="button" onClick={() => setAt(4)} aria-pressed={guarding} className="route-guard">
+            <span>
+              <b>{watch.n}</b> {watch.name} <span className="text-dim">— {route.guard}</span>
+            </span>
+          </button>
+        </div>
+
+        {/* ---------------- кадр ---------------- */}
+        <div
+          ref={stage}
+          className="journey-stage"
+          style={
+            {
+              '--os-step': `${STEP_MS}ms`,
+              // часы показа стоят на паузе и за экраном; свет в кадре — только за экраном:
+              // на паузе кадр, открытый вручную, всё равно должен загореться
+              '--os-play': running ? 'running' : 'paused',
+              '--os-live': inView ? 'running' : 'paused'
+            } as CSSProperties
+          }
+        >
+          <OrderScheme id={active.id} ready={near} className="journey-shot" />
+          <div className="journey-scrim" aria-hidden />
+
+          <span className="journey-kicker rail-label">
+            Кадр <b>{active.n}</b> / {watch.n}
+          </span>
+
+          {/* пока показ идёт сам, читалке каждые семь секунд его не объявляем */}
+          <div key={active.id} className="journey-caption" aria-live={running ? 'off' : 'polite'}>
+            <span className="rail-label">
+              <b>{active.name}</b> · {active.role}
+            </span>
+            <p className="display m-0 mt-3 text-[clamp(24px,2.7vw,40px)] leading-[1.04]">{active.headline}</p>
+            {/* экран в кадре — картинка; читалке тот же шаг словами */}
+            <p className="sr-only">{active.client}</p>
+          </div>
+
+          <figure className="journey-screen m-0">
+            <OrderScreens id={active.id} playing={inView} />
+            <figcaption className="rail-label mt-3 text-center">{active.screen}</figcaption>
+          </figure>
+
+          {/* часы показа: полоска дошла до края — следующий кадр */}
+          <i key={at} className="journey-timer" onAnimationEnd={() => step(1)} aria-hidden />
+        </div>
+
+        {/* ---------------- что это даёт ---------------- */}
+        <div key={active.id} className="journey-detail grid gap-6 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] md:gap-[clamp(32px,6vw,96px)]">
+          <div>
+            <span className="rail-label">Вам</span>
+            <p className="m-0 mt-2.5 max-w-[52ch] text-[clamp(15px,1.25vw,18px)] leading-relaxed">{active.you}</p>
+          </div>
+          <div>
+            <span className="rail-label">Собираем</span>
+            <Link
+              href={active.service.href}
+              className="group mt-2.5 flex w-fit items-center gap-2 text-[clamp(15px,1.25vw,18px)] font-medium text-fg transition-colors duration-300 hover:text-accent"
+            >
+              {active.service.label}
+              <svg viewBox="0 0 16 16" className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
+                <path d="M3 8h9.5M8.5 3.5 13 8l-4.5 4.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </Link>
+            <span className="mt-3 block font-mono text-[10px] uppercase leading-relaxed tracking-rail text-faint">{active.tech}</span>
           </div>
         </div>
       </div>
     </section>
+  );
+}
+
+function Arrow({ back = false }: { back?: boolean }) {
+  return (
+    <svg viewBox="0 0 16 16" className={`h-3.5 w-3.5 ${back ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
+      <path d="M3 8h9.5M8.5 3.5 13 8l-4.5 4.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
 

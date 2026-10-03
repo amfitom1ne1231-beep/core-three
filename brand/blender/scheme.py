@@ -1,5 +1,5 @@
 """
-Схема «Путь одного заказа» — сцена для главной.
+Схема «Путь одного заказа» — пять кадров для главной.
 
 Образ выбран по пробе (BRIEF.md, раздел 25): чёрное полированное стекло
 и студийный свет, как у предметной съёмки Apple; луч с дымкой из
@@ -7,20 +7,25 @@
 стеклянная крышка, под стеклом светится значок. Пазы — световые вставки
 вровень с плитой. В светлой теме — белое глянцевое стекло без дымки.
 
+Общий план с пятью одинаковыми кубами не объяснял, что где происходит,
+поэтому схема снимается кадрами: камера подходит к каждой станции по
+очереди, станция стоит слева, справа — место под живой экран заказа.
+
 Запуск (без интерфейса), на каждую тему:
   /Applications/Blender.app/Contents/MacOS/Blender -b -P brand/blender/scheme.py -- \
-      --theme dark --out public/scheme [--width 1800] [--samples 256] [--still путь.png] [--map-only]
+      --theme dark --out public/scheme [--width 1920] [--samples 256] \
+      [--shot site] [--still путь.png] [--map-only]
 
-Что получается. Сцена рендерится целиком — основа со всеми отражениями
-(base). Для каждой станции и каждого паза — та же сцена, где горит
-только он, обрезанная по своему участку (lit-<id>). Шум у всех рендеров
-одного зерна, поэтому вне изменившегося света пиксели совпадают с
-основой, и вставку на ней не видно. Браузер проявляет вариант «паз
-горит» маской, бегущей по пазу, — это и есть ток: настоящий свет
+Что получается на кадр. Сцена целиком, всё погашено (<кадр>). Дальше
+состояния копятся: свет пришёл по пазу (-a), загорелась станция (-b),
+свет ушёл дальше (-c) — каждое обрезано по своему участку. Шум у всех
+рендеров одного зерна, поэтому вне изменившегося света пиксели
+совпадают с основой, и вставку на ней не видно. Браузер проявляет
+«паз горит» маской, бегущей по пазу, — это и есть ток: настоящий свет
 с отражением в стекле, а не нарисованная поверх линия.
 
-map.json — те же точки в пикселях кадра: пазы, станции, подписи,
-области нажатия и кадры вариантов.
+shots.json — те же точки в пикселях кадра: пазы, участки вставок и
+место станции (по нему кадр обрезается на телефоне).
 """
 
 import json
@@ -43,10 +48,11 @@ def arg(name, default):
 
 THEME = arg('--theme', 'dark')
 OUT = os.path.join(arg('--out', 'public/scheme'), THEME)
-WIDTH = int(arg('--width', '1800'))
+WIDTH = int(arg('--width', '1920'))
 SAMPLES = int(arg('--samples', '256'))
 STILL = arg('--still', None)  # один кадр «как будет» — для поиска образа
-# только map.json, без рендера: когда поменялись подписи, а не свет
+ONLY = arg('--shot', None)    # один кадр из пяти; остальные в shots.json не трогаются
+# только shots.json, без рендера: когда поменялись точки, а не свет
 MAP_ONLY = '--map-only' in argv
 DARK = THEME == 'dark'
 os.makedirs(OUT, exist_ok=True)
@@ -61,25 +67,37 @@ INLAY = -0.006           # верх световой вставки — почт
 GLYPH, STROKE = 0.62, 1.6
 R = M / 2 + 0.06         # от центра модуля до грани цоколя
 
-# станции по ходу заказа; мониторинг — дозорная колонна над контуром
+# Контур мониторинга обходит всю цепочку; дозорная колонна стоит в его
+# углу, и свет расходится от неё в обе стороны
+X0, Y0, X1, Y1 = -1.6, -1.6, 8.0, 4.5
+
+# станции по ходу заказа
 STATIONS = [
     ('site', (0.0, 0.0), 1.0),
     ('catalog', (3.2, 0.0), 1.0),
     ('bot', (3.2, 2.9), 1.0),
     ('money', (6.4, 2.9), 1.0),
-    ('watch', (-0.3, 3.5), 1.5),
+    ('watch', (X0, Y0), 1.5),
 ]
+# паз — одна или несколько ломаных; свет бежит по каждой от её начала
 CHANNELS = {
-    'in': [(-4.5, 0.0), (-R, 0.0)],
-    'ab': [(R, 0.0), (3.2 - R, 0.0)],
-    'bc': [(3.2, R), (3.2, 2.9 - R)],
-    'cd': [(3.2 + R, 2.9), (6.4 - R, 2.9)],
-    'out': [(6.4, 2.9 + R), (6.4, 9.0)],
-    # от дозорной колонны в контур; не «watch» — так зовут саму станцию,
-    # и вариант паза затирал вариант колонны
-    'guard': [(-0.3, 3.5 - R), (-0.3, 2.35)],
+    'in': [[(-6.5, 0.0), (-R, 0.0)]],
+    'ab': [[(R, 0.0), (3.2 - R, 0.0)]],
+    'bc': [[(3.2, R), (3.2, 2.9 - R)]],
+    'cd': [[(3.2 + R, 2.9), (6.4 - R, 2.9)]],
+    'out': [[(6.4, 2.9 + R), (6.4, 11.0)]],
+    'loop': [[(X0 + R, Y0), (X1, Y0), (X1, Y1)], [(X0, Y0 + R), (X0, Y1), (X1, Y1)]],
 }
-LOOP = [(-1.25, -1.2), (7.55, -1.2), (7.55, 2.35), (-1.25, 2.35), (-1.25, -1.2)]
+# кадры: станция, по какому пазу свет пришёл, по какому ушёл дальше,
+# и камера — дистанция и на сколько метров станция сдвинута влево от центра
+SHOTS = [
+    ('site', ['in'], ['ab'], 13.0, 1.5),
+    ('catalog', ['ab'], ['bc'], 13.0, 1.5),
+    ('bot', ['bc'], ['cd'], 13.0, 1.5),
+    ('money', ['cd'], ['out'], 13.0, 1.5),
+    # мониторинг — план шире: видно, что контур уходит вокруг цепочки
+    ('watch', [], ['loop'], 17.0, 2.1),
+]
 
 ICONS = {
     'site': '<rect x="3" y="4.5" width="18" height="13" rx="2"/><path d="M3 8.5h18M9 20h6"/>'
@@ -190,7 +208,11 @@ BOARD = bsdf('board', '#0b0f15' if DARK else '#dfe5ec', 0.5, metallic=0.2)
 
 # у каждого источника свой материал: варианты включают их по одному
 LINE = {k: emission(f'line_{k}', ACCENT, IDLE) for k in CHANNELS}
-LINE['loop'] = emission('line_loop', ACCENT, IDLE * 0.7)
+# контур длинный: в полную силу он заливал бы светом всю плиту
+LINE_IDLE = {k: IDLE * (0.7 if k == 'loop' else 1.0) for k in CHANNELS}
+LINE_HOT = {k: HOT * (0.35 if k == 'loop' else 1.0) for k in CHANNELS}
+for k in CHANNELS:
+    set_strength(LINE[k], LINE_IDLE[k])
 GLYPHS = {sid: emission(f'glyph_{sid}', ACCENT, GLYPH_IDLE) for sid, _, _ in STATIONS}
 RINGS = {sid: emission(f'ring_{sid}', ACCENT, 0.0) for sid, _, _ in STATIONS}
 
@@ -227,7 +249,7 @@ def apply_mods(o):
     o.data = mesh
 
 
-plate = box('plate', (-12, -12, -0.4), (18, 18, 0.0), PLATE)
+plate = box('plate', (-16, -16, -0.4), (22, 22, 0.0), PLATE)
 cut_parts = []
 
 
@@ -245,9 +267,9 @@ def groove(points, width, light_mat, name):
             (hi[0] if along_x else p[0] + w2, p[1] + w2 if along_x else hi[1], INLAY), light_mat)
 
 
-for key, pts in CHANNELS.items():
-    groove(pts, GW, LINE[key], key)
-groove(LOOP, GW * 0.7, LINE['loop'], 'loop')
+for key, lines in CHANNELS.items():
+    for n, pts in enumerate(lines):
+        groove(pts, GW * (0.7 if key == 'loop' else 1.0), LINE[key], f'{key}{n}')
 
 bpy.ops.object.select_all(action='DESELECT')
 for c in cut_parts:
@@ -359,14 +381,18 @@ def area(name, loc, size, energy, color, size_y=None, target=CENTER):
     return o
 
 
-# студия: мягкий верхний свет сзади, полосы по бокам — грани корпусов,
+# Студия: мягкий верхний свет сзади, полосы по бокам — грани корпусов,
 # слабое заполнение спереди. Широкая панель сзади стоит под углом взгляда
-# камеры — её отражение и есть длинный блик по стеклу плиты
-area('top', (3.0, 5.5, 8.0), 9, 5200 if DARK else 2600, '#f4f8ff', size_y=2.5)
-area('strip_l', (-7, 1.5, 3.0), 0.6, 600 if DARK else 700, '#dfe9ff', size_y=8)
-area('strip_r', (12, 3.5, 3.0), 0.6, 1600 if DARK else 900, '#cfe0ff', size_y=8)
-area('fill', (6, -9, 5), 8, 500 if DARK else 900, '#c8d6ea')
-area('mirror', (-7.0, 11.0, 6.5), 16, 1100 if DARK else 600, '#e8f0ff', size_y=3.5)
+# камеры — её отражение и есть длинный блик по стеклу плиты. Свет ездит
+# за камерой от кадра к кадру: у каждой станции та же съёмка.
+RIG = [
+    area('top', (0.0, 3.9, 7.6), 9, 5200 if DARK else 2600, '#f4f8ff', size_y=2.5),
+    area('strip_l', (-10.0, -0.1, 2.6), 0.6, 600 if DARK else 700, '#dfe9ff', size_y=8),
+    area('strip_r', (9.0, 1.9, 2.6), 0.6, 1600 if DARK else 900, '#cfe0ff', size_y=8),
+    area('fill', (3.0, -10.6, 4.6), 8, 500 if DARK else 900, '#c8d6ea'),
+    area('mirror', (-10.0, 9.4, 6.1), 16, 700 if DARK else 600, '#e8f0ff', size_y=3.5),
+]
+RIG_AT = [o.location.copy() for o in RIG]
 
 # Луч и дымка из «Kling» в рендер не входят: запечённые, они либо не
 # видны, либо заливают чёрное стекло серым — и в любом случае стоят на
@@ -379,23 +405,35 @@ cam_data = bpy.data.cameras.new('cam')
 cam_data.lens = 85
 cam_data.sensor_width = 36
 cam_data.dof.use_dof = True
-# Модули — метр в стороне, и при честной диафрагме вся сцена резкая.
-# «Макро»-диафрагма даёт глубину предметной съёмки: средняя станция
-# резкая, дальний край плиты уходит в мягкость
-cam_data.dof.aperture_fstop = 0.3
 cam = link(bpy.data.objects.new('cam', cam_data))
-target = Vector((3.0, 1.45, 0.3))
-el, dist = math.radians(27), 23.0
-dirv = Vector((math.cos(el) / math.sqrt(2), -math.cos(el) / math.sqrt(2), math.sin(el)))
-cam.location = target + dirv * dist
-aim(cam, target)
 focus = link(bpy.data.objects.new('focus', None))
-focus.location = (2.6, 0.9, 0.5)
 cam_data.dof.focus_object = focus
 scene.camera = cam
-# матрица камеры обновляется при пересчёте сцены; рендер делает это сам,
-# а в режиме «только карта» проекция без этого считалась от нуля
-bpy.context.view_layer.update()
+
+EL = math.radians(27)
+# камера смотрит по диагонали плиты: «вправо» на экране — это +x+y
+DIRV = Vector((math.cos(EL) / math.sqrt(2), -math.cos(EL) / math.sqrt(2), math.sin(EL)))
+RIGHT = Vector((1, 1, 0)).normalized()
+
+
+def frame(sid, dist, shift):
+    """Камера и свет — к станции: она слева, справа место под живой экран."""
+    cx, cy = next(c for s, c, _ in STATIONS if s == sid)
+    top = TOPS[sid]
+    target = Vector((cx, cy, top * 0.45)) + RIGHT * shift
+    cam.location = target + DIRV * dist
+    aim(cam, target)
+    focus.location = (cx, cy, top)
+    # Модули — метр в стороне, и при честной диафрагме вся сцена резкая.
+    # «Макро»-диафрагма даёт глубину предметной съёмки: станция резкая,
+    # соседние и дальний край плиты уходят в мягкость
+    cam_data.dof.aperture_fstop = 0.45
+    for o, at in zip(RIG, RIG_AT):
+        o.location = at + target
+        aim(o, target + Vector((0.0, 0.15, 0.1)))
+    # матрица камеры обновляется при пересчёте сцены; рендер делает это сам,
+    # а в режиме «только карта» проекция без этого считалась от нуля
+    bpy.context.view_layer.update()
 
 
 def px(p):
@@ -403,9 +441,27 @@ def px(p):
     return [round(v.x * W, 1), round((1 - v.y) * HH, 1)]
 
 
+def visible(pts, steps=48, margin=60):
+    """Ломаная в пикселях — только та её часть, что в кадре: свет не должен
+    тратить время на путь за краем экрана."""
+    out = []
+    for p, q in zip(pts, pts[1:]):
+        seen = []
+        for i in range(steps + 1):
+            w = Vector(p).lerp(Vector(q), i / steps)
+            v = world_to_camera_view(scene, cam, w)
+            x, y = v.x * W, (1 - v.y) * HH
+            if v.z > 0.1 and -margin <= x <= W + margin and -margin <= y <= HH + margin:
+                seen.append([round(x, 1), round(y, 1)])
+        for pt in (seen[:1] + seen[-1:]) if seen else []:
+            if not out or out[-1] != pt:
+                out.append(pt)
+    return out
+
+
 # ---------------------------------------------------------------- рендер
 
-def render(name, crop=None, quality=86):
+def render(name, crop=None, quality=84):
     if MAP_ONLY:
         return
     if crop:
@@ -424,8 +480,7 @@ def render(name, crop=None, quality=86):
     print('слой', name)
 
 
-def box_px(points, pad):
-    ps = [px(p) for p in points]
+def box_px(ps, pad):
     l = max(0, math.floor(min(p[0] for p in ps) - pad))
     r = min(W, math.ceil(max(p[0] for p in ps) + pad))
     t = max(0, math.floor(min(p[1] for p in ps) - pad))
@@ -433,81 +488,80 @@ def box_px(points, pad):
     return {'x': l, 'y': t, 'w': r - l, 'h': b - t}
 
 
-def hull(points):
-    """Выпуклая оболочка — область нажатия модуля на экране."""
-    pts = sorted(set(map(tuple, points)))
-    if len(pts) < 3:
-        return [list(p) for p in pts]
-
-    def cross(o, a, b):
-        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
-
-    lower, upper = [], []
-    for p in pts:
-        while len(lower) >= 2 and cross(lower[-2], lower[-1], p) <= 0:
-            lower.pop()
-        lower.append(p)
-    for p in reversed(pts):
-        while len(upper) >= 2 and cross(upper[-2], upper[-1], p) <= 0:
-            upper.pop()
-        upper.append(p)
-    return [list(p) for p in lower[:-1] + upper[:-1]]
+def lines_px(keys):
+    """Пазы кадра: ломаные для бегущей маски и участок вставки — с отражением
+    света в стекле и на соседних корпусах."""
+    paths, around = [], []
+    for k in keys:
+        for pts in CHANNELS[k]:
+            for z in (INLAY, -0.7, 0.7):
+                path = visible([(x, y, z) for x, y in pts])
+                around += path
+                if z == INLAY and len(path) > 1:
+                    paths.append(path)
+    return paths, (box_px(around, 50) if around else None)
 
 
-if STILL:
-    # кадр «как будет»: горит «Сайт», по «Сайт → Каталог» идёт ток
-    set_strength(GLYPHS['site'], GLYPH_HOT)
-    set_strength(RINGS['site'], GLYPH_HOT * 0.5)
-    set_strength(LINE['ab'], HOT * 0.4)
-    scene.render.image_settings.file_format = 'PNG'
-    scene.render.filepath = STILL
-    bpy.ops.render.render(write_still=True)
-    sys.exit(0)
+def light(keys, on):
+    for k in keys:
+        set_strength(LINE[k], LINE_HOT[k] if on else LINE_IDLE[k])
 
-layers = {'base': {'x': 0, 'y': 0, 'w': W, 'h': HH}}
-render('base', quality=88)
 
-modules = {}
-for sid, (cx, cy), tall in STATIONS:
+def glow(sid, on):
+    set_strength(GLYPHS[sid], GLYPH_HOT if on else GLYPH_IDLE)
+    set_strength(RINGS[sid], GLYPH_HOT * 0.5 if on else 0.0)
+
+
+path_json = os.path.join(os.path.dirname(OUT), THEME, 'shots.json')
+data = {'theme': THEME, 'size': [W, HH], 'shots': {}}
+if ONLY and os.path.exists(path_json):
+    with open(path_json) as f:
+        data['shots'] = json.load(f).get('shots', {})
+
+for sid, came, went, dist, shift in SHOTS:
+    if ONLY and sid != ONLY:
+        continue
+    frame(sid, dist, shift)
+    cx, cy = next(c for s, c, _ in STATIONS if s == sid)
     r, top = M / 2, TOPS[sid] + GLASS
-    corners = [(cx + dx * r, cy + dy * r, z) for dx in (-1, 1) for dy in (-1, 1) for z in (0.0, top)]
-    # отражение горящей крышки уходит в стекло под модулем — вариант
-    # захватывает и его
-    mirror = [(x, y, -z) for x, y, z in corners]
-    crop = box_px(corners + mirror, 40)
-    set_strength(GLYPHS[sid], GLYPH_HOT)
-    set_strength(RINGS[sid], GLYPH_HOT * 0.5)
-    layers[f'lit-{sid}'] = crop
-    render(f'lit-{sid}', crop)
-    set_strength(GLYPHS[sid], GLYPH_IDLE)
-    set_strength(RINGS[sid], 0.0)
-    modules[sid] = {
-        'top': px((cx, cy, top)),
-        # подпись справа от модуля (у правого края кадра — слева), выноска —
-        # над дальним углом крышки
-        'label': px((cx + r, cy + r, top * 0.55)),
-        'labelLeft': px((cx - r, cy - r, top * 0.55)),
-        'peak': px((cx - r, cy + r, top)),
-        'hit': hull([px(c) for c in corners]),
-    }
 
-for key, pts in list(CHANNELS.items()) + [('loop', LOOP)]:
-    pts3 = [(x, y, INLAY) for x, y in pts]
-    spill = [(x, y, z) for x, y, _ in pts3 for z in (-0.6, 0.6)]
-    crop = box_px(pts3 + spill, 30)
-    set_strength(LINE[key], HOT if key != 'loop' else HOT * 0.35)
-    layers[f'lit-{key}'] = crop
-    render(f'lit-{key}', crop)
-    set_strength(LINE[key], IDLE if key != 'loop' else IDLE * 0.7)
+    if STILL:
+        # кадр «как будет»: свет пришёл, станция горит
+        light(came, True)
+        glow(sid, True)
+        scene.render.image_settings.file_format = 'PNG'
+        scene.render.filepath = STILL
+        bpy.ops.render.render(write_still=True)
+        sys.exit(0)
 
-data = {
-    'theme': THEME,
-    'size': [W, HH],
-    'layers': layers,
-    'modules': modules,
-    'channels': {k: [px((x, y, INLAY)) for x, y in pts] for k, pts in CHANNELS.items()},
-    'loop': [px((x, y, INLAY)) for x, y in LOOP],
-}
-with open(os.path.join(OUT, 'map.json'), 'w') as f:
+    shot = {'focus': px((cx, cy, top))}
+    render(sid, quality=86)
+
+    # свет пришёл по пазу
+    if came:
+        paths, crop = lines_px(came)
+        light(came, True)
+        render(f'{sid}-a', crop)
+        shot['a'] = {'box': crop, 'paths': paths}
+
+    # станция загорелась; отражение горящей крышки уходит в стекло под
+    # модулем — вставка захватывает и его
+    corners = [(cx + dx * r, cy + dy * r, z) for dx in (-1, 1) for dy in (-1, 1) for z in (-top, top)]
+    crop = box_px([px(c) for c in corners], 60)
+    glow(sid, True)
+    render(f'{sid}-b', crop)
+    shot['b'] = {'box': crop}
+
+    # свет ушёл дальше
+    paths, crop = lines_px(went)
+    light(went, True)
+    render(f'{sid}-c', crop)
+    shot['c'] = {'box': crop, 'paths': paths}
+
+    light(came + went, False)
+    glow(sid, False)
+    data['shots'][sid] = shot
+
+with open(path_json, 'w') as f:
     json.dump(data, f, ensure_ascii=False, indent=1)
-print('карта', os.path.join(OUT, 'map.json'))
+print('карта', path_json)
