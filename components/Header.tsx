@@ -12,6 +12,9 @@ import { contactHref } from '@/lib/lead';
 import { SITE } from '@/content/site';
 import Cta from './Cta';
 
+/** Страницы направлений: пункт «Услуги» горит на любой из них. */
+const SERVICE_PATHS: string[] = SITE.pages.map((p) => p.href);
+
 /**
  * Шапка прячется при движении вниз и возвращается при движении вверх:
  * иначе она перекрывает подписи у нижней кромки первого экрана.
@@ -118,16 +121,30 @@ export default function Header() {
         </span>
       </Link>
 
-      <nav className="pointer-events-auto hidden items-center gap-7 md:flex">
-        {SITE.nav.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className="font-mono text-[10px] uppercase tracking-rail text-dim transition-colors duration-300 hover:text-fg"
-          >
-            {item.label}
-          </Link>
-        ))}
+      {/* Где ты — видно и в шапке: текущий раздел светлее и с тем же
+          штрихом, что у выбранной темы. «Услуги» горят на всех четырёх
+          страницах направлений — ссылка ведёт на первую из них. */}
+      <nav aria-label="Разделы" className="pointer-events-auto hidden items-center gap-7 md:flex">
+        {SITE.nav.map((item) => {
+          const here = item.href === '/sites' ? SERVICE_PATHS.includes(pathname) : pathname.startsWith(item.href);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-current={here ? 'page' : undefined}
+              className={`relative -my-2 py-2 font-mono text-[10px] uppercase tracking-rail transition-colors duration-300 hover:text-fg ${
+                here ? 'text-fg' : 'text-dim'
+              }`}
+            >
+              {item.label}
+              <span
+                aria-hidden
+                className="absolute inset-x-0 bottom-1 block h-px origin-left bg-accent transition-transform duration-300"
+                style={{ transform: `scaleX(${here ? 1 : 0})` }}
+              />
+            </Link>
+          );
+        })}
       </nav>
 
       {/* тема живёт рядом с навигацией: это настройка просмотра,

@@ -10,19 +10,11 @@ import Process from '@/components/service/Process';
 import { demoBySlug } from '@/content/concepts';
 import { contactHref } from '@/lib/lead';
 import { SITE } from '@/content/site';
+import { pageMeta } from '@/lib/meta';
 
 const PAGE = SITE.concepts.page;
 
-export const metadata: Metadata = {
-  title: PAGE.meta.title,
-  description: PAGE.meta.description,
-  alternates: { canonical: '/concepts' },
-  openGraph: {
-    title: `${PAGE.meta.title} — CoreThree`,
-    description: PAGE.meta.description,
-    url: '/concepts'
-  }
-};
+export const metadata: Metadata = pageMeta({ title: PAGE.meta.title, description: PAGE.meta.description, path: '/concepts' });
 
 /**
  * Витрина концептов.

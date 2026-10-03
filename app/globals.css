@@ -65,6 +65,33 @@
   --edge: rgba(11, 12, 14, 0.30);
 }
 
+/* Прелоадер. Уже видели в этой сессии — не показываем вовсе (флаг ставит
+   SEEN_BOOT в <head> до первой отрисовки). Страховка на случай, когда
+   скрипты не загрузились или упали: оверлей уходит сам через 7 секунд —
+   позже сторожевого таймера в самом прелоадере, так что живому сценарию
+   она не мешает. Без JS вовсе его прячет <noscript> в layout. */
+html[data-seen] [data-preloader] {
+  display: none;
+}
+[data-preloader] {
+  animation: preloader-failsafe 0.5s ease 7s forwards;
+}
+@keyframes preloader-failsafe {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+/* Общее правило reduced motion обнуляет задержки всех анимаций, и
+   страховка срабатывала бы сразу: оверлей пропал, а замок на прокрутке
+   ещё держится. Здесь задержка остаётся, исчезновение — мгновенное. */
+@media (prefers-reduced-motion: reduce) {
+  [data-preloader] {
+    animation-duration: 0.001ms !important;
+    animation-delay: 7s !important;
+  }
+}
+
 /* Пока знак прелоадера летит в шапку, её собственный знак спрятан: на
    экране один знак, и он садится на своё место. Слово рядом проявляется
    следом, когда знак уже сел. */
@@ -445,6 +472,15 @@ body {
 .finale-ink {
   mix-blend-mode: screen;
 }
+/* Финал входит в страницу без кромки. Чернила и затемнение сверху
+   начинались ровно по краю секции — непрозрачной полосой поверх
+   материала, и на каждой странице над финалом стояла горизонтальная
+   линия. Маска растворяет оба слоя: сверху виден тот же материал,
+   что и над секцией, чернила проступают из него. */
+.finale-fade {
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 20%);
+  mask-image: linear-gradient(180deg, transparent 0%, #000 20%);
+}
 :root[data-theme='light'] .finale-ink {
   mix-blend-mode: multiply;
   filter: invert(1) hue-rotate(180deg);
@@ -656,7 +692,11 @@ body {
 
 .brief-card {
   position: relative;
-  display: block;
+  /* кнопка центрирует содержимое по высоте сама: карточка с короткой
+     подписью в ряду с двухстрочными съезжала на 10px вниз */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
   min-height: 104px;
   padding: 16px 16px 18px;
   border: 1px solid var(--line-strong);

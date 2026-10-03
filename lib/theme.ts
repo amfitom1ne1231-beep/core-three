@@ -15,8 +15,13 @@ export type Theme = 'dark' | 'light';
 
 const KEY = 'ct-theme';
 
-/** Одна строка, которую страница выполняет до первой отрисовки. */
-export const THEME_BOOT = `(function(){try{var s=localStorage.getItem('${KEY}');var m=window.matchMedia('(prefers-color-scheme: light)').matches;document.documentElement.dataset.theme=(s==='light'||s==='dark')?s:(m?'light':'dark')}catch(e){}})()`;
+/**
+ * Одна строка, которую страница выполняет до первой отрисовки. Если тема
+ * выбрана вручную, строка браузера перекрашивается под неё, когда теги
+ * разметки уже на месте: иначе у тёмной темы на светлой системе строка
+ * оставалась светлой до первого переключения.
+ */
+export const THEME_BOOT = `(function(){try{var s=localStorage.getItem('${KEY}');var m=window.matchMedia('(prefers-color-scheme: light)').matches;var t=(s==='light'||s==='dark')?s:(m?'light':'dark');document.documentElement.dataset.theme=t;if(s===t){document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('meta[name="theme-color"]').forEach(function(e){e.setAttribute('content',t==='light'?'#f4f5f7':'#050608')})})}}catch(e){}})()`;
 
 export function readTheme(): Theme {
   if (typeof document === 'undefined') return 'dark';
@@ -40,9 +45,12 @@ export function setTheme(next: Theme) {
   } catch {
     /* приватный режим: выбор проживёт до перезагрузки */
   }
-  // строка браузера и системные элементы формы — по той же теме
-  document
-    .querySelector('meta[name="theme-color"]')
-    ?.setAttribute('content', next === 'light' ? '#f4f5f7' : '#050608');
+  // Строка браузера — по той же теме. Тегов два, по одному на системную
+  // настройку, и браузер берёт тот, чей media совпал. Правили раньше
+  // только первый (тёмный): у кого система светлая, выбор тёмной темы
+  // строку не перекрашивал.
+  document.querySelectorAll('meta[name="theme-color"]').forEach((m) => {
+    m.setAttribute('content', next === 'light' ? '#f4f5f7' : '#050608');
+  });
   listeners.forEach((fn) => fn(next));
 }

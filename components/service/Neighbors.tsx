@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import gsap from 'gsap';
-import { LIVE_W, LIVE_H } from '../live/kit';
+import { LIVE_W } from '../live/kit';
 import { LIVE_BY_KEY } from '../live/map';
 import { SITE } from '@/content/site';
 

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { checkLead } from '@/lib/lead';
 import { saveLead } from '@/lib/leads-store';
+import { notifyLead } from '@/lib/notify';
 
 /**
  * Приём заявки. Клиенту не верим: проверка повторяется здесь целиком.
@@ -17,6 +18,24 @@ const MAX_LEADS = 5;
 const MAX_HITS = 30;
 
 const hits = new Map<string, number[]>();
+
+/**
+ * Во сколько раз шире лимиты у безымянного ведра. Туда попадают все,
+ * чей адрес узнать нельзя, — то есть на хостинге без доверенного
+ * заголовка все посетители разом. С обычными лимитами один человек
+ * тридцатью запросами закрывал форму для всех на десять минут.
+ */
+const SHARED = 10;
+
+/**
+ * Заголовок с адресом, который ставит хостинг превью. Имя вписывается
+ * на сборке (next.config.mjs), а не читается из запроса: иначе на любом
+ * другом хостинге клиент прислал бы этот заголовок сам и выбрал себе
+ * адрес — ровно та дыра, которую закрывали с x-forwarded-for.
+ */
+const HOST_IP_HEADER = process.env.LEAD_IP_HEADER ?? '';
+
+let warned = false;
 
 /**
  * Адрес отправителя.
@@ -40,6 +59,11 @@ function clientIp(req: Request): string {
   const vercel = req.headers.get('x-vercel-forwarded-for');
   if (vercel) return vercel.split(',')[0]!.trim();
 
+  if (HOST_IP_HEADER) {
+    const host = req.headers.get(HOST_IP_HEADER);
+    if (host) return host.trim();
+  }
+
   if (process.env.TRUST_PROXY === '1') {
     const real = req.headers.get('x-real-ip');
     if (real) return real.trim();
@@ -49,6 +73,10 @@ function clientIp(req: Request): string {
       const parts = chain.split(',');
       return parts[parts.length - 1]!.trim();
     }
+  }
+  if (!warned && process.env.NODE_ENV === 'production') {
+    warned = true;
+    console.warn('[lead] адрес отправителя неизвестен: все заявки в одном ведре. За прокси задайте TRUST_PROXY=1');
   }
   return 'unknown';
 }
@@ -73,9 +101,10 @@ function limited(key: string, max: number): boolean {
 
 export async function POST(req: Request) {
   const ip = clientIp(req);
+  const k = ip === 'unknown' ? SHARED : 1;
   // считается любое обращение, включая мусорное: иначе поток заведомо
   // битых тел не ограничен ничем
-  if (limited(`hit:${ip}`, MAX_HITS)) {
+  if (limited(`hit:${ip}`, MAX_HITS * k)) {
     return NextResponse.json({ error: 'rate_limited' }, { status: 429 });
   }
 
@@ -93,7 +122,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'invalid', fields: check.errors }, { status: 422 });
   }
 
-  if (limited(`lead:${ip}`, MAX_LEADS)) {
+  if (limited(`lead:${ip}`, MAX_LEADS * k)) {
     return NextResponse.json({ error: 'rate_limited' }, { status: 429 });
   }
 
@@ -101,11 +130,13 @@ export async function POST(req: Request) {
   // она ошибается на живых людях, и такую заявку надо иметь возможность
   // найти. Отправителю отвечаем как при успехе.
   if (check.bot) {
-    await saveLead(check.lead, 'spam');
+    await Promise.all([saveLead(check.lead, 'spam'), notifyLead(check.lead, 'spam')]);
     return NextResponse.json({ ok: true });
   }
 
-  const result = await saveLead(check.lead);
-  if (result === 'saved' || result === 'dry') return NextResponse.json({ ok: true });
+  // База и уведомление — независимо друг от друга: заявка, которая дошла
+  // хотя бы одним путём, не потеряна, и человеку честно отвечаем «принято»
+  const [result, notified] = await Promise.all([saveLead(check.lead), notifyLead(check.lead)]);
+  if (result === 'saved' || result === 'dry' || notified === 'sent') return NextResponse.json({ ok: true });
   return NextResponse.json({ error: 'unavailable' }, { status: 503 });
 }

@@ -47,13 +47,8 @@ export default function DemoBand({
       {/* ---------- кадр ---------- */}
       <div className={flip ? 'lg:order-2' : undefined}>
         <div className="mb-3 flex items-center justify-between gap-4">
-          <span className="flex items-center gap-2">
-            <i className="relative flex h-1.5 w-1.5">
-              <i className="absolute inset-0 animate-ping rounded-full bg-accent opacity-60" />
-              <i className="relative h-1.5 w-1.5 rounded-full bg-accent" />
-            </i>
-            <span className="rail-label">{meta.domain}</span>
-          </span>
+          {/* адрес без пульсирующей точки: «онлайн»-точки сняты по всему сайту */}
+          <span className="rail-label">{meta.domain}</span>
           <span className="rail-label">{item.niche}</span>
         </div>
 

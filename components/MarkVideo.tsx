@@ -32,8 +32,18 @@ type Props = {
   initial?: number;
 };
 
-const isSafari = () =>
-  typeof navigator !== 'undefined' && /^((?!chrome|android|crios|fxios|edg).)*safari/i.test(navigator.userAgent);
+/**
+ * Кому нужен HEVC: всему, что рисует WebKit. Это Safari на маке и любой
+ * браузер на iPhone и iPad — Chrome и Firefox там работают на том же
+ * WebKit под своей обёрткой, и WebM с альфой не покажут. Раньше они
+ * отсекались вместе с Chrome для мака и получали WebM.
+ */
+const needsHevc = () => {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent;
+  const ios = /iP(hone|ad|od)/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  return ios || /^((?!chrome|android|crios|fxios|edg).)*safari/i.test(ua);
+};
 
 const MarkVideo = forwardRef<MarkVideoHandle, Props>(function MarkVideo({ variant, className = '', initial = 0 }, ref) {
   const wrap = useRef<HTMLDivElement>(null);
@@ -52,7 +62,7 @@ const MarkVideo = forwardRef<MarkVideoHandle, Props>(function MarkVideo({ varian
     const conn = (navigator as { connection?: { saveData?: boolean } }).connection;
     if (reduced || conn?.saveData) return;
 
-    const file = `/video/mark/${variant}.${isSafari() ? 'mov' : 'webm'}`;
+    const file = `/video/mark/${variant}.${needsHevc() ? 'mov' : 'webm'}`;
     const io = new IntersectionObserver(
       ([e]) => {
         if (e.isIntersecting) setSrc((s) => s ?? file);
@@ -123,6 +133,10 @@ const MarkVideo = forwardRef<MarkVideoHandle, Props>(function MarkVideo({ varian
       <img
         src={poster}
         alt=""
+        // петля стоит в финале, далеко внизу: без lazy React вписывал её
+        // постер в предзагрузку <head> каждой страницы
+        loading={variant === 'loop' ? 'lazy' : undefined}
+        decoding="async"
         className="absolute inset-0 h-full w-full object-contain transition-opacity duration-300"
         style={{ opacity: ready ? 0 : 1 }}
         draggable={false}

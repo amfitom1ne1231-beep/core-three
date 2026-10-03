@@ -21,6 +21,8 @@ import { SITE } from '@/content/site';
  * пунктом: первый шаг человек делает здесь, не уходя со страницы,
  * и приходит в заявку не с пустого листа.
  */
+const RING_TEXT = 'ОБСУДИТЬ ПРОЕКТ · ОТВЕТИМ ЗА ДЕНЬ · РАЗБОР — 0 ₽ ·';
+
 export default function FinaleStage() {
   const pathname = usePathname() ?? '/';
   const { footer } = SITE;
@@ -31,11 +33,11 @@ export default function FinaleStage() {
     <section id="lead" className="relative isolate min-h-[100svh] scroll-mt-0 overflow-hidden" aria-label="Следующий шаг">
       {/* чернила во весь кадр: в тёмной теме светятся сквозь материал,
           в светлой — инвертированы и ложатся тушью на бумагу */}
-      <div className="finale-ink pointer-events-none absolute inset-0 -z-10">
+      <div className="finale-ink finale-fade pointer-events-none absolute inset-0 -z-10">
         <VideoBackdrop src={SITE.media.ink.src} poster={SITE.media.ink.poster} crop={1.04} opacity={0.9} />
       </div>
       <div
-        className="pointer-events-none absolute inset-0 -z-10"
+        className="finale-fade pointer-events-none absolute inset-0 -z-10"
         style={{
           background:
             'linear-gradient(180deg, rgb(var(--bg-rgb)) 0%, rgb(var(--bg-rgb) / 0) 22%, rgb(var(--bg-rgb) / 0) 70%, rgb(var(--bg-rgb)) 100%), radial-gradient(90% 70% at 30% 50%, rgb(var(--bg-rgb) / 0.55) 0%, rgb(var(--bg-rgb) / 0) 70%)'
@@ -93,14 +95,21 @@ export default function FinaleStage() {
         {/* знак в объёме и большая кнопка на нём */}
         <div className="relative mx-auto w-full max-w-[560px]">
           <MarkVideo variant="loop" className="aspect-square w-full" />
-          <Link href={base} data-magnetic className="round-cta absolute bottom-[4%] left-[-2%] sm:left-[2%]" aria-label="Обсудить проект">
+          {/* имя ссылки — ровно надпись на кольце: голосовой ввод зовёт кнопку
+              тем, что видит, и читалка должна назвать её так же */}
+          <Link href={base} data-magnetic className="round-cta absolute bottom-[4%] left-[-2%] sm:left-[2%]" aria-label={RING_TEXT}>
             <svg viewBox="0 0 200 200" className="round-cta-ring" aria-hidden>
               <defs>
                 <path id="rc-circle" d="M100 100 m-78 0 a78 78 0 1 1 156 0 a78 78 0 1 1 -156 0" />
               </defs>
-              <text>
-                <textPath href="#rc-circle" startOffset="0">
-                  ОБСУДИТЬ ПРОЕКТ · ОТВЕТИМ ЗА ДЕНЬ · РАЗБОР — 0 ₽ ·
+              {/* Окружность — 490 единиц, а строка в моноширинном с разрядкой
+                  выходила на 513: хвост «₽ ·» обрезался, и кольцо читалось
+                  «РАЗБОР — 0». textLength подгоняет разрядку под окружность
+                  при любом шрифте, включая запасной, а зазор в четыре
+                  единицы оставляет место стыку конца с началом. */}
+              <text textLength={486} lengthAdjust="spacing">
+                <textPath href="#rc-circle" startOffset="0" textLength={486} lengthAdjust="spacing">
+                  {RING_TEXT}
                 </textPath>
               </text>
             </svg>

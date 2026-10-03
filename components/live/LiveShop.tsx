@@ -125,7 +125,7 @@ export default function LiveShop({ playing }: LiveProps) {
               <div key={it.name} data-card={i} className="w-[158px] overflow-hidden rounded-[12px] bg-[#1c1c20]">
                 <div className="relative h-[134px] overflow-hidden">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img data-img={i} src={it.img} alt="" className="h-full w-full object-cover" draggable={false} />
+                  <img loading="lazy" decoding="async" data-img={i} src={it.img} alt="" className="h-full w-full object-cover" draggable={false} />
                   {it.badge && (
                     <span
                       className="absolute left-2 top-2 flex items-center gap-1 rounded-full px-2 py-0.5 text-[8.5px] font-semibold"
@@ -180,6 +180,8 @@ export default function LiveShop({ playing }: LiveProps) {
           <img
             data-fly
             src="/live/candle.webp"
+            loading="lazy"
+            decoding="async"
             alt=""
             className="absolute left-0 top-0 h-12 w-12 rounded-full object-cover opacity-0 shadow-[0_10px_24px_rgba(0,0,0,0.5)]"
           />
@@ -196,7 +198,7 @@ export default function LiveShop({ playing }: LiveProps) {
               </p>
               <div className="mt-3 flex items-center gap-2.5 rounded-[10px] bg-[#222226] p-2">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/live/candle.webp" alt="" className="h-11 w-11 rounded-[8px] object-cover" />
+                <img loading="lazy" decoding="async" src="/live/candle.webp" alt="" className="h-11 w-11 rounded-[8px] object-cover" />
                 <span className="flex-1 text-[10.5px] leading-tight">
                   Свеча «Кедр»
                   <span className="block text-[9px] text-[#77726b]">Соевый воск</span>

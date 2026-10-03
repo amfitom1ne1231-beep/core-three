@@ -8,20 +8,24 @@
     "start": "next start",
     "build:check": "NEXT_DIST_DIR=.next-check next build",
     "start:check": "NEXT_DIST_DIR=.next-check next start -p 3100",
-    "test": "tsc lib/lead.ts --outDir .test-out --target es2022 --module es2022 --skipLibCheck && node --test test/"
+    "test": "tsc -p tsconfig.test.json && node --test test/",
+    "lint": "eslint ."
   },
   "dependencies": {
+    "gsap": "^3.13.0",
+    "lenis": "^1.3.11",
     "next": "^15.5.4",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1",
-    "gsap": "^3.13.0",
-    "lenis": "^1.3.11"
+    "react-dom": "^19.1.1"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.7",
     "@types/node": "^22.18.0",
     "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",
     "autoprefixer": "^10.4.21",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^15.5.25",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.18",
     "typescript": "^5.9.2"

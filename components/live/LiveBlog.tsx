@@ -106,7 +106,7 @@ export default function LiveBlog({ playing }: LiveProps) {
           <article className="absolute left-6 top-[52px] w-[318px]">
             <div data-cover className="relative h-[92px] overflow-hidden rounded-[8px]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img data-cover-img src="/live/desk.webp" alt="" className="h-full w-full object-cover" draggable={false} />
+              <img loading="lazy" decoding="async" data-cover-img src="/live/desk.webp" alt="" className="h-full w-full object-cover" draggable={false} />
             </div>
             <p data-kicker className="m-0 mt-3 font-mono text-[8.5px] uppercase tracking-[0.18em] text-[#8a8479]">
               Заметки · 4 мин · 22 сентября

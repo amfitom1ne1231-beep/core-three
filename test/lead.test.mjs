@@ -12,7 +12,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { checkLead, kindFromLocation, contactHref, LIMITS, MIN_FILL_MS } from '../.test-out/lead.js';
+import { checkLead, kindFromLocation, contactHref, LIMITS, MIN_FILL_MS } from '../.test-out/lib/lead.js';
 
 /** Заведомо правильная заявка: в тестах меняем по одному полю. */
 const ok = () => ({

@@ -60,6 +60,11 @@ export type SilkHandle = {
   setParams: (patch: Partial<SilkParams>) => void;
   /** 0 — тёмный матовый, 1 — молочный (волна 2). Переход плавный. */
   setTheme: (mode: 0 | 1) => void;
+  /**
+   * Не рисовать: материал целиком закрыт завесой главы. Последний кадр
+   * остаётся на канвасе, под непрозрачной завесой его всё равно не видно.
+   */
+  setPaused: (paused: boolean) => void;
 };
 
 const hexToRgb = (hex: string): [number, number, number] => {
@@ -94,7 +99,7 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
     // Без WebGL остаётся фон из токенов темы — первый экран не ломается.
     canvas.style.display = 'none';
     opts.onFirstFrame?.();
-    return { destroy: () => {}, setParams: () => {}, setTheme: () => {} };
+    return { destroy: () => {}, setParams: () => {}, setTheme: () => {}, setPaused: () => {} };
   }
 
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -163,7 +168,7 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
   if (!silk || !sim) {
     canvas.style.display = 'none';
     opts.onFirstFrame?.();
-    return { destroy: () => {}, setParams: () => {}, setTheme: () => {} };
+    return { destroy: () => {}, setParams: () => {}, setTheme: () => {}, setPaused: () => {} };
   }
 
   /* --- поле следа курсора: две RGBA8-текстуры по кругу --- */
@@ -194,6 +199,14 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   };
 
+  /**
+   * При reduced motion время стоит, след курсора выключен, и каждый кадр
+   * был копией предыдущего — шестьдесят раз в секунду. Теперь кадр
+   * рисуется, только когда что-то поменялось: параметры главы, тема,
+   * размер окна.
+   */
+  let dirty = true;
+
   /* --- размеры --- */
   let renderScale = isMobile ? 0.7 : 1;
   const resize = () => {
@@ -203,6 +216,7 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
     canvas.width = Math.max(1, Math.round(cssW * dpr * renderScale));
     canvas.height = Math.max(1, Math.round(cssH * dpr * renderScale));
     sizeField(256, Math.max(64, Math.round(256 / Math.max(cssW / cssH, 0.3))));
+    dirty = true;
   };
 
   /* --- ввод --- */
@@ -266,10 +280,21 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
   let raf = 0;
   let announced = false;
   const still = reduced || isMobile;
+  let paused = false;
 
   const frame = (now: number) => {
     raf = requestAnimationFrame(frame);
-    if (hidden || !onScreen || !silk) return;
+    // первый кадр рисуется в любом случае: его ждёт прелоадер, а страница,
+    // открытая посреди схемы, начинает как раз под полной завесой
+    if (hidden || !onScreen || (paused && announced) || !silk) {
+      last = now;
+      return;
+    }
+    if (reduced && !dirty && Math.abs(modeTarget - mode) < 0.001) {
+      last = now;
+      return;
+    }
+    dirty = false;
 
     const dt = Math.min((now - last) / 1000, 0.05);
     last = now;
@@ -354,7 +379,9 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
       opts.onFirstFrame?.();
     }
 
-    // 3. разрешение подстраивается под живые кадры
+    // 3. разрешение подстраивается под живые кадры (при reduced motion
+    // кадров нет по замыслу — подстраивать нечего)
+    if (reduced) return;
     acc += dt;
     frames++;
     if (acc >= 0.5) {
@@ -395,6 +422,7 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
     setParams(patch) {
       const needsRebuild = patch.octaves !== undefined && patch.octaves !== P.octaves;
       Object.assign(P, patch);
+      dirty = true;
       if (needsRebuild) {
         if (silk) gl.deleteProgram(silk.program);
         silk = build(`#define OCT ${P.octaves | 0}\n${SILK_FRAG}`);
@@ -402,6 +430,10 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
     },
     setTheme(next) {
       modeTarget = next;
+      dirty = true;
+    },
+    setPaused(next) {
+      paused = next;
     }
   };
 }

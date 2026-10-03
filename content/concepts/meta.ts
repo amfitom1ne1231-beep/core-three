@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { demoBySlug } from './index';
+import { pageMeta } from '@/lib/meta';
 
 /**
  * Метаданные страницы демо. Общие для всех четырёх, чтобы заголовок
@@ -9,14 +10,5 @@ import { demoBySlug } from './index';
 export function demoMetadata(slug: string): Metadata {
   const demo = demoBySlug(slug);
   if (!demo) return {};
-  return {
-    title: demo.title,
-    description: demo.description,
-    alternates: { canonical: `/concepts/${demo.slug}` },
-    openGraph: {
-      title: `${demo.title} — CoreThree`,
-      description: demo.description,
-      url: `/concepts/${demo.slug}`
-    }
-  };
+  return pageMeta({ title: demo.title, description: demo.description, path: `/concepts/${demo.slug}` });
 }

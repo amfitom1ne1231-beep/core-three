@@ -6,17 +6,9 @@ import RevealText from '@/components/RevealText';
 import ScrollScenes from '@/components/ScrollScenes';
 import Neighbors from '@/components/service/Neighbors';
 import { ABOUT } from '@/content/about';
+import { pageMeta } from '@/lib/meta';
 
-export const metadata: Metadata = {
-  title: ABOUT.meta.title,
-  description: ABOUT.meta.description,
-  alternates: { canonical: '/about' },
-  openGraph: {
-    title: `${ABOUT.meta.title} — CoreThree`,
-    description: ABOUT.meta.description,
-    url: '/about'
-  }
-};
+export const metadata: Metadata = pageMeta({ title: ABOUT.meta.title, description: ABOUT.meta.description, path: '/about' });
 
 /**
  * О студии.
@@ -101,7 +93,9 @@ export default function AboutPage() {
                   {/* имя появится, когда его дадут: роль работает и без него */}
                   {m.name ? <h3 className="display m-0 mt-4 text-[clamp(22px,2.2vw,32px)]">{m.name}</h3> : null}
                   <p className="relative m-0 mt-5 flex-1 text-[14.5px] leading-relaxed text-dim">{m.text}</p>
-                  <ul className="relative m-0 mt-7 flex list-none flex-wrap gap-1.5 p-0">
+                  {/* чипы переносятся раньше угла с номером: на одной строке
+                      с ним они ложились поверх цифр */}
+                  <ul className="relative m-0 mt-7 flex list-none flex-wrap gap-1.5 p-0 pr-[clamp(72px,7.5vw,124px)]">
                     {m.owns.map((o) => (
                       <li
                         key={o}

@@ -131,7 +131,11 @@ export default function HeroSilk({ params }: { params?: Partial<SilkParams> }) {
         }
       }
       silk.setParams(patch);
-      if (veil.current) veil.current.style.opacity = (v / total).toFixed(3);
+      const cover = v / total;
+      if (veil.current) veil.current.style.opacity = cover.toFixed(3);
+      // Под схемой завеса глухая, а шейдер рисовал полный экран каждый
+      // кадр — для никого. Стоит, пока материал не видно совсем.
+      silk.setPaused(cover > 0.995);
     };
     const schedule = () => {
       if (!raf) raf = requestAnimationFrame(blend);

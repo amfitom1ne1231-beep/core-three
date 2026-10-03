@@ -125,7 +125,7 @@ export default function LiveWebApp({ playing }: LiveProps) {
                 {MENU.map((m, i) => (
                   <li key={m.name} data-row className="flex items-center gap-2 border-b border-[#f1f1f4] px-2 py-1.5 last:border-b-0">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img data-dish src={m.img} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" draggable={false} />
+                    <img loading="lazy" decoding="async" data-dish src={m.img} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" draggable={false} />
                     <span className="min-w-0 flex-1 leading-tight">
                       <b className="block whitespace-nowrap text-[10.5px] font-semibold">{m.name}</b>
                       <span className="block whitespace-nowrap text-[8.5px] text-[#999]">{m.note}</span>
@@ -206,7 +206,7 @@ export default function LiveWebApp({ playing }: LiveProps) {
               {[MENU[0], MENU[2]].map((m) => (
                 <li key={m.name} data-ticket className="flex items-center gap-2 text-[10px]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={m.img} alt="" className="h-5 w-5 rounded-full object-cover" />
+                  <img loading="lazy" decoding="async" src={m.img} alt="" className="h-5 w-5 rounded-full object-cover" />
                   <span className="flex-1 leading-tight">
                     {m.name}
                     <span className="block text-[8.5px] text-white/45">{m.note}</span>

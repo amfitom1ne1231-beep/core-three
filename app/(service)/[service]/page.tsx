@@ -7,6 +7,7 @@ import TelegramDemo from '@/components/TelegramDemo';
 import { SERVICES, bySlug } from '@/content/services';
 import { SITE } from '@/content/site';
 import { TG_DEMO } from '@/content/tg-demo';
+import { pageMeta } from '@/lib/meta';
 
 /**
  * Четыре страницы направлений на одном роуте.
@@ -30,16 +31,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const page = bySlug((await params).service);
   if (!page) return {};
-  return {
-    title: page.meta.title,
-    description: page.meta.description,
-    alternates: { canonical: `/${page.slug}` },
-    openGraph: {
-      title: `${page.meta.title} — CoreThree`,
-      description: page.meta.description,
-      url: `/${page.slug}`
-    }
-  };
+  return pageMeta({ title: page.meta.title, description: page.meta.description, path: `/${page.slug}` });
 }
 
 export default async function Service({ params }: { params: Promise<{ service: string }> }) {

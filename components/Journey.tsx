@@ -130,7 +130,7 @@ export default function Journey() {
 
   return (
     <section ref={section} data-chapter="anatomy" className="relative z-10 w-full" aria-label="Как это устроено">
-      <div data-recede className="flex flex-col gap-[clamp(28px,5vh,56px)] px-4 section-y sm:px-8 lg:px-[56px]">
+      <div data-recede className="flex flex-col gap-[clamp(28px,5vh,56px)] px-4 section-y sm:px-8 lg:px-[72px]">
         <div className="grid gap-6 lg:grid-cols-[1fr_minmax(0,420px)] lg:items-end">
           <div>
             <div className="flex items-center justify-between gap-4">

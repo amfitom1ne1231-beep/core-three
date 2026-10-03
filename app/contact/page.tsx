@@ -6,12 +6,9 @@ import RevealText from '@/components/RevealText';
 import ScrollScenes from '@/components/ScrollScenes';
 import Process from '@/components/service/Process';
 import { SITE } from '@/content/site';
+import { pageMeta } from '@/lib/meta';
 
-export const metadata: Metadata = {
-  title: 'Обсудить проект',
-  description: SITE.contact.lead,
-  alternates: { canonical: '/contact' }
-};
+export const metadata: Metadata = pageMeta({ title: 'Обсудить проект', description: SITE.contact.lead, path: '/contact' });
 
 /**
  * Заявка — главный разговор сайта, поэтому она не форма, а бриф.

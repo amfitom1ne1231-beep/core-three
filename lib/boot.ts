@@ -82,3 +82,27 @@ export function markLeaving(rect: DOMRect | null) {
   resolveLeave?.(rect);
   resolveLeave = null;
 }
+
+/* ------------------------------------------------------------------ */
+
+/**
+ * Прелоадер — один раз за сессию.
+ *
+ * Он держал контент две-три секунды на каждом прямом заходе: со ссылки
+ * в мессенджере, из поиска, по кнопке «назад» после внешнего сайта.
+ * Сборка знака хороша при знакомстве, а на пятом заходе за вечер — это
+ * просто ожидание. Флаг ставится, когда прелоадер ушёл, и читается
+ * в <head> до первой отрисовки: оверлей прячется стилем ещё до того,
+ * как загрузится хоть один скрипт.
+ */
+export const SEEN_KEY = 'ct-seen';
+
+export const SEEN_BOOT = `(function(){try{if(sessionStorage.getItem('${SEEN_KEY}'))document.documentElement.dataset.seen=''}catch(e){}})()`;
+
+export function markSeen() {
+  try {
+    sessionStorage.setItem(SEEN_KEY, '1');
+  } catch {
+    /* приватный режим: прелоадер покажется и в следующий раз */
+  }
+}

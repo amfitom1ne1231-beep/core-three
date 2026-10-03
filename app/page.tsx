@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Atlas from '@/components/Atlas';
 import Cta from '@/components/Cta';
 import Footer from '@/components/Footer';
@@ -10,6 +11,9 @@ import ScrollScenes from '@/components/ScrollScenes';
 import { SITE } from '@/content/site';
 
 const url = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+
+// остальное — заголовок, описание, картинка — главная берёт из корня
+export const metadata: Metadata = { alternates: { canonical: '/' } };
 
 /** Разметка для поисковиков: кто мы, чем занимаемся, как связаться. */
 const jsonLd = {

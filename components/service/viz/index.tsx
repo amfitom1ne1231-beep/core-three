@@ -30,7 +30,8 @@ export type VizProps = { note?: string };
 /* ---------------- 01. структура страницы ---------------- */
 const Blocks = ({ note }: VizProps) => (
   <Scene>
-    <Box className="absolute inset-x-[8%] inset-y-[6%] flex flex-col gap-[7%] p-[6%]">
+    {/* рамка кончается выше подписи: на 6% снизу подпись ложилась на её кромку */}
+    <Box className="absolute inset-x-[8%] bottom-[15%] top-[6%] flex flex-col gap-[7%] p-[6%]">
       <div className="flex items-center justify-between" style={rise(60)}>
         <Bar w="18%" h={6} tone={0.4} />
         <div className="flex gap-1.5">
@@ -49,7 +50,7 @@ const Blocks = ({ note }: VizProps) => (
         <span className="block h-6 w-20 border border-line-strong" />
       </div>
     </Box>
-    <Tag className="absolute bottom-[2%] left-[8%]">{note ?? 'порядок чтения'}</Tag>
+    <Tag className="absolute bottom-[5%] left-[8%]">{note ?? 'порядок чтения'}</Tag>
   </Scene>
 );
 

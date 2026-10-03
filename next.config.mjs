@@ -14,6 +14,13 @@ const nextConfig = {
   outputFileTracingRoot: dirname(fileURLToPath(import.meta.url)),
   reactStrictMode: true,
   poweredByHeader: false,
+  env: {
+    // Адрес посетителя для лимита заявок на Netlify. Сборка Netlify всегда
+    // выставляет NETLIFY=true; переменные из netlify.toml до серверной
+    // функции в рантайме не доходят, поэтому имя заголовка вписывается
+    // здесь, на сборке. На Vercel свой заголовок, на VPS — TRUST_PROXY.
+    LEAD_IP_HEADER: process.env.NETLIFY === 'true' ? 'x-nf-client-connection-ip' : ''
+  },
   /**
    * Превью (SITE_NOINDEX=1 задаёт netlify.toml) не должно попасть в поиск
    * раньше настоящего домена. Заголовок ставится здесь, а не в netlify.toml:
@@ -21,8 +28,26 @@ const nextConfig = {
    * отдаёт рантайм Next.js мимо них. На боевом хостинге переменной нет.
    */
   async headers() {
-    if (process.env.SITE_NOINDEX !== '1') return [];
-    return [{ source: '/:path*', headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }] }];
+    /**
+     * Базовые заголовки безопасности. Полный CSP со списком источников
+     * скриптов здесь нарочно не задан: инлайновые скрипты Next и Метрика
+     * потребовали бы nonce или 'unsafe-inline', и выигрыш был бы мнимым.
+     * Зато запрещено то, что не нужно сайту никогда: встраивать его
+     * в чужие фреймы (демо витрина встраивает только сама), подменять
+     * базовый адрес, грузить плагины и отправлять формы на сторону.
+     */
+    const security = [
+      { key: 'X-Content-Type-Options', value: 'nosniff' },
+      { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+      { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+      { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+      {
+        key: 'Content-Security-Policy',
+        value: "frame-ancestors 'self'; base-uri 'self'; object-src 'none'; form-action 'self'"
+      }
+    ];
+    if (process.env.SITE_NOINDEX === '1') security.push({ key: 'X-Robots-Tag', value: 'noindex, nofollow' });
+    return [{ source: '/:path*', headers: security }];
   },
   compiler: {
     // шейдерные строки большие, но статичные — убираем только логи

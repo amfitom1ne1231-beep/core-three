@@ -58,10 +58,13 @@ import { SITE } from '@/content/site';
 
 /**
  * Размер пульта и отступ от края подобраны под сетку сайта: у секций
- * боковое поле 72px, и 56 + 24 укладываются в него, не наезжая на текст.
+ * боковое поле 72px. Было 56 + 24 = 80 — пульт заходил на текст на
+ * восемь пикселей, и у левого края на каждой странице под ним пропадали
+ * буквы заголовков, чипы и подписи. 48 + 16 = 64 оставляют до текста
+ * восемь пикселей воздуха, а область нажатия не меньше 44.
  */
-const SIZE = 56;
-const EDGE = 24;
+const SIZE = 48;
+const EDGE = 16;
 /** Ниже этой доли экрана знак уходит из шапки в пульт. */
 const HANDOFF = 0.75;
 /** Ширина живого экрана в панели и его высота по пропорции вставки. */
@@ -96,7 +99,7 @@ const EXTRA = [
 const PAGE_NAME: Record<string, string> = {
   '/': 'Главная',
   '/contact': 'Заявка',
-  '/consent': 'Cookie',
+  '/consent': 'Согласие',
   ...Object.fromEntries([...ROUTES, ...EXTRA].map((r) => [r.href, r.label]))
 };
 
@@ -497,7 +500,7 @@ export default function NavPod() {
 
           {/* знак проворачивается своим слоем: внешние заняты появлением
               и парением */}
-          <span ref={spin} className="block h-8 w-8">
+          <span ref={spin} className="block h-7 w-7">
             <MarkColor id={markId} className="h-full w-full" />
           </span>
         </button>

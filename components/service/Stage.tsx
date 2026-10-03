@@ -87,12 +87,10 @@ export default function Stage({ live: Live, task }: { live: ComponentType<LivePr
     <div className="relative">
       {/* Отметка живого кадра. Номер направления не дублируется: он уже
           стоит кикером над заголовком, а два одинаковых рельса рядом
-          читаются как сбой вёрстки, а не как система. */}
-      <div className="mb-3 flex items-center gap-2 pr-4 sm:pr-8 lg:pr-0">
-        <i className="relative flex h-1.5 w-1.5">
-          <i className="absolute inset-0 animate-ping rounded-full bg-accent opacity-60" />
-          <i className="relative h-1.5 w-1.5 rounded-full bg-accent" />
-        </i>
+          читаются как сбой вёрстки, а не как система. Пульсирующей точки
+          перед подписью больше нет — та же примета шаблона, что «на связи»
+          на кнопке заявки, снятая раньше. */}
+      <div className="mb-3 pr-4 sm:pr-8 lg:pr-0">
         <span className="rail-label">Живой кадр</span>
       </div>
 

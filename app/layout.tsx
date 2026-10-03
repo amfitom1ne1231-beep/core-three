@@ -4,6 +4,7 @@ import CookieConsent from '@/components/CookieConsent';
 import SiteChrome from '@/components/SiteChrome';
 import SmoothScroll from '@/components/SmoothScroll';
 import { SITE } from '@/content/site';
+import { SEEN_BOOT } from '@/lib/boot';
 import { THEME_BOOT } from '@/lib/theme';
 import './globals.css';
 
@@ -40,9 +41,14 @@ export const metadata: Metadata = {
     description: SITE.hero.lead
   },
   twitter: { card: 'summary_large_image' },
-  alternates: { canonical: '/' },
-  // превью закрыто от поиска и метатегом — на случай, если заголовок срежет прокси
-  robots: process.env.SITE_NOINDEX === '1' ? { index: false, follow: false } : { index: true, follow: true }
+  // Канонический адрес здесь не задаётся: из корня он наследовался всем,
+  // у кого нет своего, и 404 объявляла себя главной. Каждая страница
+  // называет свой адрес сама (lib/meta.ts).
+  //
+  // Превью закрыто от поиска и метатегом — на случай, если заголовок
+  // срежет прокси. Явное «index, follow» не пишем: это поведение по
+  // умолчанию, а на 404 оно спорило с noindex, который ставит сам Next.
+  robots: process.env.SITE_NOINDEX === '1' ? { index: false, follow: false } : undefined
 };
 
 export const viewport: Viewport = {
@@ -57,9 +63,9 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    // data-theme выставляет загрузочный скрипт до первой отрисовки;
-    // suppressHydrationWarning — потому что разметка сервера про тему
-    // не знает и знать не может
+    // data-theme и data-seen выставляют загрузочные скрипты до первой
+    // отрисовки; suppressHydrationWarning — потому что разметка сервера
+    // про тему и про уже виденный прелоадер не знает и знать не может
     <html lang="ru" suppressHydrationWarning className={`${onest.variable} ${mono.variable}`}>
       <head>
         {/*
@@ -68,6 +74,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           в <head> выполняется раньше, чем браузер что-либо рисует.
         */}
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT }} />
+        <script dangerouslySetInnerHTML={{ __html: SEEN_BOOT }} />
+        {/* Без JS прелоадер некому снять, и сайт оставался чёрным экраном
+            с «000 / 100». Разметка под ним целиком серверная — её и показываем. */}
+        <noscript dangerouslySetInnerHTML={{ __html: '<style>[data-preloader]{display:none!important}</style>' }} />
       </head>
       <body>
         <a className="skip-link" href="#content">

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import MarkVideo, { type MarkVideoHandle } from '../MarkVideo';
 import { LIVE_H, LIVE_W } from '../live/kit';
 import { LIVE_BY_KEY } from '../live/map';
-import { DEADLINES, EXTRAS, NEEDS, STAGES, estimate } from '@/content/brief';
+import { DEADLINES, EXTRAS, NEEDS, STAGES, estimate, formatEstimate } from '@/content/brief';
 import { checkLead, kindFromLocation, LEAD_KINDS, LIMITS, type LeadField, type LeadKind } from '@/lib/lead';
 import { SITE } from '@/content/site';
 
@@ -13,8 +13,6 @@ type Status = 'idle' | 'sending' | 'done' | 'rate' | 'down';
 type Errors = Partial<Record<LeadField | 'need', string>>;
 
 const PREVIEW_W = 336;
-
-const plural = (n: number) => (n % 10 === 1 && n % 100 !== 11 ? 'неделя' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 'недели' : 'недель');
 
 /**
  * Бриф на странице заявки — главный разговор сайта.
@@ -41,7 +39,6 @@ export default function Brief({ intro }: { intro?: ReactNode }) {
   const [consent, setConsent] = useState(false);
   const [status, setStatus] = useState<Status>('idle');
   const [errors, setErrors] = useState<Errors>({});
-  const [number, setNumber] = useState('0000');
   const [typeParam, setTypeParam] = useState<LeadKind | null>(null);
 
   const started = useRef(0);
@@ -49,8 +46,13 @@ export default function Brief({ intro }: { intro?: ReactNode }) {
   const formRef = useRef<HTMLFormElement>(null);
   const doneRef = useRef<HTMLHeadingElement>(null);
 
-  // пункт из финала страницы и тип раздела — из адреса; номер брифа —
-  // только на клиенте, иначе разметка сервера разошлась бы с ним
+  /**
+   * Пункт из финала страницы и тип раздела — из адреса.
+   *
+   * Номера брифа больше нет. Он собирался из даты и часа, у двоих в один
+   * час выходил одинаковым и в заявку не уходил — то есть был выдуман,
+   * и это на странице, где первое ядро — честность.
+   */
   useEffect(() => {
     started.current = Date.now();
     const q = new URLSearchParams(location.search);
@@ -64,13 +66,24 @@ export default function Brief({ intro }: { intro?: ReactNode }) {
         if (byKind) setNeeds([byKind.id]);
       }
     }
-    const d = new Date();
-    setNumber(String(((d.getMonth() + 1) * 100 + d.getDate()) * 10 + (d.getHours() % 10)).padStart(4, '0'));
   }, []);
 
   const picked = NEEDS.filter((n) => needs.includes(n.id));
   const eta = estimate(needs, stage);
-  const steps = [needs.length > 0, stage !== null, deadline !== null, name.trim() !== '' && contact.trim() !== ''];
+  const etaText = eta ? formatEstimate(eta) : null;
+  /**
+   * Пять шагов, как и вопросов на странице. Третий необязателен,
+   * поэтому он пройден, когда в нём что-то выбрали или ответили на
+   * следующий: иначе счётчик «0 из 4» спорил с «пятью вопросами»,
+   * а заполненный целиком бриф не доходил бы до пяти из пяти.
+   */
+  const steps = [
+    needs.length > 0,
+    stage !== null,
+    extras.length > 0 || deadline !== null,
+    deadline !== null,
+    name.trim() !== '' && contact.trim() !== ''
+  ];
   const done = steps.filter(Boolean).length;
 
   // знак собирается ходом брифа: разобран — на старте, собран — после отправки
@@ -91,10 +104,10 @@ export default function Brief({ intro }: { intro?: ReactNode }) {
       stage && `Этап: ${STAGES.find((s) => s.id === stage)?.label}`,
       extras.length && `Подключить: ${extras.join(', ')}`,
       deadline && `Срок: ${DEADLINES.find((d) => d.id === deadline)?.label}`,
-      eta && `Ориентир: ${eta[0]}–${eta[1]} нед.`
+      etaText && `Ориентир: ${etaText.value} ${etaText.unit}`
     ].filter(Boolean);
     return lines.join('\n');
-  }, [picked, stage, extras, deadline, eta]);
+  }, [picked, stage, extras, deadline, etaText]);
 
   const toggle = (list: string[], set: (v: string[]) => void, id: string) =>
     set(list.includes(id) ? list.filter((x) => x !== id) : [...list, id]);
@@ -165,7 +178,7 @@ export default function Brief({ intro }: { intro?: ReactNode }) {
         {intro}
         {status === 'done' ? (
           <div role="status" className="brief-done">
-            <span className="rail-label">Бриф №{number} отправлен</span>
+            <span className="rail-label">Бриф отправлен</span>
             <h2 ref={doneRef} tabIndex={-1} className="display m-0 mt-6 text-[clamp(36px,5vw,76px)] outline-none">
               Бриф у нас.
               <span className="block font-bold tracking-[-0.035em]">Ответим в течение дня.</span>
@@ -415,10 +428,15 @@ export default function Brief({ intro }: { intro?: ReactNode }) {
             собирается, не видно. Полоска внизу держит главное на экране. */}
         {status !== 'done' && done > 0 && (
           <a href="#brief-live" className="brief-dock lg:hidden">
-            <span className="font-mono text-[10px] uppercase tracking-rail text-faint">Бриф №{number}</span>
+            <span className="font-mono text-[10px] uppercase tracking-rail text-faint">Бриф</span>
             <span className="text-[13px] font-medium">
               {done} из {steps.length}
-              {eta && <span className="text-dim"> · {eta[0]}–{eta[1]} нед.</span>}
+              {etaText && (
+                <span className="text-dim">
+                  {' '}
+                  · {etaText.value} {etaText.unit}
+                </span>
+              )}
             </span>
             <i className="brief-dock-bar" style={{ transform: `scaleX(${done / steps.length})` }} aria-hidden />
           </a>
@@ -431,7 +449,7 @@ export default function Brief({ intro }: { intro?: ReactNode }) {
           <MarkVideo ref={mark} variant="build" initial={0.08} className="aspect-square w-[112px] shrink-0" />
           <div className="min-w-0 flex-1">
             <p className="m-0 flex items-baseline justify-between gap-3">
-              <span className="rail-label">Бриф №{number}</span>
+              <span className="rail-label">Бриф</span>
               <span className="font-mono text-[10px] tracking-rail text-faint">
                 {status === 'done' ? 'отправлен' : `${done} из ${steps.length}`}
               </span>
@@ -461,9 +479,9 @@ export default function Brief({ intro }: { intro?: ReactNode }) {
             <span className="font-mono text-[10px] text-faint">уточним на созвоне</span>
           </p>
           <p className="m-0 mt-2 text-[28px] font-medium leading-none tracking-[-0.02em]">
-            {eta ? (
+            {etaText ? (
               <>
-                {eta[0]}–{eta[1]} <span className="text-[15px] font-normal text-dim">{plural(eta[1])}</span>
+                {etaText.value} <span className="text-[15px] font-normal text-dim">{etaText.unit}</span>
               </>
             ) : needs.includes('unsure') ? (
               <span className="text-[17px] font-normal text-dim">Посчитаем после разбора — бесплатно</span>

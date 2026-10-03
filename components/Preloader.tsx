@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import Mark from './Mark';
 import { MARK_CENTER } from './mark-geometry';
-import { fontsReady, markLeaving, markRevealed, silkReady, withTimeout } from '@/lib/boot';
+import { fontsReady, markLeaving, markRevealed, markSeen, silkReady, withTimeout } from '@/lib/boot';
 
 /**
  * Прелоадер. Знак собирается из трёх лучей — ровно из тех, что составляют
@@ -22,9 +22,23 @@ export default function Preloader() {
     const box = markBox.current;
     if (!el || !box) return;
 
+    /**
+     * Уже видели в этой сессии: оверлей спрятан стилем ещё до скриптов
+     * (SEEN_BOOT в <head>), здесь только отпускаем всех, кто его ждёт, —
+     * знак первого экрана встаёт на место без перелёта, текст проявляется
+     * сразу.
+     */
+    if (document.documentElement.hasAttribute('data-seen')) {
+      markLeaving(null);
+      markRevealed();
+      setDone(true);
+      return;
+    }
+
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    // Материал живёт только на главной. На остальных страницах его кадр
-    // не придёт никогда, и прелоадер простоял бы до таймаута.
+    // Материал есть не на всех страницах (политика, согласие, 404 — без
+    // него). Там его кадр не придёт никогда, и прелоадер простоял бы
+    // до таймаута, поэтому ждём его, только если канвас на месте.
     const silk = document.querySelector('canvas[data-silk]') ? silkReady : Promise.resolve();
     const arms = box.querySelectorAll<SVGGElement>('[data-arm]');
     const shown = { value: 0 };
@@ -42,6 +56,7 @@ export default function Preloader() {
       clearTimeout(watchdog);
       document.documentElement.style.overflow = prevOverflow;
       markRevealed();
+      markSeen();
       setDone(true);
     };
 
@@ -165,6 +180,10 @@ export default function Preloader() {
   return (
     <div
       ref={root}
+      // data-preloader — для страховок в CSS: без JS и при сбое скриптов
+      // оверлей уходит сам (globals.css), а в повторный заход за сессию
+      // не показывается вовсе
+      data-preloader
       className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-bg"
       aria-hidden
     >

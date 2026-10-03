@@ -692,7 +692,10 @@ export default function Atlas() {
             в трансформах карусели, и всё, что попадёт внутрь, поедет
             вместе с ними — масштаб, обрезка, размытие по скорости.
           */}
-          <div className="mt-3 pr-4 sm:pr-8 lg:pr-0">
+          {/* на широком экране — ровно в ширину активного кадра: сцена
+              уходит к краю окна ради соседних карточек, а плашка вслед
+              за ней вылезала за поле сетки */}
+          <div className="mt-3 pr-4 sm:pr-8 lg:w-[var(--A)] lg:pr-0">
             <div
               key={index}
               className="glass flex items-center gap-4 rounded-[12px] px-4 py-3"

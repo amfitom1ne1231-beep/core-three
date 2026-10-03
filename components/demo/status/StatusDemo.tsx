@@ -41,7 +41,7 @@ type Tone = 'ok' | 'warn' | 'err' | 'mute';
 /**
  * Строка ленты разобрана на колонки, а не собрана пробелами.
  * В системном моноширинном кириллица не всегда той же ширины, что латиница,
- * и `padEnd` разъезжается ровно на запросах вроде `?q=хлеб`.
+ * и `padEnd` разъезжается ровно на запросах вроде `?q=плед`.
  */
 type FeedItem = { id: number; time: string; path: string; code: string; took: string; tone: Tone };
 type Update = { at: string; label: string; text: string };

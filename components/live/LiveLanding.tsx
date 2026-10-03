@@ -209,7 +209,7 @@ export default function LiveLanding({ playing }: LiveProps) {
                 <i data-ripple className="absolute left-1/2 top-1/2 -ml-4 -mt-4 h-8 w-8 rounded-full bg-white" />
               </span>
               <span className="text-[10.5px] text-white/60">
-                4 900 ₽ <s className="text-white/35">6 500</s>
+                4 900 ₽ <s className="text-white/50">6 500</s>
               </span>
             </div>
             <div data-proof className="mt-4 flex items-center gap-2">
@@ -318,7 +318,7 @@ export default function LiveLanding({ playing }: LiveProps) {
           data-toast
           className="absolute left-[330px] top-3 flex w-[212px] items-center gap-2.5 rounded-xl border border-white/10 bg-[#0f1a2b]/95 px-3 py-2.5 shadow-[0_18px_40px_rgba(0,0,0,0.5)] backdrop-blur"
         >
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#2aabee] text-[10px] font-bold">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#1f78c1] text-[10px] font-bold">
             АТ
           </span>
           <span className="min-w-0 leading-tight">
