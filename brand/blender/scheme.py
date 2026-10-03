@@ -21,19 +21,21 @@
 свет ушёл дальше (-c) — каждое обрезано по своему участку. Шум у всех
 рендеров одного зерна, поэтому вне изменившегося света пиксели
 совпадают с основой, и вставку на ней не видно. Браузер проявляет
-«паз горит» маской, бегущей по пазу, — это и есть ток: настоящий свет
-с отражением в стекле, а не нарисованная поверх линия.
+вставки по очереди — это и есть ток: настоящий свет с отражением
+в стекле, а не нарисованная поверх линия.
 
-shots.json — те же точки в пикселях кадра: пазы, участки вставок и
-место станции (по нему кадр обрезается на телефоне).
+shots.json — участки вставок и место станции в пикселях кадра
+(вокруг него кадр «дышит», пока стоит).
 
 Между кадрами камера не перещёлкивается, а плывёт над плитой: на каждый
 перегон — ролик fly-<откуда>-<куда>.mp4 (нужен ffmpeg):
   ... scheme.py -- --theme dark --out public/scheme --fly --frames /tmp/fly \
-      [--width 1280] [--samples 32] [--shot site]
+      [--width 1280] [--samples 24] [--shot site]
 Ролик начинается с того, чем кончается кадр станции (свет ушёл дальше),
 и кончается тем, с чего начинается следующий (свет пришёл): в браузере
-он встаёт между двумя неподвижными кадрами без шва.
+он встаёт между двумя неподвижными кадрами без шва. Из тех же кадров
+собирается и обратный ролик (fly-<куда>-<откуда>.mp4) — шаг назад.
+60 кадров в секунду: на 24 пролёт рядом с интерфейсом шёл рывками.
 """
 
 import json
@@ -59,13 +61,13 @@ def arg(name, default):
 THEME = arg('--theme', 'dark')
 OUT = os.path.join(arg('--out', 'public/scheme'), THEME)
 WIDTH = int(arg('--width', '1280' if '--fly' in argv else '1920'))
-SAMPLES = int(arg('--samples', '32' if '--fly' in argv else '256'))
+SAMPLES = int(arg('--samples', '24' if '--fly' in argv else '256'))
 STILL = arg('--still', None)  # один кадр «как будет» — для поиска образа
 ONLY = arg('--shot', None)    # один кадр из пяти; остальные в shots.json не трогаются
 # пролёты камеры от станции к станции: кадры — в папку --frames, ролики — в --out
 FLY = '--fly' in argv
 FRAMES = arg('--frames', None)
-FPS = 24
+FPS = 60
 # только shots.json, без рендера: когда поменялись точки, а не свет
 MAP_ONLY = '--map-only' in argv
 DARK = THEME == 'dark'
@@ -456,8 +458,8 @@ def px(p):
 
 
 def visible(pts, steps=48, margin=60):
-    """Ломаная в пикселях — только та её часть, что в кадре: свет не должен
-    тратить время на путь за краем экрана."""
+    """Ломаная в пикселях — только та её часть, что в кадре: по ней считается
+    участок вставки."""
     out = []
     for p, q in zip(pts, pts[1:]):
         seen = []
@@ -503,17 +505,14 @@ def box_px(ps, pad):
 
 
 def lines_px(keys):
-    """Пазы кадра: ломаные для бегущей маски и участок вставки — с отражением
-    света в стекле и на соседних корпусах."""
-    paths, around = [], []
+    """Участок вставки для пазов кадра — с отражением света в стекле
+    и на соседних корпусах."""
+    around = []
     for k in keys:
         for pts in CHANNELS[k]:
             for z in (INLAY, -0.7, 0.7):
-                path = visible([(x, y, z) for x, y in pts])
-                around += path
-                if z == INLAY and len(path) > 1:
-                    paths.append(path)
-    return paths, (box_px(around, 50) if around else None)
+                around += visible([(x, y, z) for x, y in pts])
+    return box_px(around, 50) if around else None
 
 
 def light(keys, on):
@@ -548,6 +547,8 @@ if FLY:
     scene.render.motion_blur_shutter = 0.5
     scene.render.use_persistent_data = True
     scene.render.fps = FPS
+    if hasattr(scene.cycles, 'denoising_use_gpu'):
+        scene.cycles.denoising_use_gpu = True
     scene.render.use_border = False
     s = scene.render.image_settings
     s.file_format, s.color_mode, s.compression = 'PNG', 'RGB', 15
@@ -560,7 +561,7 @@ if FLY:
         if ONLY and sid != ONLY:
             continue
         # дальний перегон дольше, но не во столько же раз: камера плывёт, а не ползёт
-        n = round((1.3 + 0.12 * (place[nid] - place[sid]).length) * FPS)
+        n = round((1.45 + 0.12 * (place[nid] - place[sid]).length) * FPS)
         for o in movers:
             o.animation_data_clear()
         for m in lamps:
@@ -596,7 +597,7 @@ if FLY:
         frames = os.path.join(FRAMES, THEME, name)
         shutil.rmtree(frames, ignore_errors=True)
         os.makedirs(frames)
-        # кадр в движении смазан, и шум в нём не виден: 32 сэмпла неотличимы от 48
+        # кадр в движении смазан, и шум в нём не виден: 24 сэмпла неотличимы от 48
         for f in range(1, n + 1):
             scene.frame_set(f)
             scene.render.filepath = os.path.join(frames, f'{f:04d}.png')
@@ -604,14 +605,16 @@ if FLY:
 
         # Цвет помечен как sRGB: без метки браузер решает сам, и ролик
         # расходится по тону с неподвижным кадром, между которыми стоит.
-        # aq-mode=3 бережёт тёмные градиенты стекла от полос
-        subprocess.run([
-            'ffmpeg', '-y', '-loglevel', 'error', '-framerate', str(FPS), '-i', os.path.join(frames, '%04d.png'),
-            '-vf', 'scale=out_color_matrix=bt709:out_range=tv,format=yuv420p',
-            '-c:v', 'libx264', '-preset', 'slow', '-crf', arg('--crf', '23'), '-x264-params', 'aq-mode=3',
-            '-color_primaries', 'bt709', '-color_trc', 'iec61966-2-1', '-colorspace', 'bt709', '-color_range', 'tv',
-            '-movflags', '+faststart', '-an', os.path.join(OUT, f'{name}.mp4'),
-        ], check=True)
+        # aq-mode=3 бережёт тёмные градиенты стекла от полос.
+        # Обратный ролик — те же кадры задом наперёд
+        for clip, order in ((name, ''), (f'fly-{nid}-{sid}', 'reverse,')):
+            subprocess.run([
+                'ffmpeg', '-y', '-loglevel', 'error', '-framerate', str(FPS), '-i', os.path.join(frames, '%04d.png'),
+                '-vf', order + 'scale=out_color_matrix=bt709:out_range=tv,format=yuv420p',
+                '-c:v', 'libx264', '-preset', 'slow', '-crf', arg('--crf', '25'), '-x264-params', 'aq-mode=3',
+                '-color_primaries', 'bt709', '-color_trc', 'iec61966-2-1', '-colorspace', 'bt709', '-color_range', 'tv',
+                '-movflags', '+faststart', '-an', os.path.join(OUT, f'{clip}.mp4'),
+            ], check=True)
         print('пролёт', name, n, 'кадров')
     sys.exit(0)
 
@@ -642,10 +645,10 @@ for sid, came, went, dist, shift in SHOTS:
 
     # свет пришёл по пазу
     if came:
-        paths, crop = lines_px(came)
+        crop = lines_px(came)
         light(came, True)
         render(f'{sid}-a', crop)
-        shot['a'] = {'box': crop, 'paths': paths}
+        shot['a'] = {'box': crop}
 
     # станция загорелась; отражение горящей крышки уходит в стекло под
     # модулем — вставка захватывает и его
@@ -656,10 +659,10 @@ for sid, came, went, dist, shift in SHOTS:
     shot['b'] = {'box': crop}
 
     # свет ушёл дальше
-    paths, crop = lines_px(went)
+    crop = lines_px(went)
     light(went, True)
     render(f'{sid}-c', crop)
-    shot['c'] = {'box': crop, 'paths': paths}
+    shot['c'] = {'box': crop}
 
     light(came + went, False)
     glow(sid, False)

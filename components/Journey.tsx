@@ -28,8 +28,9 @@ const STEP_MS = 6000;
  *  - «зачем» — строка под кадром: что это даёт вам и какое наше
  *    направление это собирает.
  *
- * Кадры сменяются сами, пока схема на экране; пауза и стрелки —
- * в шапке. Между станциями камера плывёт над плитой (OrderScheme):
+ * Показ идёт сам, пока схема на экране; пауза и стрелки — в шапке.
+ * Между соседними станциями камера плывёт над плитой в обе стороны
+ * (OrderScheme):
  * `at` — куда идёт показ, по нему сразу едет жетон на линии пути;
  * `shown` — где камера уже стоит, по нему живут подпись, экран и строка
  * под кадром. Пока они расходятся, кадр чистый и часы показа стоят.
@@ -45,6 +46,10 @@ export default function Journey() {
   const [at, setAt] = useState(0);
   const [shown, setShown] = useState(0);
   const [held, setHeld] = useState(false);
+  // Человек потянулся к управлению — обратный пролёт готовим заранее.
+  // При автопоказе назад никто не летит, и качать его незачем
+  const [manual, setManual] = useState(false);
+  const reach = { onPointerEnter: () => setManual(true), onFocus: () => setManual(true) };
   const [inView, setInView] = useState(false);
   // кадры грузятся, когда схема подошла к экрану, а не вместе со страницей
   const [near, setNear] = useState(false);
@@ -77,12 +82,20 @@ export default function Journey() {
   }, []);
 
   const step = useCallback((by: number) => setAt((v) => (v + by + stations.length) % stations.length), [stations.length]);
+  const turn = (by: number) => {
+    setManual(true);
+    step(by);
+  };
+  const pick = (i: number) => {
+    setManual(true);
+    setAt(i);
+  };
 
   // стрелки листают кадры, пока фокус на линии пути или на управлении
   const onKey = (e: KeyboardEvent) => {
     if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
     e.preventDefault();
-    step(e.key === 'ArrowRight' ? 1 : -1);
+    turn(e.key === 'ArrowRight' ? 1 : -1);
   };
 
   // доля линии, пройденная заказом: узлов шесть — поиск, четыре станции, деньги
@@ -103,14 +116,14 @@ export default function Journey() {
           </div>
           <div className="flex items-end justify-between gap-6">
             <p className="m-0 max-w-[40ch] text-[clamp(14px,1.1vw,16px)] leading-relaxed text-dim">{lead}</p>
-            <div className="flex gap-2" onKeyDown={onKey}>
-              <button type="button" onClick={() => step(-1)} aria-label="Предыдущий кадр" className={`${round} max-sm:hidden`}>
+            <div className="flex gap-2" onKeyDown={onKey} {...reach}>
+              <button type="button" onClick={() => turn(-1)} aria-label="Предыдущий кадр" className={`${round} max-sm:hidden`}>
                 <Arrow back />
               </button>
               <button type="button" onClick={() => setHeld((v) => !v)} aria-label={held ? 'Продолжить показ' : 'Остановить показ'} className={round}>
                 <PauseIcon held={held} />
               </button>
-              <button type="button" onClick={() => step(1)} aria-label="Следующий кадр" className={`${round} max-sm:hidden`}>
+              <button type="button" onClick={() => turn(1)} aria-label="Следующий кадр" className={`${round} max-sm:hidden`}>
                 <Arrow />
               </button>
             </div>
@@ -118,7 +131,7 @@ export default function Journey() {
         </div>
 
         {/* ---------------- линия пути ---------------- */}
-        <div className="route" role="group" aria-label="Путь заказа: шаги" onKeyDown={onKey}>
+        <div className="route" role="group" aria-label="Путь заказа: шаги" onKeyDown={onKey} {...reach}>
           <span className="route-token" style={{ '--at': passed } as CSSProperties} aria-hidden>
             <b className="route-ava">{order.who[0]}</b>
             <span className="max-sm:hidden">{order.who} ·</span> {order.id}
@@ -143,7 +156,7 @@ export default function Journey() {
               <li key={s.id}>
                 <button
                   type="button"
-                  onClick={() => setAt(i)}
+                  onClick={() => pick(i)}
                   aria-pressed={at === i}
                   data-passed={guarding || i < at || undefined}
                   className="route-node"
@@ -167,7 +180,7 @@ export default function Journey() {
           </ol>
 
           {/* мониторинг — не станция на пути, а скоба под всей цепочкой */}
-          <button type="button" onClick={() => setAt(4)} aria-pressed={guarding} className="route-guard">
+          <button type="button" onClick={() => pick(4)} aria-pressed={guarding} className="route-guard">
             <span>
               <b>{watch.n}</b> {watch.name} <span className="text-dim">— {route.guard}</span>
             </span>
@@ -189,7 +202,7 @@ export default function Journey() {
             } as CSSProperties
           }
         >
-          <OrderScheme id={stations[at].id} ready={near} onArrive={arrive} className="journey-shot" />
+          <OrderScheme id={stations[at].id} ready={near} eager={manual} onArrive={arrive} className="journey-shot" />
           <div className="journey-scrim" aria-hidden />
 
           <span className="journey-kicker rail-label">
