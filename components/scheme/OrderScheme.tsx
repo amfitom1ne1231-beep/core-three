@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { onThemeChange, readTheme, type Theme } from '@/lib/theme';
 import darkShots from '@/public/scheme/dark/shots.json';
 import lightShots from '@/public/scheme/light/shots.json';
@@ -19,7 +19,16 @@ import lightShots from '@/public/scheme/light/shots.json';
  * «Ушёл дальше» играет в конце кадра — и следующий кадр начинается
  * с того, что этот же свет пришёл.
  *
- * Весь ход — на CSS-анимациях (globals.css, `.os-*`): пауза показа
+ * Между станциями камера не перещёлкивается, а плывёт над плитой:
+ * на каждый перегон есть ролик пролёта (fly-<откуда>-<куда>.mp4), снятый
+ * той же камерой. Он начинается с последнего состояния кадра и кончается
+ * первым состоянием следующего, поэтому встаёт между двумя неподвижными
+ * кадрами без шва: ролик проявился → камера доехала → под ним уже лежит
+ * резкий кадр станции, ролик растворился. Пролёт есть только к следующей
+ * станции по ходу заказа; шаг назад, прыжок через станцию, режим без
+ * движения и ролик, который не успел загрузиться, — обычная смена кадра.
+ *
+ * Свет в кадре — на CSS-анимациях (globals.css, `.os-*`): пауза показа
  * замораживает их через `--os-play` вместе с полоской времени.
  *
  * Луч и пылинки в тёмной теме — живые, поверх рендера: запечённые,
@@ -36,6 +45,8 @@ const MAPS: Record<Theme, ShotMap> = { dark: darkShots, light: lightShots };
 const ROOT = '/scheme';
 /** Сколько прошлый кадр лежит под новым, пока тот проявляется. */
 const CROSS_MS = 900;
+/** Сколько ждём первого кадра ролика, прежде чем сменить кадр без пролёта. */
+const FLY_WAIT_MS = 1000;
 /** Ширина маски бегущего света и её размытие, в пикселях кадра. */
 const BAND = 210;
 const SOFT = 26;
@@ -49,20 +60,113 @@ const DUST = Array.from({ length: 18 }, (_, i) => {
   return { x: 8 + r(1) * 30, y: 6 + r(2) * 56, s: 2 + r(3) * 4, dur: 9 + r(4) * 10, delay: -r(5) * 18, blur: r(6) > 0.6 };
 });
 
-export default function OrderScheme({ id, ready, className = '' }: { id: string; ready: boolean; className?: string }) {
+export default function OrderScheme({
+  id,
+  ready,
+  onArrive,
+  className = ''
+}: {
+  /** Станция, куда идёт показ. */
+  id: string;
+  ready: boolean;
+  /** Камера на месте: кадр станции на сцене. */
+  onArrive?: (id: string) => void;
+  className?: string;
+}) {
   // тема известна только в браузере: до неё кадр не грузим, иначе светлая
   // тема сначала скачала бы тёмный рендер
   const [theme, setTheme] = useState<Theme | null>(null);
   const [narrow, setNarrow] = useState(false);
 
-  // прошлый кадр считается прямо в рендере: через эффект он на один
-  // проход исчезал бы со сцены, и его анимации начинались заново
+  // на сцене до трёх кадров: текущий; прошлый — под проявлением нового;
+  // следующий — ждёт под роликом пролёта, уже загруженный
   const [cur, setCur] = useState(id);
   const [prev, setPrev] = useState<string | null>(null);
-  if (id !== cur) {
-    setPrev(cur);
-    setCur(id);
-  }
+  const [next, setNext] = useState<string | null>(null);
+  /** Текущий кадр пришёл пролётом: свет по пазу уже пришёл в ролике. */
+  const [flown, setFlown] = useState(false);
+  const [flying, setFlying] = useState(false);
+  /** Ролик, загруженный под следующий шаг: «откуда-куда». */
+  const [clip, setClip] = useState<string | null>(null);
+
+  const video = useRef<HTMLVideoElement>(null);
+  const stage = useRef({ cur, next });
+  stage.current = { cur, next };
+  const arrive = useRef(onArrive);
+  arrive.current = onArrive;
+  const abort = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    const { cur: from, next: to } = stage.current;
+    if (id === (to ?? from)) return;
+    // показ ушёл в другую сторону посреди пролёта
+    abort.current?.();
+
+    let done = false;
+    const cut = () => {
+      if (done) return;
+      done = true;
+      setNext(null);
+      setFlying(false);
+      if (id !== from) {
+        setPrev(from);
+        setCur(id);
+        setFlown(false);
+      }
+      arrive.current?.(id);
+    };
+
+    const v = video.current;
+    if (!v || v.dataset.clip !== `${from}-${id}` || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      cut();
+      return;
+    }
+
+    let timer = 0;
+    const stop = () => {
+      clearTimeout(timer);
+      v.removeEventListener('playing', begin);
+      v.removeEventListener('ended', land);
+      abort.current = null;
+    };
+    const land = () => {
+      if (done) return;
+      done = true;
+      stop();
+      setPrev(null);
+      setCur(id);
+      setNext(null);
+      setFlown(true);
+      setFlying(false);
+      arrive.current?.(id);
+    };
+    const begin = () => {
+      clearTimeout(timer);
+      setFlying(true);
+      // ролик мог встать (вкладка в фоне, сеть) — тогда садимся по времени
+      timer = window.setTimeout(land, (v.duration || 2.5) * 1000 + 1500);
+    };
+    const fail = () => {
+      stop();
+      v.pause();
+      cut();
+    };
+    abort.current = () => {
+      done = true;
+      stop();
+      v.pause();
+    };
+
+    setNext(id);
+    v.currentTime = 0;
+    v.addEventListener('playing', begin, { once: true });
+    v.addEventListener('ended', land, { once: true });
+    timer = window.setTimeout(fail, FLY_WAIT_MS);
+    v.play().catch(fail);
+  }, [id]);
+
+  useEffect(() => () => abort.current?.(), []);
+
   useEffect(() => {
     const t = window.setTimeout(() => setPrev(null), CROSS_MS);
     return () => clearTimeout(t);
@@ -85,16 +189,19 @@ export default function OrderScheme({ id, ready, className = '' }: { id: string;
   const ids = map ? Object.keys(map.shots) : [];
   const src = (name: string) => `${ROOT}/${theme}/${name}.webp`;
 
-  // следующий кадр качается заранее — смена не ждёт сеть
+  // следующий кадр и пролёт к нему качаются заранее — смена не ждёт сеть.
+  // Ролик меняется не сразу: прошлый ещё растворяется над кадром
   useEffect(() => {
-    if (!theme || !ready) return;
+    if (!theme || !ready || flying || next) return;
     const all = Object.keys(MAPS[theme].shots);
-    const next = all[(all.indexOf(cur) + 1) % all.length];
-    for (const name of [next, `${next}-a`, `${next}-b`, `${next}-c`]) {
-      if (name.endsWith('-a') && !MAPS[theme].shots[next].a) continue;
+    const after = all[(all.indexOf(cur) + 1) % all.length];
+    for (const name of [after, `${after}-a`, `${after}-b`, `${after}-c`]) {
+      if (name.endsWith('-a') && !MAPS[theme].shots[after].a) continue;
       new Image().src = `${ROOT}/${theme}/${name}.webp`;
     }
-  }, [theme, ready, cur]);
+    const t = window.setTimeout(() => setClip(`${cur}-${after}`), 450);
+    return () => clearTimeout(t);
+  }, [theme, ready, cur, flying, next]);
 
   if (!map || !ready) return <div className={`order-scheme ${className}`} />;
 
@@ -102,9 +209,9 @@ export default function OrderScheme({ id, ready, className = '' }: { id: string;
   const dark = theme === 'dark';
 
   return (
-    <div className={`order-scheme ${className}`} aria-hidden>
+    <div className={`order-scheme ${className}`} data-flying={flying || undefined} aria-hidden>
       {ids
-        .filter((s) => s === cur || s === prev)
+        .filter((s) => s === cur || s === prev || s === next)
         .map((s) => {
           const shot = map.shots[s];
           const on = s === cur;
@@ -113,13 +220,19 @@ export default function OrderScheme({ id, ready, className = '' }: { id: string;
           lit.push(['b', shot.b], ['c', shot.c]);
           const mask = (k: string) => `os-${s}-${k}`;
           return (
-            <div key={s} className="os-shot" data-on={on || undefined} data-out={!on || undefined}>
+            <div
+              key={s}
+              className="os-shot"
+              data-on={on || undefined}
+              data-out={s === prev || undefined}
+              data-wait={s === next || undefined}
+              data-flown={(on && flown) || undefined}
+            >
               <svg
                 viewBox={`0 0 ${W} ${H}`}
                 // на телефоне кадр уже рендера: держим левую часть, где станция
                 preserveAspectRatio={narrow ? 'xMinYMid slice' : 'xMidYMid slice'}
-                className="os-cam absolute inset-0 h-full w-full"
-                style={{ transformOrigin: `${(shot.focus[0] / W) * 100}% ${(shot.focus[1] / H) * 100}%` }}
+                className="absolute inset-0 h-full w-full"
               >
                 <defs>
                   <filter id={mask('soft')} filterUnits="userSpaceOnUse" x="0" y="0" width={W} height={H}>
@@ -158,9 +271,29 @@ export default function OrderScheme({ id, ready, className = '' }: { id: string;
           );
         })}
 
-      {/* луч и пылинки из «Kling» — только в тёмной теме */}
+      {/* пролёт к следующей станции: лежит поверх кадров и виден, только пока играет */}
+      {clip && (
+        <video
+          key={`${theme}/${clip}`}
+          ref={video}
+          data-clip={clip}
+          data-on={flying || undefined}
+          className="os-fly"
+          src={`${ROOT}/${theme}/fly-${clip}.mp4`}
+          style={{ objectPosition: narrow ? 'left center' : 'center' }}
+          muted
+          playsInline
+          preload="auto"
+          disablePictureInPicture
+          disableRemotePlayback
+          tabIndex={-1}
+        />
+      )}
+
+      {/* луч и пылинки из «Kling» — только в тёмной теме; в пролёте гаснут:
+          луч стоит на станции, а не едет с камерой */}
       {dark && (
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="os-air pointer-events-none absolute inset-0 overflow-hidden">
           <div className="os-beam" />
           {DUST.map((p, i) => (
             <i

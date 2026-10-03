@@ -26,11 +26,21 @@
 
 shots.json — те же точки в пикселях кадра: пазы, участки вставок и
 место станции (по нему кадр обрезается на телефоне).
+
+Между кадрами камера не перещёлкивается, а плывёт над плитой: на каждый
+перегон — ролик fly-<откуда>-<куда>.mp4 (нужен ffmpeg):
+  ... scheme.py -- --theme dark --out public/scheme --fly --frames /tmp/fly \
+      [--width 1280] [--samples 32] [--shot site]
+Ролик начинается с того, чем кончается кадр станции (свет ушёл дальше),
+и кончается тем, с чего начинается следующий (свет пришёл): в браузере
+он встаёт между двумя неподвижными кадрами без шва.
 """
 
 import json
 import math
 import os
+import shutil
+import subprocess
 import sys
 
 import addon_utils
@@ -48,10 +58,14 @@ def arg(name, default):
 
 THEME = arg('--theme', 'dark')
 OUT = os.path.join(arg('--out', 'public/scheme'), THEME)
-WIDTH = int(arg('--width', '1920'))
-SAMPLES = int(arg('--samples', '256'))
+WIDTH = int(arg('--width', '1280' if '--fly' in argv else '1920'))
+SAMPLES = int(arg('--samples', '32' if '--fly' in argv else '256'))
 STILL = arg('--still', None)  # один кадр «как будет» — для поиска образа
 ONLY = arg('--shot', None)    # один кадр из пяти; остальные в shots.json не трогаются
+# пролёты камеры от станции к станции: кадры — в папку --frames, ролики — в --out
+FLY = '--fly' in argv
+FRAMES = arg('--frames', None)
+FPS = 24
 # только shots.json, без рендера: когда поменялись точки, а не свет
 MAP_ONLY = '--map-only' in argv
 DARK = THEME == 'dark'
@@ -511,6 +525,95 @@ def glow(sid, on):
     set_strength(GLYPHS[sid], GLYPH_HOT if on else GLYPH_IDLE)
     set_strength(RINGS[sid], GLYPH_HOT * 0.5 if on else 0.0)
 
+
+# ---------------------------------------------------------------- пролёты
+
+def strength(mat):
+    return mat.node_tree.nodes['Emission'].inputs['Strength']
+
+
+def fade(mat, a, b, f0, f1):
+    """Свет меняется за время пролёта: ключи на силе излучения."""
+    sock = strength(mat)
+    sock.default_value = a
+    sock.keyframe_insert('default_value', frame=f0)
+    sock.default_value = b
+    sock.keyframe_insert('default_value', frame=f1)
+
+
+if FLY:
+    assert FRAMES, 'пролётам нужна папка кадров: --frames'
+    assert shutil.which('ffmpeg'), 'пролёты собирает ffmpeg — его нет в PATH'
+    scene.render.use_motion_blur = True
+    scene.render.motion_blur_shutter = 0.5
+    scene.render.use_persistent_data = True
+    scene.render.fps = FPS
+    scene.render.use_border = False
+    s = scene.render.image_settings
+    s.file_format, s.color_mode, s.compression = 'PNG', 'RGB', 15
+    movers = [cam, focus] + RIG
+    lamps = list(LINE.values()) + list(GLYPHS.values()) + list(RINGS.values())
+    place = {sid: Vector(c) for sid, c, _ in STATIONS}
+
+    route = SHOTS + SHOTS[:1]
+    for (sid, came, went, dist, shift), (nid, ncame, _, ndist, nshift) in zip(route, route[1:]):
+        if ONLY and sid != ONLY:
+            continue
+        # дальний перегон дольше, но не во столько же раз: камера плывёт, а не ползёт
+        n = round((1.3 + 0.12 * (place[nid] - place[sid]).length) * FPS)
+        for o in movers:
+            o.animation_data_clear()
+        for m in lamps:
+            m.node_tree.animation_data_clear()
+        light(list(CHANNELS), False)
+        for st, _, _ in STATIONS:
+            glow(st, False)
+
+        # Камера, точка резкости и весь свет студии едут вместе; ключей два,
+        # кривая между ними — плавный разгон и остановка
+        frame(sid, dist, shift)
+        for o in movers:
+            o.keyframe_insert('location', frame=1)
+        frame(nid, ndist, nshift)
+        for o in movers:
+            o.keyframe_insert('location', frame=n)
+
+        # Свет: в начале — как кончился кадр станции (пришёл, горит, ушёл
+        # дальше), в конце — как начинается следующий (пришёл). Гаснет
+        # в первой половине пути, загорается во второй
+        hot0, hot1 = set(came) | set(went), set(ncame)
+        for k in CHANNELS:
+            if k in hot0 and k in hot1:
+                set_strength(LINE[k], LINE_HOT[k])
+            elif k in hot0:
+                fade(LINE[k], LINE_HOT[k], LINE_IDLE[k], 1, round(n * 0.55))
+            elif k in hot1:
+                fade(LINE[k], LINE_IDLE[k], LINE_HOT[k], round(n * 0.45), n)
+        fade(GLYPHS[sid], GLYPH_HOT, GLYPH_IDLE, 1, round(n * 0.6))
+        fade(RINGS[sid], GLYPH_HOT * 0.5, 0.0, 1, round(n * 0.6))
+
+        name = f'fly-{sid}-{nid}'
+        frames = os.path.join(FRAMES, THEME, name)
+        shutil.rmtree(frames, ignore_errors=True)
+        os.makedirs(frames)
+        # кадр в движении смазан, и шум в нём не виден: 32 сэмпла неотличимы от 48
+        for f in range(1, n + 1):
+            scene.frame_set(f)
+            scene.render.filepath = os.path.join(frames, f'{f:04d}.png')
+            bpy.ops.render.render(write_still=True)
+
+        # Цвет помечен как sRGB: без метки браузер решает сам, и ролик
+        # расходится по тону с неподвижным кадром, между которыми стоит.
+        # aq-mode=3 бережёт тёмные градиенты стекла от полос
+        subprocess.run([
+            'ffmpeg', '-y', '-loglevel', 'error', '-framerate', str(FPS), '-i', os.path.join(frames, '%04d.png'),
+            '-vf', 'scale=out_color_matrix=bt709:out_range=tv,format=yuv420p',
+            '-c:v', 'libx264', '-preset', 'slow', '-crf', arg('--crf', '23'), '-x264-params', 'aq-mode=3',
+            '-color_primaries', 'bt709', '-color_trc', 'iec61966-2-1', '-colorspace', 'bt709', '-color_range', 'tv',
+            '-movflags', '+faststart', '-an', os.path.join(OUT, f'{name}.mp4'),
+        ], check=True)
+        print('пролёт', name, n, 'кадров')
+    sys.exit(0)
 
 path_json = os.path.join(os.path.dirname(OUT), THEME, 'shots.json')
 data = {'theme': THEME, 'size': [W, HH], 'shots': {}}

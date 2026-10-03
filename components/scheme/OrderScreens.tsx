@@ -539,7 +539,13 @@ export default function OrderScreens({ id, playing, className = '' }: { id: stri
     <div className={`order-screen ${className}`} aria-hidden>
       <div className="relative origin-top-left overflow-hidden" style={{ width: SCREEN_W, height: SCREEN_H, transform: 'scale(var(--screen-k, 1))' }}>
         {Object.entries(SCREENS).map(([key, Screen]) => (
-          <div key={key} className="absolute inset-0 transition-opacity duration-500" style={{ opacity: key === id ? 1 : 0, zIndex: key === id ? 1 : 0 }}>
+          <div
+            key={key}
+            className="absolute inset-0"
+            // прошлый экран лежит под новым, пока тот проявляется, и гаснет после:
+            // погасни он сразу — сквозь новый просвечивал бы рендер
+            style={{ opacity: key === id ? 1 : 0, zIndex: key === id ? 1 : 0, transition: key === id ? 'opacity .5s' : 'opacity 0s .5s' }}
+          >
             <Screen playing={playing && key === id} />
           </div>
         ))}

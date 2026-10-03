@@ -11,10 +11,10 @@ import { SITE } from '@/content/site';
 gsap.registerPlugin(ScrollTrigger);
 
 /** Сколько держится кадр, пока путь проигрывается сам. */
-const STEP_MS = 7000;
+const STEP_MS = 6000;
 
 /**
- * Путь одного заказа — схема-презентация из пяти кадров.
+ * Путь одного заказа — схема-презентация: пять станций и пролёты между ними.
  *
  * Прежняя схема показывала всё сразу — пять станций на одном плане —
  * и на вопрос «что тут происходит и куда оно идёт» не отвечала. Теперь
@@ -29,15 +29,21 @@ const STEP_MS = 7000;
  *    направление это собирает.
  *
  * Кадры сменяются сами, пока схема на экране; пауза и стрелки —
- * в шапке. Под курсором показ не замирает: кадр занимает пол-экрана,
- * курсор почти всегда над ним, и схема стояла бы на первом шаге.
- * Часы показа — CSS-анимация полоски времени: её конец и есть смена
- * кадра, а пауза замораживает вместе с ней свет в кадре (`--os-play`).
+ * в шапке. Между станциями камера плывёт над плитой (OrderScheme):
+ * `at` — куда идёт показ, по нему сразу едет жетон на линии пути;
+ * `shown` — где камера уже стоит, по нему живут подпись, экран и строка
+ * под кадром. Пока они расходятся, кадр чистый и часы показа стоят.
+ *
+ * Под курсором показ не замирает: кадр занимает пол-экрана, курсор
+ * почти всегда над ним, и схема стояла бы на первом шаге. Часы показа —
+ * CSS-анимация полоски времени: её конец и есть уход камеры к следующей
+ * станции, а пауза замораживает вместе с ней свет в кадре (`--os-play`).
  */
 export default function Journey() {
   const section = useRef<HTMLElement>(null);
   const stage = useRef<HTMLDivElement>(null);
   const [at, setAt] = useState(0);
+  const [shown, setShown] = useState(0);
   const [held, setHeld] = useState(false);
   const [inView, setInView] = useState(false);
   // кадры грузятся, когда схема подошла к экрану, а не вместе со страницей
@@ -46,9 +52,11 @@ export default function Journey() {
   const { label, title, titleAccent, lead, order, route, stations } = SITE.journey;
   const track = stations.slice(0, 4);
   const watch = stations[4];
-  const active = stations[at];
+  const active = stations[shown];
   const guarding = at === 4;
-  const running = inView && !held;
+  const flying = at !== shown;
+  const running = inView && !held && !flying;
+  const arrive = useCallback((id: string) => setShown(stations.findIndex((s) => s.id === id)), [stations]);
 
   useEffect(() => {
     const el = section.current;
@@ -170,6 +178,7 @@ export default function Journey() {
         <div
           ref={stage}
           className="journey-stage"
+          data-flying={flying || undefined}
           style={
             {
               '--os-step': `${STEP_MS}ms`,
@@ -180,7 +189,7 @@ export default function Journey() {
             } as CSSProperties
           }
         >
-          <OrderScheme id={active.id} ready={near} className="journey-shot" />
+          <OrderScheme id={stations[at].id} ready={near} onArrive={arrive} className="journey-shot" />
           <div className="journey-scrim" aria-hidden />
 
           <span className="journey-kicker rail-label">
@@ -198,12 +207,13 @@ export default function Journey() {
           </div>
 
           <figure className="journey-screen m-0">
-            <OrderScreens id={active.id} playing={inView} />
+            {/* экран меняется в начале пролёта, пока его не видно, а играет с прилёта */}
+            <OrderScreens id={stations[at].id} playing={inView && !flying} />
             <figcaption className="rail-label mt-3 text-center">{active.screen}</figcaption>
           </figure>
 
-          {/* часы показа: полоска дошла до края — следующий кадр */}
-          <i key={at} className="journey-timer" onAnimationEnd={() => step(1)} aria-hidden />
+          {/* часы показа: полоска дошла до края — камера уходит к следующей станции */}
+          {!flying && <i key={shown} className="journey-timer" onAnimationEnd={() => step(1)} aria-hidden />}
         </div>
 
         {/* ---------------- что это даёт ---------------- */}
