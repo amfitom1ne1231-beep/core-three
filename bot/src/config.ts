@@ -1,0 +1,75 @@
+import { z } from 'zod';
+
+/**
+ * Настройки сервиса — только из окружения. Секреты в репозиторий
+ * не попадают: образец с пояснениями — `bot/.env.example`.
+ *
+ * Без токена бота сервис всё равно поднимается: принимает заявки,
+ * пишет их в базу и считает сроки. Так его можно разрабатывать
+ * и тестировать до того, как у заказчика появится бот.
+ */
+
+const hhmm = z
+  .string()
+  .regex(/^\d{1,2}:\d{2}$/)
+  .transform((s) => {
+    const [h, m] = s.split(':').map(Number);
+    return h! * 60 + m!;
+  });
+
+const Env = z.object({
+  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  PORT: z.coerce.number().int().default(8787),
+
+  /** Токен бота от @BotFather. Пусто — бот выключен, сервис работает. */
+  BOT_TOKEN: z.string().optional(),
+  /** polling — для разработки, webhook — на сервере за HTTPS. */
+  BOT_MODE: z.enum(['polling', 'webhook']).default('polling'),
+  /** Публичный адрес сервиса, на него Telegram шлёт webhook. */
+  PUBLIC_URL: z.url().optional(),
+  /** Секрет в адресе и заголовке webhook: чужой запрос его не знает. */
+  WEBHOOK_SECRET: z.string().min(16).optional(),
+
+  /** Telegram id владельца: он первый в команде и приглашает остальных. */
+  OWNER_TG_ID: z.coerce.number().int().optional(),
+
+  /** Postgres. Пусто — встроенный PGlite в BOT_DATA_DIR (разработка). */
+  DATABASE_URL: z.string().optional(),
+  BOT_DATA_DIR: z.string().default('.data/pglite'),
+
+  /** Общий секрет с сайтом: им подписан каждый запрос с заявкой. */
+  INTAKE_SECRET: z.string().min(16).optional(),
+
+  /** Адрес сайта — для ответа посторонним в боте. */
+  SITE_URL: z.url().default('https://corethree.ru'),
+
+  /** Рабочее время для сроков: напоминания ночью и в выходные не шлются. */
+  WORK_TZ: z.string().default('Europe/Moscow'),
+  WORK_DAYS: z
+    .string()
+    .default('1,2,3,4,5')
+    .transform((s) => s.split(',').map(Number)),
+  WORK_START: hhmm.default(10 * 60),
+  WORK_END: hhmm.default(19 * 60),
+  /** Через сколько рабочих минут без «Беру» напомнить группе. */
+  SLA_TAKE_MIN: z.coerce.number().int().default(60),
+  /** За сколько минут до конца дня проверить, всем ли ответили. */
+  SLA_ALARM_BEFORE_END_MIN: z.coerce.number().int().default(60)
+});
+
+export type Config = z.infer<typeof Env> & {
+  work: { tz: string; days: number[]; start: number; end: number };
+};
+
+export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
+  const parsed = Env.safeParse(env);
+  if (!parsed.success) {
+    const issues = parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('\n  ');
+    throw new Error(`Настройки сервиса неверны:\n  ${issues}`);
+  }
+  const c = parsed.data;
+  return {
+    ...c,
+    work: { tz: c.WORK_TZ, days: c.WORK_DAYS, start: c.WORK_START, end: c.WORK_END }
+  };
+}

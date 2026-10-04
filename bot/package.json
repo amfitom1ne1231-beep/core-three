@@ -1,0 +1,35 @@
+{
+  "name": "@corethree/bot",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Рабочий бот студии: заявки, проекты, метрики, мониторинг. План — BOT.md в корне.",
+  "scripts": {
+    "dev": "tsx watch --env-file=.env.local src/main.ts",
+    "build": "node build.mjs",
+    "start": "node dist/main.js",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test test/*.test.ts",
+    "db:generate": "drizzle-kit generate"
+  },
+  "engines": {
+    "node": ">=20.12"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "@hono/node-server": "^2.1.3",
+    "drizzle-orm": "^0.45.3",
+    "grammy": "^1.46.0",
+    "hono": "^4.13.13",
+    "pg": "^8.23.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "@types/pg": "^8.23.1",
+    "drizzle-kit": "^0.31.11",
+    "esbuild": "^0.28.2",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}

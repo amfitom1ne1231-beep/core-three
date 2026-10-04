@@ -10,7 +10,7 @@ import { FlatCompat } from '@eslint/eslintrc';
 const compat = new FlatCompat({ baseDirectory: dirname(fileURLToPath(import.meta.url)) });
 
 const config = [
-  { ignores: ['.next/**', '.next-check/**', '.test-out/**', 'node_modules/**', 'proto/**', 'brand/**', 'next-env.d.ts'] },
+  { ignores: ['.next/**', '.next-check/**', '.test-out/**', 'node_modules/**', 'proto/**', 'brand/**', 'bot/**', 'admin/**', 'next-env.d.ts'] },
   ...compat.extends('next/core-web-vitals', 'next/typescript'),
   {
     rules: {

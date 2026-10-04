@@ -6,9 +6,10 @@
     "lib": ["es2022", "dom"],
     "strict": true,
     "skipLibCheck": true,
+    "rewriteRelativeImportExtensions": true,
     "outDir": ".test-out",
     "rootDir": ".",
     "paths": { "@/*": ["./*"] }
   },
-  "files": ["lib/lead.ts", "lib/notify.ts", "lib/barber.ts", "content/brief.ts", "content/concepts/barber.ts"]
+  "files": ["lib/lead.ts", "lib/notify.ts", "lib/intake.ts", "lib/barber.ts", "content/brief.ts", "content/concepts/barber.ts"]
 }

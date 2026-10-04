@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { checkLead } from '@/lib/lead';
-import { saveLead } from '@/lib/leads-store';
+import { forwardLead } from '@/lib/intake';
 import { notifyLead } from '@/lib/notify';
 
 /**
@@ -126,17 +126,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'rate_limited' }, { status: 429 });
   }
 
-  // Ловушка сработала: кладём со статусом «спам», а не выбрасываем —
-  // она ошибается на живых людях, и такую заявку надо иметь возможность
-  // найти. Отправителю отвечаем как при успехе.
-  if (check.bot) {
-    await Promise.all([saveLead(check.lead, 'spam'), notifyLead(check.lead, 'spam')]);
-    return NextResponse.json({ ok: true });
-  }
+  // Заявка — в сервис бота: он хранит её в базе в РФ и ставит карточку
+  // в рабочую группу. Форма уходит как пришла, ловушку для ботов сервис
+  // проверяет сам и такую заявку не выбрасывает, а помечает.
+  const forwarded = await forwardLead(body);
+  if (forwarded === 'sent' || forwarded === 'dry') return NextResponse.json({ ok: true });
 
-  // База и уведомление — независимо друг от друга: заявка, которая дошла
-  // хотя бы одним путём, не потеряна, и человеку честно отвечаем «принято»
-  const [result, notified] = await Promise.all([saveLead(check.lead), notifyLead(check.lead)]);
-  if (result === 'saved' || result === 'dry' || notified === 'sent') return NextResponse.json({ ok: true });
+  // Сервис недоступен — запасной путь: прямо в группу, как раньше.
+  // Заявка, которая дошла хотя бы так, не потеряна.
+  const notified = await notifyLead(check.lead, check.bot ? 'spam' : 'new');
+  // сработавшей ловушке отвечаем «успех» в любом случае: бот ничего не узнаёт
+  if (notified === 'sent' || check.bot) return NextResponse.json({ ok: true });
   return NextResponse.json({ error: 'unavailable' }, { status: 503 });
 }
