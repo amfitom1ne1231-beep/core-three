@@ -8,8 +8,8 @@
 #
 # Docker — из репозиториев самой Ubuntu, без сторонних скриптов.
 # Открыты только SSH, 80 и 443. Вход по паролю выключается: только ключ.
-# В Yandex Cloud порты 80 и 443 нужно открыть ещё и в группе безопасности
-# сети — deploy/README.md, «Yandex Cloud».
+# В Yandex Cloud порты 80 и 443 должны быть открыты ещё и в группе
+# безопасности сети — проверить: deploy/README.md, «Yandex Cloud».
 set -euo pipefail
 : "${SERVER:?укажите SERVER=<логин>@<ip>}"
 KEY="${SSH_KEY:-$HOME/.ssh/corethree_vps}"
