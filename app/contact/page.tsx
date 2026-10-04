@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import Brief from '@/components/contact/Brief';
 import Footer from '@/components/Footer';
-import HeroSilk from '@/components/HeroSilk';
 import RevealText from '@/components/RevealText';
 import ScrollScenes from '@/components/ScrollScenes';
 import Process from '@/components/service/Process';
@@ -61,8 +60,6 @@ export default function ContactPage() {
 
   return (
     <>
-      {/* тот же материал, что на главной: заявка — продолжение того же мира */}
-      <HeroSilk />
       <main id="content" className="relative z-10 w-full">
         <section
           data-chapter="contact"

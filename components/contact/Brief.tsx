@@ -5,7 +5,7 @@ import Link from 'next/link';
 import MarkVideo, { type MarkVideoHandle } from '../MarkVideo';
 import { LIVE_H, LIVE_W } from '../live/kit';
 import { LIVE_BY_KEY } from '../live/map';
-import { DEADLINES, EXTRAS, NEEDS, STAGES, estimate, formatEstimate } from '@/content/brief';
+import { DEADLINES, EXTRAS, NEEDS, STAGES, estimate, formatEstimate, stagesFor } from '@/content/brief';
 import { checkLead, kindFromLocation, LEAD_KINDS, LIMITS, type LeadField, type LeadKind } from '@/lib/lead';
 import { SITE } from '@/content/site';
 
@@ -30,7 +30,7 @@ const PREVIEW_W = 336;
  */
 export default function Brief({ intro }: { intro?: ReactNode }) {
   const [needs, setNeeds] = useState<string[]>([]);
-  const [stage, setStage] = useState<string | null>(null);
+  const [stagePick, setStage] = useState<string | null>(null);
   const [extras, setExtras] = useState<string[]>([]);
   const [deadline, setDeadline] = useState<string | null>(null);
   const [name, setName] = useState('');
@@ -69,6 +69,10 @@ export default function Brief({ intro }: { intro?: ReactNode }) {
   }, []);
 
   const picked = NEEDS.filter((n) => needs.includes(n.id));
+  // ответ на второй вопрос живёт, только пока он уместен: сняли сайт
+  // и магазин — «нужен новый» уходит вместе со своим вариантом
+  const stages = stagesFor(needs);
+  const stage = stages.some((s) => s.id === stagePick) ? stagePick : null;
   const eta = estimate(needs, stage);
   const etaText = eta ? formatEstimate(eta) : null;
   /**
@@ -241,7 +245,7 @@ export default function Brief({ intro }: { intro?: ReactNode }) {
                 <span className="brief-num">02</span> Где вы сейчас?
               </legend>
               <div role="radiogroup" aria-label="Этап" className="flex flex-wrap gap-2">
-                {STAGES.map((s) => (
+                {stages.map((s) => (
                   <button
                     key={s.id}
                     type="button"

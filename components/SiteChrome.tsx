@@ -3,11 +3,22 @@
 import { usePathname } from 'next/navigation';
 import Cursor from './Cursor';
 import Header from './Header';
+import HeroSilk from './HeroSilk';
 import NavPod from './NavPod';
 import Preloader from './Preloader';
+import { SITE } from '@/content/site';
+
+/** Страницы, под которыми лежит материал. У документов и у 404 фон плоский. */
+const MATERIAL = new Set(['/', '/contact', '/about', '/concepts', ...SITE.pages.map((p) => p.href)]);
 
 /**
- * Наша хрома: прелоадер, шапка, пульт, курсор, зерно.
+ * Наша хрома: материал, прелоадер, шапка, пульт, курсор, зерно.
+ *
+ * Материал живёт здесь, а не на страницах: раньше каждая страница
+ * создавала свой, и на каждом переходе шейдер собирался заново —
+ * кадр без фона, а в светлой теме ещё и тёмная вспышка, пока новый
+ * материал доезжал до своей палитры. Теперь он один и переходы
+ * между страницами переживает.
  *
  * Внутри демо её нет. Демо концепта — это сайт клиента, а не наш раздел:
  * своя палитра, свои шрифты, своя шапка. Знак CoreThree поверх чужого
@@ -26,6 +37,7 @@ export default function SiteChrome() {
 
   return (
     <>
+      {MATERIAL.has(pathname) && <HeroSilk />}
       <Preloader />
       <Header />
       <NavPod />

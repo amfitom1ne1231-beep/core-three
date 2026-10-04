@@ -13,6 +13,7 @@ import { onThemeChange, readTheme, setTheme, type Theme } from '@/lib/theme';
  *
  * Обе кнопки видны всегда, поэтому состояние читается без наведения и
  * без догадок: `aria-pressed` говорит читалке, какая тема включена.
+ * На телефоне кнопки стоят в шапке под пальцем — область нажатия выше.
  */
 
 const OPTIONS: { id: Theme; label: string }[] = [
@@ -44,14 +45,14 @@ export default function ThemeToggle({ className = '' }: { className?: string }) 
             type="button"
             onClick={() => setTheme(o.id)}
             aria-pressed={on}
-            className="group relative -my-2 px-1.5 py-2 font-mono text-[10px] uppercase tracking-rail transition-colors duration-300 focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-fg"
+            className="group relative -my-2 px-1.5 py-2 max-md:-my-3.5 max-md:py-3.5 font-mono text-[10px] uppercase tracking-rail transition-colors duration-300 focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-fg"
             style={{ color: on ? 'var(--fg)' : 'var(--fg-faint)' }}
           >
             {o.label}
             {/* штрих под выбранным — тот же язык, что у рельса карусели */}
             <span
               aria-hidden
-              className="absolute inset-x-1.5 bottom-1 block h-px origin-left bg-accent transition-transform duration-300"
+              className="absolute inset-x-1.5 bottom-1 block h-px origin-left bg-accent transition-transform duration-300 max-md:bottom-2.5"
               style={{ transform: `scaleX(${on ? 1 : 0})` }}
             />
           </button>

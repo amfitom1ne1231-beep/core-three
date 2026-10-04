@@ -3,7 +3,6 @@ import ConceptCards from '@/components/ConceptCards';
 import DemoBand from '@/components/concepts/DemoBand';
 import Cta from '@/components/Cta';
 import Footer from '@/components/Footer';
-import HeroSilk from '@/components/HeroSilk';
 import RevealText from '@/components/RevealText';
 import ScrollScenes from '@/components/ScrollScenes';
 import Process from '@/components/service/Process';
@@ -35,7 +34,6 @@ export default function ConceptsPage() {
 
   return (
     <>
-      <HeroSilk />
       <main id="content" className="relative z-10 w-full">
         {/* ---------- первый экран ---------- */}
         <section data-chapter="hero" className="relative overflow-hidden" aria-label="Начало">

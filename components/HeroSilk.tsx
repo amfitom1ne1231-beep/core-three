@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 import { markSilkReady } from '@/lib/boot';
 import { createSilk, SILK_DEFAULTS, type SilkParams } from '@/lib/silk';
 import { onThemeChange, readTheme } from '@/lib/theme';
@@ -71,11 +72,20 @@ const hex = (c: number[]) => '#' + c.map((v) => Math.round(v).toString(16).padSt
 export default function HeroSilk({ params }: { params?: Partial<SilkParams> }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const veil = useRef<HTMLDivElement>(null);
+  const reblend = useRef<(() => void) | null>(null);
+  const pathname = usePathname();
+
+  // Материал один на весь сайт и переходы между страницами переживает:
+  // главы на новой странице другие — смесь пересчитывается под них
+  useEffect(() => {
+    reblend.current?.();
+  }, [pathname]);
 
   useEffect(() => {
     if (!ref.current) return;
     const silk = createSilk(ref.current, {
       params,
+      mode: readTheme() === 'light' ? 1 : 0,
       onFirstFrame: markSilkReady,
       ignoreVisibility: new URLSearchParams(location.search).has('silkdebug')
     });
@@ -141,18 +151,20 @@ export default function HeroSilk({ params }: { params?: Partial<SilkParams> }) {
       if (!raf) raf = requestAnimationFrame(blend);
     };
     blend();
+    reblend.current = schedule;
     addEventListener('scroll', schedule, { passive: true });
     addEventListener('resize', schedule, { passive: true });
 
     /**
      * Материал живёт в WebGL, и CSS-токены до него не достают: палитру
      * ему надо передать отдельно. Переход внутри шейдера плавный —
-     * `setTheme` двигает `uMode` к цели, а не переключает его.
+     * `setTheme` двигает `uMode` к цели, а не переключает его. Рождается
+     * материал сразу в текущей теме (см. `mode` выше).
      */
-    silk.setTheme(readTheme() === 'light' ? 1 : 0);
     const offTheme = onThemeChange((t) => silk.setTheme(t === 'light' ? 1 : 0));
 
     return () => {
+      reblend.current = null;
       cancelAnimationFrame(raf);
       offTheme();
       removeEventListener('scroll', schedule);

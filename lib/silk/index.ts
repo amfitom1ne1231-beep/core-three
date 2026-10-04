@@ -76,6 +76,13 @@ type Prog = { program: WebGLProgram; loc: (name: string) => WebGLUniformLocation
 
 export type SilkOptions = {
   params?: Partial<SilkParams>;
+  /**
+   * Тема, в которой материал рождается: 0 — тёмный, 1 — молочный.
+   * Плавный переход — для смены темы на глазах, а не для рождения:
+   * материал создаётся заново на каждой странице, и в светлой теме
+   * каждый переход начинался с тёмной вспышки.
+   */
+  mode?: 0 | 1;
   /** Зовётся один раз, после первого отрисованного кадра. */
   onFirstFrame?: () => void;
   /**
@@ -273,8 +280,8 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
   /* --- цикл --- */
   const t0 = performance.now();
   let last = t0;
-  let mode = 0;
-  let modeTarget = 0;
+  let mode: number = opts.mode ?? 0;
+  let modeTarget: number = mode;
   let frames = 0;
   let acc = 0;
   let raf = 0;

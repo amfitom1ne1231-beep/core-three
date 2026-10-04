@@ -24,8 +24,8 @@ export type Step = { n: string; title: string; text: string };
 export default function Process({
   steps,
   label = 'Как идёт работа',
-  title = 'Четыре шага,',
-  titleAccent = 'без сюрпризов',
+  title = 'Четыре',
+  titleAccent = 'шага',
   lead = 'На каждом шаге есть что показать. Работающая ссылка вместо отчёта о процессе.',
   chapter = 'atlas'
 }: {

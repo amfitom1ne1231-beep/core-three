@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import Cores from '@/components/about/Cores';
 import Footer from '@/components/Footer';
-import HeroSilk from '@/components/HeroSilk';
 import RevealText from '@/components/RevealText';
 import ScrollScenes from '@/components/ScrollScenes';
 import Neighbors from '@/components/service/Neighbors';
@@ -23,7 +22,6 @@ export const metadata: Metadata = pageMeta({ title: ABOUT.meta.title, descriptio
 export default function AboutPage() {
   return (
     <>
-      <HeroSilk />
       <main id="content" className="relative z-10 w-full">
         {/* ---------- первый экран ---------- */}
         <section data-chapter="hero" className="relative overflow-hidden" aria-label="Начало">

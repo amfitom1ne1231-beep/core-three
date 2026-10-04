@@ -41,11 +41,20 @@ export const NEEDS: Need[] = [
   { id: 'unsure', n: '06', label: 'Пока не знаю', scope: 'Разберём задачу и предложим решение', kind: 'general', weeks: [0, 0] }
 ];
 
-export const STAGES = [
+export type Stage = { id: string; label: string; note: string; only?: readonly string[] };
+
+export const STAGES: readonly Stage[] = [
   { id: 'idea', label: 'Есть идея', note: 'Начнём со структуры и прототипа' },
   { id: 'spec', label: 'Есть макет или ТЗ', note: 'Сразу в сборку' },
-  { id: 'live', label: 'Есть сайт, нужен новый', note: 'Перенесём данные и позиции в поиске' }
-] as const;
+  // переезжать со старого сайта может сайт или магазин; у бота, мини-приложения
+  // и мониторинга «старого сайта» нет — там этот ответ только сбивал
+  { id: 'live', label: 'Есть сайт, нужен новый', note: 'Перенесём данные и позиции в поиске', only: ['site', 'shop'] }
+];
+
+/** Этапы, которые имеют смысл для выбранного в первом вопросе. */
+export function stagesFor(needs: string[]): readonly Stage[] {
+  return STAGES.filter((s) => !s.only || s.only.some((id) => needs.includes(id)));
+}
 
 export const DEADLINES = [
   { id: 'asap', label: 'Как можно скорее' },

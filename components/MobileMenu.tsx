@@ -217,12 +217,13 @@ export default function MobileMenu({ onOpenChange }: { onOpenChange?: (open: boo
           {SITE.hero.primary.label}
         </Cta>
 
-        <div className="mt-6 flex items-center justify-between gap-4 border-t border-line pt-5">
+        {/* на экранах от 360px тема уже стоит в шапке */}
+        <div className="mt-6 flex items-center justify-between gap-4 border-t border-line pt-5 min-[360px]:hidden">
           <span className="rail-label">Тема</span>
           <ThemeToggle />
         </div>
 
-        <div className="mt-5 flex flex-col gap-2">
+        <div className="mt-5 flex flex-col gap-2 min-[360px]:mt-6 min-[360px]:border-t min-[360px]:border-line min-[360px]:pt-5">
           <a href={`mailto:${SITE.email}`} className="text-[14px] text-dim">
             {SITE.email}
           </a>

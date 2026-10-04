@@ -9,7 +9,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { estimate, formatEstimate } from '../.test-out/content/brief.js';
+import { estimate, formatEstimate, stagesFor } from '../.test-out/content/brief.js';
 
 const show = (needs, stage = null) => {
   const e = estimate(needs, stage);
@@ -46,4 +46,12 @@ test('одинаковые границы пишутся одним числом
   assert.deepEqual(formatEstimate({ lo: 3, hi: 3, unit: 'weeks' }), { value: '3', unit: 'недели' });
   assert.deepEqual(formatEstimate({ lo: 1, hi: 1, unit: 'weeks' }), { value: '1', unit: 'неделя' });
   assert.deepEqual(formatEstimate({ lo: 5, hi: 5, unit: 'days' }), { value: '5', unit: 'дней' });
+});
+
+test('«есть сайт, нужен новый» — только когда выбран сайт или магазин', () => {
+  const ids = (needs) => stagesFor(needs).map((s) => s.id);
+  assert.deepEqual(ids([]), ['idea', 'spec']);
+  assert.deepEqual(ids(['bot', 'app', 'ops', 'unsure']), ['idea', 'spec']);
+  assert.deepEqual(ids(['site']), ['idea', 'spec', 'live']);
+  assert.deepEqual(ids(['bot', 'shop']), ['idea', 'spec', 'live']);
 });

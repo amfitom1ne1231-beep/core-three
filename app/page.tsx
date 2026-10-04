@@ -3,7 +3,6 @@ import Atlas from '@/components/Atlas';
 import Cta from '@/components/Cta';
 import Footer from '@/components/Footer';
 import HeroMark from '@/components/HeroMark';
-import HeroSilk from '@/components/HeroSilk';
 import Journey from '@/components/Journey';
 import Manifesto from '@/components/Manifesto';
 import RevealText from '@/components/RevealText';
@@ -47,7 +46,6 @@ export default function Home() {
         // данные свои и статичные, экранирование < — от закрытия тега внутри строки
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
       />
-      <HeroSilk />
       <main id="content" className="relative z-10 w-full">
         {/* overflow-x-clip: знак выходит за край и на скролле растёт — страница
             не должна от этого становиться шире экрана, а по вертикали лучи

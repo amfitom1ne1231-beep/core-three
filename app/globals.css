@@ -773,6 +773,14 @@ body {
   border-color: var(--accent);
   background: color-mix(in srgb, var(--accent) 16%, rgb(var(--bg-rgb) / 0.6));
 }
+/* На молочном фоне 12–16% акцента давали еле заметную голубизну:
+   выбранное почти не отличалось от соседнего. В светлой теме — плотнее */
+:root[data-theme='light'] .brief-card[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--accent) 22%, rgb(var(--bg-rgb) / 0.7));
+}
+:root[data-theme='light'] :is(.brief-pill[aria-checked='true'], .brief-chip[aria-pressed='true'], .brief-chip[aria-checked='true']) {
+  background: color-mix(in srgb, var(--accent) 26%, rgb(var(--bg-rgb) / 0.7));
+}
 .brief-card:focus-visible,
 .brief-pill:focus-visible,
 .brief-chip:focus-visible {

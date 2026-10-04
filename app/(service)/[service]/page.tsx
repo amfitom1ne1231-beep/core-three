@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Footer from '@/components/Footer';
-import HeroSilk from '@/components/HeroSilk';
 import ServicePage from '@/components/ServicePage';
 import TelegramDemo from '@/components/TelegramDemo';
 import { SERVICES, bySlug } from '@/content/services';
@@ -79,7 +78,6 @@ export default async function Service({ params }: { params: Promise<{ service: s
         // данные свои и статичные, экранирование < — от закрытия тега внутри строки
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
       />
-      <HeroSilk />
       <ServicePage page={page}>
         {/* живая проба сценария — только у ботов: показывать её на
             мониторинге не за чем, а шаблон остаётся общим */}
