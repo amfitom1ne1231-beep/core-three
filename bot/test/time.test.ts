@@ -90,3 +90,18 @@ test('время в карточке: сегодня — часы, вчера �
   assert.equal(shortTime(msk(4, 21, 40), msk(5, 12), 'Europe/Moscow'), 'вчера, 21:40');
   assert.equal(shortTime(msk(1, 14, 0), msk(5, 12), 'Europe/Moscow'), '1 окт, 14:00');
 });
+
+test('настройки: владельцы списком, неверный id — понятная ошибка', async () => {
+  const { loadConfig } = await import('../src/config');
+  assert.deepEqual(loadConfig({ OWNER_TG_IDS: '11, 22,33' }).OWNER_TG_IDS, [11, 22, 33]);
+  assert.deepEqual(loadConfig({}).OWNER_TG_IDS, []);
+  assert.throws(() => loadConfig({ OWNER_TG_IDS: '11,abc' }), /OWNER_TG_IDS/);
+});
+
+test('настройки: пустые строки из файла — «не задано», а не ошибка', async () => {
+  const { loadConfig } = await import('../src/config');
+  const c = loadConfig({ PUBLIC_URL: '', WEBHOOK_SECRET: '', DATABASE_URL: '', GROUP_THREAD_ID: '', OWNER_TG_IDS: '' });
+  assert.equal(c.PUBLIC_URL, undefined);
+  assert.equal(c.GROUP_THREAD_ID, undefined);
+  assert.equal(c.BOT_MODE, 'polling');
+});

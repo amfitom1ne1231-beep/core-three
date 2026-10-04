@@ -110,7 +110,7 @@ export function createBot({ db, config, now = () => new Date(), botInfo }: Deps)
     );
   }
 
-  /** К вечеру без ответа клиенту — список владельцу. */
+  /** К вечеру без ответа клиенту — список владельцам. */
   async function alarm(list: Lead[]) {
     const group = await getGroup(db);
     if (!group || !list.length) return;
@@ -127,7 +127,7 @@ export function createBot({ db, config, now = () => new Date(), botInfo }: Deps)
 
   bot.use(async (ctx, next) => {
     if (ctx.from && !ctx.from.is_bot) {
-      ctx.member = (await memberByTg(db, ctx.from)) ?? (await ensureOwner(db, ctx.from, config.OWNER_TG_ID));
+      ctx.member = (await memberByTg(db, ctx.from)) ?? (await ensureOwner(db, ctx.from, config.OWNER_TG_IDS));
     }
     await next();
   });
@@ -146,7 +146,7 @@ export function createBot({ db, config, now = () => new Date(), botInfo }: Deps)
     '',
     '/leads — открытые заявки',
     '/team — команда',
-    '/invite — пригласить в команду (владелец)',
+    '/invite — пригласить в команду (владельцы)',
     '/bind — в группе: присылать заявки сюда'
   ].join('\n');
 
@@ -157,7 +157,7 @@ export function createBot({ db, config, now = () => new Date(), botInfo }: Deps)
       const m = await acceptInvite(db, payload.slice(4), ctx.from!);
       if (!m) return ctx.reply('Приглашение не действует: его уже использовали или прошло двое суток. Попросите новое.');
       ctx.member = m;
-      for (const o of (await team(db)).filter((x) => x.role === 'owner' && x.id !== m.id)) {
+      for (const o of (await team(db)).filter((x) => x.role === 'owner')) {
         await bot.api.sendMessage(o.tgId, `${mention(m)} вошёл в команду.`, { parse_mode: 'HTML' }).catch(() => {});
       }
     }
@@ -170,7 +170,7 @@ export function createBot({ db, config, now = () => new Date(), botInfo }: Deps)
   bot.command('invite', async (ctx) => {
     if (ctx.chat.type !== 'private') return;
     if (!ctx.member) return outsider(ctx);
-    if (ctx.member.role !== 'owner') return ctx.reply('Приглашать может владелец.');
+    if (ctx.member.role !== 'owner') return ctx.reply('Приглашать могут владельцы.');
     const code = await createInvite(db, ctx.member);
     const link = `https://t.me/${ctx.me.username}?start=inv_${code}`;
     return ctx.reply(`Ссылка для входа в команду — действует двое суток и один раз:\n${link}`, {

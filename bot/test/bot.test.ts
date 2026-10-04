@@ -128,3 +128,17 @@ test('напоминание зовёт всю команду ответом н�
   assert.ok(msg.payload.reply_parameters, 'ответом на карточку');
   await t.close();
 });
+
+test('владельцев несколько — каждый входит сам, без приглашения', async () => {
+  const t = await testBot({ OWNER_TG_IDS: `${OWNER.id}, ${ILYA.id}` });
+  await t.send(command(OWNER, '/start'));
+  await t.send(command(ILYA, '/start'));
+  assert.deepEqual(
+    (await team(t.db)).map((m) => [m.name, m.role]),
+    [
+      ['Лев', 'owner'],
+      ['Илья', 'owner']
+    ]
+  );
+  await t.close();
+});

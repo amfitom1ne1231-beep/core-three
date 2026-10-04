@@ -1,6 +1,7 @@
 import { serve } from '@hono/node-server';
 import { loadConfig } from './config';
 import { openDb } from './db/client';
+import { getGroup, setGroup } from './domain/settings';
 import { createApp } from './http/app';
 import { startScheduler } from './jobs/scheduler';
 import { createBot } from './tg/bot';
@@ -13,6 +14,12 @@ import { createBot } from './tg/bot';
 const config = loadConfig();
 const { db, close, kind } = await openDb({ url: config.DATABASE_URL, dataDir: config.BOT_DATA_DIR });
 console.info(`[db] ${kind}`);
+
+// группа из окружения — пока её не задали командой /bind в самой группе
+if (config.GROUP_CHAT_ID && !(await getGroup(db))) {
+  await setGroup(db, { chatId: config.GROUP_CHAT_ID, threadId: config.GROUP_THREAD_ID ?? null, title: null });
+  console.info('[bot] рабочая группа — из GROUP_CHAT_ID');
+}
 
 const studio = config.BOT_TOKEN ? createBot({ db, config }) : null;
 if (!studio) console.warn('[bot] BOT_TOKEN не задан — бот выключен, заявки только в базу');

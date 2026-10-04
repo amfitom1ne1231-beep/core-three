@@ -30,8 +30,22 @@ const Env = z.object({
   /** Секрет в адресе и заголовке webhook: чужой запрос его не знает. */
   WEBHOOK_SECRET: z.string().min(16).optional(),
 
-  /** Telegram id владельца: он первый в команде и приглашает остальных. */
-  OWNER_TG_ID: z.coerce.number().int().optional(),
+  /**
+   * Telegram id владельцев через запятую: входят без приглашения, зовут
+   * остальных, получают вечернюю тревогу. У студии владельцы все трое.
+   */
+  OWNER_TG_IDS: z
+    .string()
+    .default('')
+    .transform((s) => s.split(',').map((x) => x.trim()).filter(Boolean).map(Number))
+    .refine((ids) => ids.every((n) => Number.isInteger(n) && n > 0), 'id — целые числа через запятую'),
+
+  /**
+   * Рабочая группа по умолчанию — пока её не задали командой /bind.
+   * id супергруппы начинается с -100. Тема — если в группе включены темы.
+   */
+  GROUP_CHAT_ID: z.coerce.number().int().optional(),
+  GROUP_THREAD_ID: z.coerce.number().int().optional(),
 
   /** Postgres. Пусто — встроенный PGlite в BOT_DATA_DIR (разработка). */
   DATABASE_URL: z.string().optional(),
@@ -62,7 +76,10 @@ export type Config = z.infer<typeof Env> & {
 };
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
-  const parsed = Env.safeParse(env);
+  // «PUBLIC_URL=» в файле настроек — значит «не задано», а не пустая строка:
+  // иначе необязательные поля валятся на проверке адреса и длины
+  const set = Object.fromEntries(Object.entries(env).filter(([, v]) => v !== undefined && v.trim() !== ''));
+  const parsed = Env.safeParse(set);
   if (!parsed.success) {
     const issues = parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('\n  ');
     throw new Error(`Настройки сервиса неверны:\n  ${issues}`);

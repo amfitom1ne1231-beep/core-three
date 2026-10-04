@@ -17,7 +17,7 @@ export function testConfig(over: Record<string, string> = {}): Config {
   return loadConfig({
     NODE_ENV: 'test',
     BOT_TOKEN: '123:test',
-    OWNER_TG_ID: String(OWNER.id),
+    OWNER_TG_IDS: String(OWNER.id),
     INTAKE_SECRET: 'test-intake-secret-0123456789',
     SITE_URL: 'https://corethree.ru',
     ...over

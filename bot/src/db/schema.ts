@@ -10,7 +10,7 @@ import { bigint, boolean, index, integer, jsonb, pgTable, serial, text, timestam
 
 const ts = (name: string) => timestamp(name, { withTimezone: true, mode: 'date' });
 
-/** Команда. Владелец один — тот, чей id в OWNER_TG_ID. */
+/** Команда. Владельцы — те, чьи id в OWNER_TG_IDS; остальные входят по приглашению. */
 export const members = pgTable('members', {
   id: serial('id').primaryKey(),
   tgId: bigint('tg_id', { mode: 'number' }).notNull().unique(),

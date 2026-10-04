@@ -5,8 +5,8 @@ import { invites, members } from '../db/schema';
 import type { Member } from './leads';
 
 /**
- * Команда. Вход — только по Telegram: владелец (OWNER_TG_ID) попадает
- * в команду первым сообщением, остальных приглашает ссылкой с кодом.
+ * Команда. Вход — только по Telegram: владельцы (OWNER_TG_IDS) попадают
+ * в команду первым сообщением, остальных приглашают ссылкой с кодом.
  * Доступ у всех полный — так решил заказчик: для троих роли только мешают.
  */
 
@@ -27,9 +27,9 @@ export async function memberByTg(db: Db, user: TgUser): Promise<Member | null> {
   return m;
 }
 
-/** Владелец входит без приглашения — его id задан в окружении. */
-export async function ensureOwner(db: Db, user: TgUser, ownerTgId: number | undefined): Promise<Member | null> {
-  if (!ownerTgId || user.id !== ownerTgId) return null;
+/** Владельцы входят без приглашения — их id заданы в окружении. */
+export async function ensureOwner(db: Db, user: TgUser, ownerIds: number[]): Promise<Member | null> {
+  if (!ownerIds.includes(user.id)) return null;
   const existing = await memberByTg(db, user);
   if (existing) return existing;
   const [m] = await db
