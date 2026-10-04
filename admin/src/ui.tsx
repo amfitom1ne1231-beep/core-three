@@ -14,7 +14,7 @@ export function useMeData(): Me {
 
 /* ---------- значки: один набор, одна толщина линии ---------- */
 
-type IconName = 'plus' | 'search' | 'back' | 'chevron' | 'copy' | 'check' | 'close' | 'inbox' | 'layers' | 'link' | 'file' | 'lock';
+type IconName = 'plus' | 'search' | 'back' | 'chevron' | 'copy' | 'check' | 'close' | 'inbox' | 'layers' | 'bars' | 'link' | 'file' | 'lock';
 
 const PATHS: Record<IconName, ReactNode> = {
   plus: <path d="M12 5v14M5 12h14" />,
@@ -46,6 +46,7 @@ const PATHS: Record<IconName, ReactNode> = {
       <path d="m4 13 8 4.5 8-4.5" />
     </>
   ),
+  bars: <path d="M6 19v-6M12 19V5M18 19v-9" />,
   link: (
     <>
       <path d="M10.5 13.5a4 4 0 0 0 5.7 0l2.6-2.6a4 4 0 0 0-5.7-5.7l-1 1" />
@@ -225,9 +226,10 @@ export function Check({ done, label, disabled, onToggle }: { done: boolean; labe
 
 /* ---------- вкладки внизу: разделы приложения ---------- */
 
-const TABS: { route: Route; label: string; icon: 'inbox' | 'layers' }[] = [
+const TABS: { route: Route; label: string; icon: 'inbox' | 'layers' | 'bars' }[] = [
   { route: { name: 'leads' }, label: 'Заявки', icon: 'inbox' },
-  { route: { name: 'projects' }, label: 'Проекты', icon: 'layers' }
+  { route: { name: 'projects' }, label: 'Проекты', icon: 'layers' },
+  { route: { name: 'metrics' }, label: 'Метрики', icon: 'bars' }
 ];
 
 export function TabBar({ current }: { current: Route['name'] }) {

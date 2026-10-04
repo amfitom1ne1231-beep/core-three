@@ -32,7 +32,7 @@ html.browser {
     --tg-theme-subtitle-text-color: #8b9aa8;
     --tg-theme-section-header-text-color: #8b9aa8;
     --tg-theme-link-color: #5eb5f7;
-    --tg-theme-button-color: #2f6ea5;
+    --tg-theme-button-color: #3a86c8;
     --tg-theme-button-text-color: #ffffff;
     --tg-theme-section-separator-color: rgba(255, 255, 255, 0.08);
     --tg-theme-destructive-text-color: #ef6461;
@@ -60,6 +60,7 @@ html.browser {
   --link: var(--link-raw);
   --danger-text: var(--danger);
   --accent-fill: var(--accent);
+  --mark: var(--accent);
 
   /* нажатие и подложки: серый с прозрачностью читается на обеих темах */
   --press: rgba(127, 127, 127, 0.14);
@@ -87,6 +88,17 @@ html.browser {
     --danger-text: color-mix(in srgb, var(--danger) 72%, var(--text));
     --danger-fill: color-mix(in srgb, var(--danger) 13%, transparent);
     --accent-fill: color-mix(in srgb, var(--accent) 72%, #000000);
+    /*
+     * Цвет столбцов на графиках — один, от акцента темы. Проверен скриптом
+     * (контраст с поверхностью 3:1, полоса светлоты, насыщенность) на темах
+     * iOS, Android и Desktop: на светлой поверхности акцент делается глубже,
+     * на тёмной — чуть приглушается, иначе слепит.
+     */
+    --mark: color-mix(in srgb, var(--accent) 78%, var(--text));
+  }
+
+  :root[data-scheme='dark'] {
+    --mark: color-mix(in srgb, var(--accent) 85%, var(--surface));
   }
 }
 
@@ -964,6 +976,164 @@ textarea:focus,
 .sheet__text--break {
   color: var(--hint);
   word-break: break-all;
+}
+
+/* ---------- метрики ---------- */
+
+.tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.tiles--three {
+  grid-template-columns: repeat(3, 1fr);
+  margin-top: 0;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  min-height: 92px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  text-align: left;
+}
+
+.tile--link:active {
+  background-image: linear-gradient(var(--press), var(--press));
+}
+
+.tile__label {
+  color: var(--hint);
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+/* крупное число — обычными цифрами: равноширинные на таком кегле выглядят разреженно */
+.tile__value {
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.tile__value--warn {
+  color: var(--danger-text);
+}
+
+.tile__note {
+  color: var(--hint);
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+/* другой период ещё грузится — прежние цифры на месте, приглушены */
+.is-stale {
+  opacity: 0.55;
+  transition: opacity 0.15s ease-out;
+}
+
+.chart__readout {
+  min-height: 20px;
+  margin-bottom: 8px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.chart__plot {
+  border-radius: 6px;
+  outline-offset: 4px;
+}
+
+/* страницу по графику можно прокручивать: жест по вертикали остаётся браузеру */
+.chart__plot svg {
+  display: block;
+  touch-action: pan-y;
+}
+
+.chart__grid {
+  stroke: var(--sep);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+
+.chart__tick {
+  fill: var(--hint);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart__bar {
+  fill: var(--mark);
+}
+
+.chart__cursor {
+  stroke: var(--hint);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+
+.chart__foot {
+  margin-top: 12px;
+  color: var(--hint);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.bars {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bars__head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 15px;
+  line-height: 1.3;
+}
+
+.bars__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bars__note {
+  flex: none;
+  color: var(--hint);
+  font-size: 13px;
+}
+
+.bars__value {
+  flex: none;
+  margin-left: auto;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.bars__track {
+  display: block;
+  height: 8px;
+  margin-top: 6px;
+}
+
+/* у базовой линии край прямой, со стороны значения — скруглён */
+.bars__fill {
+  display: block;
+  min-width: 4px;
+  height: 100%;
+  border-radius: 0 4px 4px 0;
+  background: var(--mark);
 }
 
 /* ---------- вкладки разделов ---------- */

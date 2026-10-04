@@ -41,6 +41,10 @@ let startParam: string | undefined;
 export function boot() {
   if (!inTelegram) {
     document.documentElement.classList.add('browser');
+    const dark = window.matchMedia('(prefers-color-scheme: dark)');
+    const follow = () => setScheme(dark.matches);
+    follow();
+    dark.addEventListener('change', follow);
     return;
   }
   initData = rawInitData;
@@ -60,7 +64,7 @@ export function boot() {
   themeParams.bindCssVars.ifAvailable();
   // родные элементы (календарь, выпадающий список) — в тёмной или светлой схеме вслед за темой Telegram,
   // а не системы: иначе на тёмной теме при светлой системе значок календаря не видно
-  const scheme = () => (document.documentElement.style.colorScheme = themeParams.isDark() ? 'dark' : 'light');
+  const scheme = () => setScheme(themeParams.isDark());
   scheme();
   themeParams.isDark.sub(scheme);
 
@@ -86,6 +90,17 @@ export function boot() {
   }
 
   miniApp.ready.ifAvailable();
+}
+
+/**
+ * Тёмная тема или светлая. От этого зависят родные элементы (календарь,
+ * выпадающий список) и цвет столбцов на графиках: на тёмном фоне акцент
+ * темы приглушается, на светлом — делается глубже (styles.css, --mark).
+ */
+function setScheme(dark: boolean) {
+  const root = document.documentElement;
+  root.style.colorScheme = dark ? 'dark' : 'light';
+  root.dataset.scheme = dark ? 'dark' : 'light';
 }
 
 /** Событие клиенту Telegram напрямую, без SDK: мобильный и настольный мост, веб-версия. */
@@ -118,7 +133,7 @@ function bootBare() {
     const bg = typeof theme.bg_color === 'string' ? theme.bg_color : '';
     if (/^#[0-9a-f]{6}$/i.test(bg)) {
       const [r, g, b] = [1, 3, 5].map((i) => parseInt(bg.slice(i, i + 2), 16));
-      root.style.colorScheme = 0.299 * r! + 0.587 * g! + 0.114 * b! < 128 ? 'dark' : 'light';
+      setScheme(0.299 * r! + 0.587 * g! + 0.114 * b! < 128);
     }
   } catch {
     // темы в параметрах нет или она битая

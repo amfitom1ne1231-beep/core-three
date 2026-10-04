@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { JetBrains_Mono } from 'next/font/google';
 import SmoothScroll from '@/components/SmoothScroll';
+import SourceMemo from '@/components/SourceMemo';
 import { SITE } from '@/content/site';
 import { SEEN_BOOT } from '@/lib/boot';
 import { DEFAULT_THEME, THEME_BOOT } from '@/lib/theme';
@@ -71,6 +72,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <SmoothScroll />
+        <SourceMemo />
         {/* шапка, пульт, курсор и шрифт сайта — в оболочке группы (site);
             у демо концептов своя группа и своё всё */}
         {children}

@@ -249,3 +249,33 @@ export const revealSecret = (id: number) => call<{ value: string }>(`/secrets/${
 
 /** Файл лежит в Telegram — бот присылает его в личку. */
 export const sendMaterial = (id: number) => call<{ ok: true }>(`/materials/${id}/send`, {});
+
+/* ---------- метрики ---------- */
+
+export type MetricsPeriod = '7' | '30' | '90' | 'all';
+
+export type Metrics = {
+  from: string | null;
+  to: string;
+  leads: { total: number; spam: number; open: number; won: number; lost: number };
+  /** Сколько заявок, пришедших за период, дошли до каждого этапа. */
+  funnel: { stage: Stage; reached: number }[];
+  firstReply: { answered: number; medianMin: number | null; withinSla: number; slaMin: number; waiting: number };
+  bySource: { id: string; label: string; count: number; won: number }[];
+  byKind: { id: string; count: number; won: number }[];
+  lostReasons: { id: string; label: string; count: number }[];
+  bucket: 'day' | 'week' | 'month';
+  timeline: { start: Day; count: number }[];
+  projects: { active: number; paused: number; done: number; openTasks: number; overdueTasks: number; overdueStages: number };
+  previous: { total: number; won: number } | null;
+};
+
+export function useMetrics(period: MetricsPeriod) {
+  return useQuery({
+    queryKey: ['metrics', period],
+    queryFn: () => call<Metrics>(`/metrics?days=${period}`),
+    staleTime: 60_000,
+    // при смене периода прежние графики остаются на месте, пока грузятся новые
+    placeholderData: (prev) => prev
+  });
+}

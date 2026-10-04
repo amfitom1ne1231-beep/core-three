@@ -1,14 +1,16 @@
 import type { Db } from '../db/client';
 import { jobRuns } from '../db/schema';
 import { logAlarm, markReminded, unansweredLeads, untakenLeads } from '../domain/leads';
-import { deadlines } from '../domain/projects';
+import { morning, weekly } from '../domain/digest';
+import { isoWeek } from '../domain/metrics';
 import { alarmSlot, needsReminder, unansweredForAlarm, type Sla } from '../domain/sla';
 import { dayKey, localParts } from '../domain/worktime';
 import type { StudioBot } from '../tg/bot';
 
 /**
  * Расписание: раз в полминуты сервис смотрит, не пора ли кого-то
- * позвать. Решения «пора» — в domain/sla.ts, здесь только исполнение.
+ * позвать или прислать сводку. Решения «пора» по заявкам — в domain/sla.ts,
+ * что попадает в сводки — в domain/digest.ts, здесь только исполнение.
  *
  * Своя таблица запусков вместо очереди: сервис один, задач немного,
  * а ключ запуска не даёт повторить вечернюю тревогу после перезапуска.
@@ -42,14 +44,19 @@ export async function tick(db: Db, studio: StudioBot | null, sla: Sla, now = new
     }
   }
 
-  // сроки задач и этапов: раз в рабочий день, с его начала. Ключ — день:
-  // сервис лежал утром — напомнит, как поднимется, но не дважды
+  // Сводки — с начала рабочего дня. Ключи — день и неделя: сервис лежал
+  // утром — пришлёт, как поднимется, но не дважды.
   const local = localParts(now, sla.work.tz);
   if (sla.work.days.includes(local.dow) && local.min >= sla.work.start) {
     const today = dayKey(now, sla.work.tz);
-    if (await claim(db, `tasks:${today}`, now)) {
-      const due = await deadlines(db, today);
-      if (studio) await studio.deadlinesDigest(due, today).catch((e) => console.error('[tasks] сроки дня', e));
+    if (await claim(db, `digest:${today}`, now)) {
+      const m = await morning(db, now, sla.work);
+      if (studio) await studio.morningDigest(m, today).catch((e) => console.error('[digest] утро', e));
+    }
+    // итоги прошлой недели — в первый рабочий день новой
+    if (await claim(db, `week:${isoWeek(today)}`, now)) {
+      const w = await weekly(db, now, sla.work, sla.takeMin);
+      if (studio) await studio.weeklyDigest(w).catch((e) => console.error('[digest] неделя', e));
     }
   }
 }

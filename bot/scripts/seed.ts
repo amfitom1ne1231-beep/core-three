@@ -1,7 +1,7 @@
 /**
  * Выдуманные данные для демо-режима (`npm run demo`): команда из троих,
- * заявки на всех этапах воронки, проекты с задачами, сроками, материалами
- * и доступами. Настоящей базы не касается — пишет в BOT_DATA_DIR из .env.demo.
+ * заявки на всех этапах воронки, два с половиной месяца закрытых заявок
+ * для метрик, проекты с задачами, сроками, материалами и доступами. Настоящей базы не касается — пишет в BOT_DATA_DIR из .env.demo.
  */
 import { loadConfig } from '../src/config';
 import { openDb } from '../src/db/client';
@@ -9,7 +9,7 @@ import { members } from '../src/db/schema';
 import { addNote, createLead, markLost, markReminded, setStage, takeLead } from '../src/domain/leads';
 import { addFile, addLink, addSecret, addTask, createProject, projectView, updateProject, updateStage, updateTask } from '../src/domain/projects';
 import { parseKey } from '../src/domain/seal';
-import { dayKey } from '../src/domain/worktime';
+import { dayKey, zoned } from '../src/domain/worktime';
 
 const config = loadConfig();
 if (!config.BOT_DATA_DIR.includes('demo')) throw new Error('seed пишет только в демо-базу: BOT_DATA_DIR должен содержать «demo»');
@@ -73,6 +73,69 @@ await setStage(db, darya.id, L, 'call', ago(19 * D));
 await setStage(db, darya.id, L, 'proposal', ago(17 * D));
 await setStage(db, darya.id, L, 'contract', ago(14 * D));
 
+/* ---------- история для метрик ---------- */
+
+// Заявки за прошлые два с половиной месяца — все уже закрыты, чтобы не
+// засорять список открытых. Разброс задан формулой, а не случаем: демо
+// каждый раз одно и то же.
+{
+  const names = ['Алина', 'Виктор', 'Жанна', 'Захар', 'Инна', 'Кирилл', 'Лариса', 'Матвей', 'Нина', 'Олег', 'Полина', 'Роман', 'Софья', 'Тимур', 'Ульяна', 'Фёдор'];
+  const kinds = ['sites', 'sites', 'bots', 'ecommerce', 'sites', 'monitoring', 'bots', 'general'];
+  const sources: { source: 'site' | 'mail' | 'manual'; meta?: Record<string, string> }[] = [
+    { source: 'site', meta: { utm_source: 'telegram', utm_medium: 'post', landing: '/' } },
+    { source: 'site', meta: { utm_source: 'yandex', utm_medium: 'cpc', landing: '/sites' } },
+    { source: 'site', meta: { landing: '/' } },
+    { source: 'site', meta: { ref: 'vk.com', landing: '/concepts' } },
+    { source: 'site', meta: { utm_source: 'telegram', utm_medium: 'post', landing: '/bots' } },
+    { source: 'mail' },
+    { source: 'site', meta: { landing: '/contact' } },
+    { source: 'manual' }
+  ];
+  const reasons = ['price', 'silent', 'price', 'time', 'competitor', 'profile'] as const;
+  const who = [L, I, M];
+
+  for (let i = 0; i < 44; i++) {
+    // чем ближе к сегодняшнему дню, тем гуще: студия растёт
+    let daysAgo = 11 + Math.floor(((i * 37) % 70) * (0.45 + ((i * 13) % 10) / 18));
+    // выходные — на пятницу: в демо заявки приходят в рабочие часы, иначе «ответ за 0 минут»
+    const dow = new Date(now - daysAgo * D * 60_000).getUTCDay();
+    if (dow === 0) daysAgo += 2;
+    if (dow === 6) daysAgo += 1;
+    const [y, mo, d] = dayKey(new Date(now - daysAgo * D * 60_000), config.work.tz).split('-').map(Number);
+    const created = zoned(y!, mo!, d!, config.work.start + ((i * 53) % 300), config.work.tz);
+    const at = Math.round((now - created.getTime()) / 60_000);
+    const src = sources[i % sources.length]!;
+    const lead = await createLead(
+      db,
+      { source: src.source, meta: src.meta ?? null, name: `${names[i % names.length]}`, contact: `client${i}@example.com`, kind: kinds[(i * 3) % kinds.length]!, task: 'Заявка из истории — для метрик демо.' },
+      ago(at)
+    );
+    const owner = who[i % 3]!;
+    // первый ответ: чаще быстро, иногда через полдня
+    const reply = [12, 25, 40, 55, 18, 95, 30, 240][i % 8]!;
+    await setStage(db, lead.id, owner, 'contacted', ago(at - reply));
+    const fate = (i * 7) % 10;
+    if (fate < 3) {
+      await markLost(db, lead.id, owner, reasons[i % reasons.length]!, ago(at - reply - 2 * D));
+      continue;
+    }
+    await setStage(db, lead.id, owner, 'call', ago(at - reply - 1 * D));
+    if (fate < 5) {
+      await markLost(db, lead.id, owner, reasons[(i + 2) % reasons.length]!, ago(at - reply - 4 * D));
+      continue;
+    }
+    await setStage(db, lead.id, owner, 'proposal', ago(at - reply - 3 * D));
+    if (fate < 8) {
+      await markLost(db, lead.id, owner, reasons[(i + 1) % reasons.length]!, ago(at - reply - 8 * D));
+      continue;
+    }
+    await setStage(db, lead.id, owner, 'contract', ago(at - reply - 6 * D));
+    // проекты из давних договоров уже сданы — в архиве
+    const p = await db.query.projects.findFirst({ where: (t, { eq }) => eq(t.leadId, lead.id) });
+    if (p) await updateProject(db, p.id, owner, { status: 'done' }, ago(Math.max(at - 30 * D, (3 + (i % 9) * 2) * D)));
+  }
+}
+
 /* ---------- проекты ---------- */
 
 const key = config.SECRETS_KEY ? parseKey(config.SECRETS_KEY) : null;
@@ -126,4 +189,4 @@ const shop = await createProject(db, { client: 'Мастерская «Нить�
 }
 
 await close();
-console.info(`[seed] демо-база: ${config.BOT_DATA_DIR} — Лев, Илья, Марина; заявки и четыре проекта`);
+console.info(`[seed] демо-база: ${config.BOT_DATA_DIR} — Лев, Илья, Марина; заявки, история для метрик, проекты`);

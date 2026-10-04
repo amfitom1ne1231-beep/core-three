@@ -3,6 +3,7 @@ import { ApiError, useMe } from './api';
 import { back, isRoot, navigate, useRoute, type Route } from './router';
 import { LeadScreen } from './screens/Lead';
 import { Leads } from './screens/Leads';
+import { MetricsScreen } from './screens/Metrics';
 import { NewLead } from './screens/NewLead';
 import { NewProject } from './screens/NewProject';
 import { ProjectScreen } from './screens/Project';
@@ -25,6 +26,8 @@ function Screen({ route }: { route: Route }) {
       return <ProjectScreen key={route.id} id={route.id} />;
     case 'project-new':
       return <NewProject />;
+    case 'metrics':
+      return <MetricsScreen />;
     default:
       return <Leads />;
   }

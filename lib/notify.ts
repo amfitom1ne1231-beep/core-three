@@ -1,4 +1,5 @@
 import type { Lead } from './lead';
+import type { SourceMeta } from './source';
 
 /**
  * Запасной путь заявки — прямо в рабочий чат Telegram.
@@ -30,7 +31,18 @@ const KIND_LABEL: Record<Lead['kind'], string> = {
   concepts: 'Концепты'
 };
 
-export function leadMessage(lead: Lead, status: 'new' | 'spam'): string {
+/** «telegram / cpc · вход: /bots · с vk.com» — одной строкой, только то, что есть. */
+export function sourceLine(meta?: SourceMeta): string | null {
+  if (!meta) return null;
+  const parts = [
+    [meta.utm_source, meta.utm_medium, meta.utm_campaign].filter(Boolean).join(' / '),
+    meta.landing && `вход: ${meta.landing}`,
+    meta.ref && `с ${meta.ref}`
+  ].filter(Boolean);
+  return parts.length ? `Источник: ${parts.join(' · ')}` : null;
+}
+
+export function leadMessage(lead: Lead, status: 'new' | 'spam', meta?: SourceMeta): string {
   const head =
     status === 'spam'
       ? 'Заявка с сайта — сработала ловушка для ботов. Проверьте: ловушка ошибается на тех, кто вставил текст из буфера.'
@@ -41,12 +53,15 @@ export function leadMessage(lead: Lead, status: 'new' | 'spam'): string {
     `Имя: ${lead.name}`,
     `Контакт: ${lead.contact}`,
     `Раздел: ${KIND_LABEL[lead.kind]} · ${lead.page}`,
+    sourceLine(meta),
     '',
     lead.task
-  ].join('\n');
+  ]
+    .filter((line) => line !== null)
+    .join('\n');
 }
 
-export async function notifyLead(lead: Lead, status: 'new' | 'spam' = 'new'): Promise<NotifyResult> {
+export async function notifyLead(lead: Lead, status: 'new' | 'spam' = 'new', meta?: SourceMeta): Promise<NotifyResult> {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chat = process.env.TELEGRAM_CHAT_ID;
   if (!token || !chat) return 'off';
@@ -60,7 +75,7 @@ export async function notifyLead(lead: Lead, status: 'new' | 'spam' = 'new'): Pr
       body: JSON.stringify({
         chat_id: chat,
         message_thread_id: thread,
-        text: leadMessage(lead, status).slice(0, 4096),
+        text: leadMessage(lead, status, meta).slice(0, 4096),
         disable_web_page_preview: true
       }),
       cache: 'no-store',

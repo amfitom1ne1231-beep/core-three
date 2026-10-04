@@ -16,6 +16,7 @@ import {
   takeLead,
   type LeadFilter
 } from '../domain/leads';
+import { computeMetrics, lastDays } from '../domain/metrics';
 import { CLOSED, FUNNEL, KIND_LABEL, LOST_REASONS, SOURCE_LABEL, STAGE_LABEL, type LostReason } from '../domain/stages';
 import { team } from '../domain/team';
 import type { StudioBot } from '../tg/bot';
@@ -101,6 +102,14 @@ export function createApi({
       // чего в этой установке нет: доступы — без ключа шифрования, файлы — без бота
       features: { secrets: secretsEnabled, files: Boolean(studio) }
     });
+  });
+
+  /** Метрики за период: последние 7, 30, 90 дней или всё время. */
+  api.get('/metrics', async (c) => {
+    const days = z.enum(['7', '30', '90', 'all']).default('30').safeParse(c.req.query('days'));
+    if (!days.success) return c.json({ error: 'bad request' }, 400);
+    const range = days.data === 'all' ? { from: null, to: now() } : lastDays(Number(days.data), now(), config.work.tz);
+    return c.json(await computeMetrics(db, { ...range, work: config.work, slaMin: config.SLA_TAKE_MIN, now: now() }));
   });
 
   api.get('/leads', async (c) => {

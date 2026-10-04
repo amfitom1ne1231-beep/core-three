@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react';
 
 /**
- * Маршруты приложения — шесть экранов, поэтому без библиотеки. Адрес — путь
+ * Маршруты приложения — семь экранов, поэтому без библиотеки. Адрес — путь
  * под /app/ (History API): в браузере экран переживает перезагрузку,
  * а бот может открыть приложение сразу на заявке (`/app/leads/12`).
  *
@@ -16,10 +16,11 @@ export type Route =
   | { name: 'new' }
   | { name: 'projects' }
   | { name: 'project'; id: number }
-  | { name: 'project-new' };
+  | { name: 'project-new' }
+  | { name: 'metrics' };
 
 /** Корневые экраны — те, что стоят на вкладках внизу. */
-export const isRoot = (route: Route) => route.name === 'leads' || route.name === 'projects';
+export const isRoot = (route: Route) => route.name === 'leads' || route.name === 'projects' || route.name === 'metrics';
 
 function parse(pathname: string): Route {
   const path = pathname.startsWith(BASE) ? pathname.slice(BASE.length) : pathname;
@@ -30,6 +31,7 @@ function parse(pathname: string): Route {
   if (project) return { name: 'project', id: Number(project[1]) };
   if (/^\/projects\/new\/?$/.test(path)) return { name: 'project-new' };
   if (/^\/projects\/?$/.test(path)) return { name: 'projects' };
+  if (/^\/metrics\/?$/.test(path)) return { name: 'metrics' };
   return { name: 'leads' };
 }
 
@@ -45,6 +47,8 @@ export function hrefOf(route: Route) {
       return `${BASE}/projects/${route.id}`;
     case 'project-new':
       return `${BASE}/projects/new`;
+    case 'metrics':
+      return `${BASE}/metrics`;
     default:
       return `${BASE}/`;
   }

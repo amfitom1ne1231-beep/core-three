@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { checkLead } from '@/lib/lead';
 import { forwardLead } from '@/lib/intake';
 import { notifyLead } from '@/lib/notify';
+import { cleanSource } from '@/lib/source';
 
 /**
  * Приём заявки. Клиенту не верим: проверка повторяется здесь целиком.
@@ -128,13 +129,17 @@ export async function POST(req: Request) {
 
   // Заявка — в сервис бота: он хранит её в базе в РФ и ставит карточку
   // в рабочую группу. Форма уходит как пришла, ловушку для ботов сервис
-  // проверяет сам и такую заявку не выбрасывает, а помечает.
-  const forwarded = await forwardLead(body);
+  // проверяет сам и такую заявку не выбрасывает, а помечает. Источник
+  // (метки из ссылки, страница входа) едет отдельно и вычищен: клиенту
+  // не верим и тут.
+  const { meta: rawMeta, ...form } = body as Record<string, unknown>;
+  const meta = cleanSource(rawMeta);
+  const forwarded = await forwardLead(form, meta);
   if (forwarded === 'sent' || forwarded === 'dry') return NextResponse.json({ ok: true });
 
   // Сервис недоступен — запасной путь: прямо в группу, как раньше.
   // Заявка, которая дошла хотя бы так, не потеряна.
-  const notified = await notifyLead(check.lead, check.bot ? 'spam' : 'new');
+  const notified = await notifyLead(check.lead, check.bot ? 'spam' : 'new', meta);
   // сработавшей ловушке отвечаем «успех» в любом случае: бот ничего не узнаёт
   if (notified === 'sent' || check.bot) return NextResponse.json({ ok: true });
   return NextResponse.json({ error: 'unavailable' }, { status: 503 });

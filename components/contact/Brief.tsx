@@ -7,6 +7,7 @@ import { LIVE_H, LIVE_W } from '../live/kit';
 import { LIVE_BY_KEY } from '../live/map';
 import { DEADLINES, EXTRAS, NEEDS, STAGES, estimate, formatEstimate, stagesFor } from '@/content/brief';
 import { checkLead, kindFromLocation, LEAD_KINDS, LIMITS, type LeadField, type LeadKind } from '@/lib/lead';
+import { readSource } from '@/lib/source';
 import { SITE } from '@/content/site';
 
 type Status = 'idle' | 'sending' | 'done' | 'rate' | 'down';
@@ -133,7 +134,9 @@ export default function Brief({ intro }: { intro?: ReactNode }) {
       website: fd.get('website'),
       kind: typeParam ?? picked[0]?.kind ?? kindFromLocation(location.pathname),
       page: location.pathname,
-      elapsed: Date.now() - started.current
+      elapsed: Date.now() - started.current,
+      // откуда человек пришёл: метки из ссылки, страница входа, сайт-источник
+      meta: readSource()
     };
     const local = checkLead(payload);
     if (!local.ok) {

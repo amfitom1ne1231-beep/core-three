@@ -18,7 +18,8 @@ import {
 } from '../domain/leads';
 import { addFile, getProject, listProjects, type Deadlines, type Material, type NewFile } from '../domain/projects';
 import { getGroup, getSetting, setGroup, setSetting } from '../domain/settings';
-import { FUNNEL, LOST_REASONS, STAGE_LABEL, type LostReason } from '../domain/stages';
+import type { Morning, Weekly } from '../domain/digest';
+import { FUNNEL, KIND_LABEL, LOST_REASONS, STAGE_LABEL, type LostReason } from '../domain/stages';
 import { acceptInvite, createInvite, ensureOwner, memberByTg, team } from '../domain/team';
 import { dayKey, shortTime } from '../domain/worktime';
 import { cardKeyboard, cardText, cb, esc, mention, parseCb, type Menu } from './card';
@@ -184,16 +185,9 @@ export function createBot({ db, config, now = () => new Date(), botInfo }: Deps)
     return `с ${d} ${MON[m! - 1]}`;
   };
 
-  /**
-   * Сроки дня — одним сообщением в группу: задачи по исполнителям, каждый
-   * отмечен; этапы — с отметкой того, кто ведёт проект. Просроченное
-   * повторяется каждый рабочий день, пока не закроют.
-   */
-  async function deadlinesDigest(due: Deadlines, today: string) {
-    const group = await getGroup(db);
-    if (!group || (!due.tasks.length && !due.stages.length)) return false;
-    const lines: string[] = ['<b>Сроки на сегодня</b>'];
-
+  /** Сроки дня: задачи по исполнителям, каждый отмечен; этапы — с отметкой того, кто ведёт проект. */
+  function deadlineLines(due: Deadlines, today: string) {
+    const lines: string[] = [];
     const byPerson = new Map<number | null, Deadlines['tasks']>();
     for (const t of due.tasks) byPerson.set(t.assigneeId, [...(byPerson.get(t.assigneeId) ?? []), t]);
     for (const [, list] of byPerson) {
@@ -201,20 +195,104 @@ export function createBot({ db, config, now = () => new Date(), botInfo }: Deps)
       lines.push('', who ? mention(who) : 'Без исполнителя');
       for (const t of list) lines.push(`— ${esc(t.title)} · ${esc(t.project)} · ${dueLabel(t.dueOn, today)}`);
     }
-
     if (due.stages.length) {
       lines.push('', 'Этапы');
       for (const st of due.stages) {
         lines.push(`— «${esc(st.title)}» · ${esc(st.project)} · ${dueLabel(st.dueOn, today)}${st.owner ? ` · ${mention(st.owner)}` : ''}`);
       }
     }
+    return lines;
+  }
+
+  const WEEKDAY = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
+  /** «2026-10-05» → «5 окт». */
+  const dayLabel = (day: string) => {
+    const [, m, d] = day.split('-').map(Number);
+    return `${d} ${MON[m! - 1]}`;
+  };
+  /** Номер заявки ссылкой на её карточку в группе. */
+  const leadRef = (l: Pick<Lead, 'id' | 'cardChatId' | 'cardMessageId'>) => {
+    const link = cardLink(l);
+    return link ? `<a href="${link}">#${l.id}</a>` : `#${l.id}`;
+  };
+  const MORE = 8;
+  const more = (n: number) => (n > MORE ? [`…и ещё ${n - MORE}`] : []);
+
+  /**
+   * Утренняя сводка — одним сообщением в начале рабочего дня: кому не
+   * ответили, что стоит без движения, чьи сроки сегодня. Нечего сказать —
+   * молчит: сообщение «всё спокойно» каждое утро перестают читать.
+   * Отмечаются только исполнители задач: остальное — к сведению.
+   */
+  async function morningDigest(m: Morning, today: string) {
+    const group = await getGroup(db);
+    const hasDue = m.due.tasks.length > 0 || m.due.stages.length > 0;
+    if (!group || (!m.waiting.length && !m.stale.length && !hasDue)) return false;
+
+    const dow = WEEKDAY[new Date(`${today}T00:00:00Z`).getUTCDay()];
+    const lines: string[] = [`<b>Утро, ${dow} ${dayLabel(today)}</b>`];
+    if (m.arrived) lines.push(`Заявок с прошлого рабочего дня: ${m.arrived}`);
+
+    if (m.waiting.length) {
+      lines.push('', `<b>Ждут ответа — ${m.waiting.length}</b>`);
+      for (const l of m.waiting.slice(0, MORE)) {
+        lines.push(`— ${leadRef(l)} ${esc(l.name)} · ${esc(KIND_LABEL[l.kind] ?? l.kind)} · ${l.ownerName ? `ведёт ${esc(l.ownerName)}` : 'никто не взял'}`);
+      }
+      lines.push(...more(m.waiting.length));
+    }
+
+    if (m.stale.length) {
+      lines.push('', `<b>Без движения — ${m.stale.length}</b>`);
+      for (const l of m.stale.slice(0, MORE)) {
+        lines.push(`— ${leadRef(l)} ${esc(l.name)} · ${STAGE_LABEL[l.stage]} · ${l.idleDays} раб. дн.${l.ownerName ? ` · ${esc(l.ownerName)}` : ''}`);
+      }
+      lines.push(...more(m.stale.length));
+    }
+
+    if (hasDue) lines.push('', '<b>Сроки на сегодня</b>', ...deadlineLines(m.due, today).slice(1));
 
     await bot.api.sendMessage(group.chatId, lines.join('\n'), {
       parse_mode: 'HTML',
       message_thread_id: group.threadId ?? undefined,
       link_preview_options: { is_disabled: true }
     });
-    log(`сроки дня: задач ${due.tasks.length}, этапов ${due.stages.length}`);
+    log(`утренняя сводка: ждут ${m.waiting.length}, без движения ${m.stale.length}, задач ${m.due.tasks.length}, этапов ${m.due.stages.length}`);
+    return true;
+  }
+
+  const minutes = (min: number) => (min < 60 ? `${min} мин` : `${Math.floor(min / 60)} ч${min % 60 ? ` ${min % 60} мин` : ''}`);
+
+  /**
+   * Итоги недели — в её первый рабочий день: те же цифры, что в приложении,
+   * за прошлую неделю. Никого не отмечает. Пустую неделю без проектов пропускает.
+   */
+  async function weeklyDigest({ monday, sunday, metrics: x }: Weekly) {
+    const group = await getGroup(db);
+    if (!group || (!x.leads.total && !x.projects.active && !x.projects.done)) return false;
+
+    const lines: string[] = [`<b>Итоги недели · ${dayLabel(monday)} – ${dayLabel(sunday)}</b>`, ''];
+    lines.push(`Заявок: ${x.leads.total}${x.previous ? ` (неделей раньше — ${x.previous.total})` : ''}`);
+    if (x.leads.total) {
+      const steps = x.funnel.slice(1).map((f) => `${STAGE_LABEL[f.stage].toLowerCase()} ${f.reached}`);
+      lines.push(`Дошли: ${steps.join(' · ')}`);
+      const reasons = x.lostReasons.map((r) => `${r.label.toLowerCase()} — ${r.count}`).join(', ');
+      lines.push(`Договоров: ${x.leads.won} · отказов: ${x.leads.lost}${reasons ? ` (${reasons})` : ''}`);
+      if (x.firstReply.medianMin !== null) {
+        lines.push(`Первый ответ: обычно за ${minutes(x.firstReply.medianMin)}, в срок — ${x.firstReply.withinSla} из ${x.firstReply.answered}`);
+      }
+      if (x.firstReply.waiting) lines.push(`Без ответа до сих пор: ${x.firstReply.waiting}`);
+      lines.push(`Откуда: ${x.bySource.slice(0, 5).map((s) => `${esc(s.label)} — ${s.count}`).join(', ')}`);
+    }
+    const p = x.projects;
+    const late = p.overdueTasks + p.overdueStages;
+    lines.push(`Проекты: в работе ${p.active}${p.done ? `, завершено за неделю ${p.done}` : ''}${late ? `, просрочено задач и этапов — ${late}` : ''}`);
+
+    await bot.api.sendMessage(group.chatId, lines.join('\n'), {
+      parse_mode: 'HTML',
+      message_thread_id: group.threadId ?? undefined,
+      link_preview_options: { is_disabled: true }
+    });
+    log(`итоги недели ${monday}: заявок ${x.leads.total}`);
     return true;
   }
 
@@ -466,7 +544,7 @@ export function createBot({ db, config, now = () => new Date(), botInfo }: Deps)
 
   bot.catch((err) => console.error('[bot]', err.error));
 
-  return { bot, publishLead, refreshCard, remind, alarm, deadlinesDigest, sendFile, syncMenu, syncCards };
+  return { bot, publishLead, refreshCard, remind, alarm, morningDigest, weeklyDigest, sendFile, syncMenu, syncCards };
 }
 
 /** Ссылка на карточку в супергруппе: t.me/c/<id без -100>/<сообщение>. */
