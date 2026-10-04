@@ -4,6 +4,7 @@ import { openDb } from './db/client';
 import { getGroup, setGroup } from './domain/settings';
 import { createApp } from './http/app';
 import { startScheduler } from './jobs/scheduler';
+import { sheetsTick } from './sheets/sync';
 import { createBot } from './tg/bot';
 
 /**
@@ -58,9 +59,17 @@ const stopScheduler = startScheduler(db, studio, {
   alarmBeforeEndMin: config.SLA_ALARM_BEFORE_END_MIN
 });
 
+// Google-таблица — отражение базы: раз в минуту в неё уходит то, что изменилось
+const sheets = config.SHEETS_URL && config.SHEETS_SECRET ? setInterval(() => void sheetsTick(db, config), 30_000) : null;
+if (sheets) {
+  console.info('[sheets] дублирование в таблицу включено');
+  void sheetsTick(db, config);
+}
+
 async function shutdown(signal: string) {
   console.info(`[main] ${signal}, останавливаюсь`);
   stopScheduler();
+  if (sheets) clearInterval(sheets);
   if (studio && config.BOT_MODE === 'polling') await studio.bot.stop();
   server.close();
   await close();

@@ -13,7 +13,8 @@
     "start": "node dist/main.js",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test test/*.test.ts",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "sheets:script": "node --env-file=.env.local scripts/sheets-script.mjs"
   },
   "engines": {
     "node": ">=20.12"

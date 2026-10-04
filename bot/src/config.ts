@@ -85,6 +85,14 @@ const Env = z.object({
     .refine((s) => Buffer.from(s, 'base64').length === 32, '32 байта в base64: openssl rand -base64 32')
     .optional(),
 
+  /**
+   * Дублирование в Google-таблицу: адрес скрипта-приёмника в самой таблице
+   * (bot/sheets/Code.gs, развёрнут веб-приложением) и общий с ним секрет.
+   * Пусто — дублирования нет.
+   */
+  SHEETS_URL: z.url().optional(),
+  SHEETS_SECRET: z.string().min(16).optional(),
+
   /** Адрес сайта — для ответа посторонним в боте. */
   SITE_URL: z.url().default('https://corethree.ru'),
 
