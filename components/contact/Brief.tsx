@@ -407,6 +407,10 @@ export default function Brief({ intro }: { intro?: ReactNode }) {
                     <a href={`https://t.me/${SITE.telegram}`} target="_blank" rel="noreferrer noopener" className="text-fg underline decoration-line-strong underline-offset-4">
                       {SITE.telegramLabel}
                     </a>
+                    , в{' '}
+                    <a href={SITE.max} target="_blank" rel="noreferrer noopener" className="text-fg underline decoration-line-strong underline-offset-4">
+                      {SITE.maxLabel}
+                    </a>
                   </p>
                 )}
               </div>

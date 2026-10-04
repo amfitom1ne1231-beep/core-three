@@ -231,6 +231,9 @@ export default function MobileMenu({ onOpenChange }: { onOpenChange?: (open: boo
           >
             {SITE.telegramLabel}
           </a>
+          <a href={SITE.max} target="_blank" rel="noreferrer noopener" className="text-[14px] text-dim">
+            {SITE.maxLabel}
+          </a>
         </div>
       </div>
     </div>

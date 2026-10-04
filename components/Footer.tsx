@@ -73,6 +73,16 @@ export default function Footer({ cta = true }: { cta?: boolean }) {
                     {SITE.telegramLabel}
                   </a>
                 </li>
+                <li>
+                  <a
+                    href={SITE.max}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="block py-3.5 text-[13px] text-dim transition-colors duration-300 hover:text-fg sm:py-0"
+                  >
+                    {SITE.maxLabel}
+                  </a>
+                </li>
               </ul>
               {/* Кто исполнитель и оператор данных — видно на каждой странице,
                   а не только в политике. Строка читается, а не угадывается:

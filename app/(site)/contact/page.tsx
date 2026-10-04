@@ -51,6 +51,14 @@ export default function ContactPage() {
         >
           Telegram {SITE.telegramLabel}
         </a>
+        <a
+          href={SITE.max}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="text-fg underline decoration-line-strong underline-offset-4 transition-colors duration-300 hover:decoration-accent"
+        >
+          {SITE.maxLabel}
+        </a>
         <a href={`mailto:${SITE.email}`} className="text-dim underline decoration-line-strong underline-offset-4 transition-colors duration-300 hover:text-fg">
           {SITE.email}
         </a>
