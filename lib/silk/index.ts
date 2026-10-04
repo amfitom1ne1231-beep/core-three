@@ -216,6 +216,20 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
 
   /* --- размеры --- */
   let renderScale = isMobile ? 0.7 : 1;
+  /**
+   * Размер канваса меняется только в кадре, прямо перед отрисовкой.
+   * Присвоение width/height стирает буфер, и раньше это случалось после
+   * отрисовки — подстройка разрешения под частоту кадров стирала только
+   * что нарисованный кадр, и на экран попадал чёрный. На тяжёлых
+   * страницах частота гуляла у порогов, разрешение качалось туда-сюда,
+   * и фон мигал раз за разом — в светлой теме серой вспышкой сквозь
+   * завесу, в тёмной провалом в черноту.
+   */
+  let wantSize = false;
+  const requestSize = () => {
+    wantSize = true;
+    dirty = true;
+  };
   const resize = () => {
     const dpr = Math.min(devicePixelRatio || 1, 2);
     const cssW = canvas.clientWidth || innerWidth;
@@ -267,7 +281,7 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
   );
   io.observe(canvas);
 
-  addEventListener('resize', resize, { passive: true });
+  addEventListener('resize', requestSize, { passive: true });
   addEventListener('scroll', onScroll, { passive: true });
   document.addEventListener('visibilitychange', onVisibility);
   if (!isMobile) {
@@ -284,6 +298,8 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
   let modeTarget: number = mode;
   let frames = 0;
   let acc = 0;
+  let slow = 0;
+  let fast = 0;
   let raf = 0;
   let announced = false;
   const still = reduced || isMobile;
@@ -302,6 +318,10 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
       return;
     }
     dirty = false;
+    if (wantSize) {
+      wantSize = false;
+      resize();
+    }
 
     const dt = Math.min((now - last) / 1000, 0.05);
     last = now;
@@ -393,12 +413,19 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
     frames++;
     if (acc >= 0.5) {
       const fps = frames / acc;
-      if (fps < 45 && renderScale > 0.55) {
+      // гистерезис: вниз — после секунды провала, вверх — после трёх секунд
+      // запаса. Без него разрешение качалось на каждом полусекундном замере
+      slow = fps < 45 ? slow + 1 : 0;
+      fast = fps > 58 ? fast + 1 : 0;
+      if (slow >= 2 && renderScale > 0.55) {
         renderScale = Math.max(0.55, renderScale - 0.15);
-        resize();
-      } else if (fps > 58 && renderScale < (isMobile ? 0.7 : 1)) {
+        requestSize();
+        slow = 0;
+        fast = 0;
+      } else if (fast >= 6 && renderScale < (isMobile ? 0.7 : 1)) {
         renderScale = Math.min(isMobile ? 0.7 : 1, renderScale + 0.1);
-        resize();
+        requestSize();
+        fast = 0;
       }
       acc = 0;
       frames = 0;
@@ -410,7 +437,7 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
     destroy() {
       cancelAnimationFrame(raf);
       io.disconnect();
-      removeEventListener('resize', resize);
+      removeEventListener('resize', requestSize);
       removeEventListener('scroll', onScroll);
       document.removeEventListener('visibilitychange', onVisibility);
       removeEventListener('pointermove', onPointerMove);
