@@ -15,9 +15,8 @@ export const metadata: Metadata = pageMeta({ title: ABOUT.meta.title, descriptio
  * Третье место, где живёт триада ядер: на первом экране она названа,
  * в манифесте звучит, здесь — показывается самим знаком (см. `Cores`).
  *
- * Блок команды построен на ролях без имён — их в брифе не было,
- * а выдумывать людей на странице про честность нельзя. Имена
- * подставятся в `ABOUT.team.items[].name`, вёрстка их уже ждёт.
+ * Блока команды нет: имён, ролей и числа людей страница не называет —
+ * решение заказчика. На его месте — «что нужно от вас».
  */
 export default function AboutPage() {
   return (
@@ -59,53 +58,37 @@ export default function AboutPage() {
         {/* ---------- три ядра: сцена со знаком ---------- */}
         <Cores />
 
-        {/* ---------- кто делает ---------- */}
-        <section data-chapter="anatomy" className="relative border-t border-line" aria-label={ABOUT.team.label}>
+        {/* ---------- что нужно от вас ---------- */}
+        <section data-chapter="anatomy" className="relative border-t border-line" aria-label={ABOUT.start.label}>
           <div className="px-4 section-y sm:px-8 lg:px-[72px]">
-            <span className="rail-label">{ABOUT.team.label}</span>
+            <span className="rail-label">{ABOUT.start.label}</span>
             <div className="mt-4 grid gap-[clamp(16px,3vh,32px)] lg:grid-cols-[1.7fr_1fr] lg:items-end">
               <h2 className="display m-0 text-[clamp(26px,4.2vw,64px)]">
-                {ABOUT.team.title} <span className="title-accent">{ABOUT.team.titleAccent}</span>
+                {ABOUT.start.title} <span className="title-accent">{ABOUT.start.titleAccent}</span>
               </h2>
               <p className="m-0 max-w-[40ch] text-[clamp(13px,1.1vw,16px)] leading-relaxed text-dim">
-                {ABOUT.team.lead}
+                {ABOUT.start.lead}
               </p>
             </div>
 
-            <ul className="m-0 mt-[clamp(28px,5vh,64px)] grid list-none gap-px border border-line bg-line p-0 lg:grid-cols-3">
-              {ABOUT.team.items.map((m, i) => (
+            <ol className="m-0 mt-[clamp(28px,5vh,64px)] grid list-none gap-px border border-line bg-line p-0 sm:grid-cols-2 lg:grid-cols-3">
+              {ABOUT.start.items.map((it, i) => (
                 <li
-                  key={m.role}
+                  key={it.title}
                   className="group relative flex flex-col overflow-hidden bg-bg p-[clamp(20px,2.4vw,38px)] transition-colors duration-500 hover:bg-elev"
                 >
-                  {/* номер роли крупно: та же система якорей, что на страницах
-                      направлений — по ней видно, что ролей ровно три */}
+                  {/* номер крупно — та же система якорей, что на страницах направлений */}
                   <span
-                    className="pointer-events-none absolute -bottom-[0.24em] right-[0.04em] font-mono text-[clamp(88px,9vw,150px)] leading-none tracking-[-0.05em] text-fg/[0.05] transition-colors duration-500 group-hover:text-fg/[0.09]"
+                    className="pointer-events-none absolute -bottom-[0.24em] right-[0.04em] font-mono text-[clamp(72px,7vw,120px)] leading-none tracking-[-0.05em] text-fg/[0.05] transition-colors duration-500 group-hover:text-fg/[0.09]"
                     aria-hidden
                   >
                     {String(i + 1).padStart(2, '0')}
                   </span>
-
-                  <span className="rail-label">{m.role}</span>
-                  {/* имя появится, когда его дадут: роль работает и без него */}
-                  {m.name ? <h3 className="display m-0 mt-4 text-[clamp(22px,2.2vw,32px)]">{m.name}</h3> : null}
-                  <p className="relative m-0 mt-5 flex-1 text-[14.5px] leading-relaxed text-dim">{m.text}</p>
-                  {/* чипы переносятся раньше угла с номером: на одной строке
-                      с ним они ложились поверх цифр */}
-                  <ul className="relative m-0 mt-7 flex list-none flex-wrap gap-1.5 p-0 pr-[clamp(72px,7.5vw,124px)]">
-                    {m.owns.map((o) => (
-                      <li
-                        key={o}
-                        className="border border-line px-2.5 py-1.5 font-mono text-[9px] uppercase tracking-rail text-faint"
-                      >
-                        {o}
-                      </li>
-                    ))}
-                  </ul>
+                  <h3 className="relative m-0 text-[clamp(17px,1.5vw,22px)] font-medium leading-snug">{it.title}</h3>
+                  <p className="relative m-0 mt-4 max-w-[38ch] pb-[clamp(28px,3vw,48px)] text-[14.5px] leading-relaxed text-dim">{it.text}</p>
                 </li>
               ))}
-            </ul>
+            </ol>
           </div>
         </section>
 

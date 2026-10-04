@@ -110,7 +110,7 @@ export default function Process({
                   aria-hidden
                 />
                 <span
-                  className="block font-mono text-[clamp(44px,5.6vw,104px)] leading-[0.8] tracking-[-0.05em] text-fg/[0.12] transition-colors duration-700 group-data-[on]:text-fg/[0.28]"
+                  className="block font-mono text-[clamp(44px,5.6vw,104px)] leading-[0.8] tracking-[-0.05em] text-fg/[0.18] transition-colors duration-700 group-data-[on]:text-fg/[0.4]"
                   aria-hidden
                 >
                   {s.n}
