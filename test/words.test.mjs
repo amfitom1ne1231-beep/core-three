@@ -45,6 +45,7 @@ const ALLOWED = new Set([
   'help.map.lead',
   'help.price.lead',
   'help.after.lead',
+  'help.faq.lead',
   'help.words.lead',
   'help.price.factors.items[].text',
   'help.after.prepare.items[].text',

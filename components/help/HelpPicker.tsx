@@ -9,7 +9,7 @@ import Jump from './Jump';
 import Picker from './Picker';
 import { formatEstimate, NEEDS } from '@/content/brief';
 import { demoBySlug } from '@/content/concepts';
-import { adviceHref, needLabel, stageNote, type Advice } from '@/content/picker';
+import { advise, adviceHref, needLabel, stageNote, type Advice, type Answers } from '@/content/picker';
 
 // живые экраны тянут свои таймлайны — грузим, только когда дошло до итога
 const LivePreview = dynamic(() => import('./LivePreview'), { ssr: false });
@@ -26,7 +26,14 @@ const actionLink =
  * экран — как это выглядит. Главная кнопка ведёт в заявку, где всё
  * уже отмечено: остаётся оставить контакт.
  */
-export default function HelpPicker() {
+export default function HelpPicker({
+  quick = [],
+  quickTitle
+}: {
+  /** Быстрые ответы: ситуация словами человека — сразу совет, без вопросов. */
+  quick?: readonly { say: string; answers: Answers }[];
+  quickTitle?: string;
+}) {
   const [advice, setAdvice] = useState<Advice | null>(null);
   const [round, setRound] = useState(0);
   const result = useRef<HTMLDivElement>(null);
@@ -42,7 +49,24 @@ export default function HelpPicker() {
     }
   }, [advice]);
 
-  if (!advice) return <Picker key={round} onAdvice={setAdvice} />;
+  if (!advice)
+    return (
+      <>
+        <Picker key={round} onAdvice={setAdvice} />
+        {quick.length > 0 && (
+          <div className="mt-[clamp(24px,4vh,36px)] border-t border-line pt-5">
+            <span className="rail-label">{quickTitle}</span>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {quick.map((q) => (
+                <button key={q.say} type="button" onClick={() => setAdvice(advise(q.answers))} className="brief-chip !text-[13.5px]">
+                  «{q.say}»
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </>
+    );
 
   const eta = advice.eta ? formatEstimate(advice.eta) : null;
   const note = stageNote(advice.stage);

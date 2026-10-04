@@ -110,7 +110,15 @@ export default function Term({ word, children }: { word: Word; children: ReactNo
             <div className="mt-2.5">
               <Link
                 href={`/help#word-${word.id}`}
-                onClick={() => setOpen(false)}
+                onClick={(e) => {
+                  setOpen(false);
+                  // уже в «Помощи»: переход по якорю внутри страницы Next не объявляет —
+                  // пульт сам переключится на словарь по событию
+                  if (location.pathname !== '/help') return;
+                  e.preventDefault();
+                  history.replaceState(history.state, '', `#word-${word.id}`);
+                  dispatchEvent(new HashChangeEvent('hashchange'));
+                }}
                 className="-my-2 inline-flex items-center gap-2 py-2 font-mono text-[10px] uppercase tracking-rail text-dim transition-colors duration-300 hover:text-accent"
               >
                 В словаре

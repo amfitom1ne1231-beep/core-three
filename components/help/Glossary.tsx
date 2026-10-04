@@ -7,31 +7,40 @@ import { findWords, GLOSSARY } from '@/content/glossary';
 export type GlossaryLabels = { search: string; placeholder: string; empty: string; ask: string };
 
 /**
- * Словарь списком с поиском.
+ * Словарь: поиск, сетка слов и карточка с объяснением выбранного.
  *
- * Без запроса — все слова по алфавиту: так их видит и тот, у кого не
- * загрузился скрипт. Поиск не различает регистр и «ё», ищет и по другим
- * написаниям («Web App», «сео») и по самому объяснению — человек может
- * помнить не слово, а то, о чём оно.
+ * Было списком на 33 статьи во всю высоту — 2,7 тысячи пикселей текста.
+ * Слова теперь видно разом, объяснение — одно, у выбранного: так словарь
+ * читается как прибор, а не как приложение к договору.
  *
- * У каждого слова постоянный якорь `#word-<id>`: на этапе «словарь
- * на месте» сюда поведут ссылки из текстов сайта.
+ * Поиск не различает регистр и «ё», ищет и по другим написаниям
+ * («сео», «Web App») и по объяснению. У каждого слова постоянный якорь
+ * `#word-<id>`: по нему ведут ссылки «В словаре» из текстов сайта.
  */
 export default function Glossary({ labels }: { labels: GlossaryLabels }) {
   const [query, setQuery] = useState('');
-  const found = findWords(query);
+  const [picked, setPicked] = useState(GLOSSARY[0]!.id);
   const inputId = useId();
-  /**
-   * Слово, к которому пришли по «В словаре» из текста. `:target` тут не
-   * помогает: Next меняет адрес без настоящего перехода по якорю.
-   */
-  const [target, setTarget] = useState('');
+  const found = findWords(query);
+  const word = found.find((w) => w.id === picked) ?? found[0];
+
+  // пришли по «В словаре» из текста — открыть это слово
   useEffect(() => {
-    const read = () => setTarget(decodeURIComponent(location.hash.slice(1)));
+    const read = () => {
+      const h = decodeURIComponent(location.hash.slice(1));
+      if (!h.startsWith('word-')) return;
+      setQuery('');
+      setPicked(h.slice(5));
+    };
     read();
     addEventListener('hashchange', read);
     return () => removeEventListener('hashchange', read);
   }, []);
+
+  const pick = (id: string) => {
+    setPicked(id);
+    history.replaceState(history.state, '', `#word-${id}`);
+  };
 
   return (
     <div>
@@ -54,25 +63,39 @@ export default function Glossary({ labels }: { labels: GlossaryLabels }) {
         </p>
       </div>
 
-      {found.length ? (
-        // по алфавиту сверху вниз, колонками, как в настоящем словаре:
-        // сеткой алфавит читался бы через строку
-        <dl className="m-0 mt-8 [column-gap:clamp(40px,5vw,96px)] lg:columns-2">
-          {found.map((w) => (
-            <div key={w.id} id={`word-${w.id}`} className="scroll-mt-28 break-inside-avoid border-t border-line py-[clamp(16px,2.4vh,24px)]">
-              <dt
-                className={`text-[clamp(16px,1.4vw,19px)] font-medium leading-snug transition-colors duration-500 ${
-                  target === `word-${w.id}` ? 'text-accent' : ''
-                }`}
-              >
-                {w.term}
-              </dt>
-              <dd className="m-0 mt-2 max-w-[52ch] text-[14.5px] leading-relaxed text-dim">{w.text}</dd>
-            </div>
-          ))}
-        </dl>
+      {word ? (
+        <div className="mt-6 grid items-start gap-5 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:gap-8">
+          <ul className="m-0 flex list-none flex-wrap gap-1.5 p-0">
+            {found.map((w) => (
+              <li key={w.id}>
+                <button
+                  id={`word-${w.id}`}
+                  type="button"
+                  aria-pressed={w.id === word.id}
+                  onClick={() => pick(w.id)}
+                  className="brief-chip scroll-mt-28 !px-3.5 !py-2 !text-[13.5px]"
+                >
+                  {w.term}
+                </button>
+              </li>
+            ))}
+          </ul>
+          {/* объяснение выбранного: на широком экране стоит рядом, пока листаешь слова */}
+          <div className="relative border border-line-strong bg-bg/50 p-5 lg:sticky lg:top-28" aria-live="polite">
+            <span className="rail-label">Слово</span>
+            <p key={word.id} className="m-0 mt-2 text-[clamp(22px,2.2vw,30px)] font-medium leading-tight tracking-[-0.01em]" style={{ animation: 'ct-rise .4s cubic-bezier(0.22,1,0.36,1) both' }}>
+              {word.term}
+            </p>
+            <p className="m-0 mt-3 text-[15px] leading-relaxed text-dim">{word.text}</p>
+            {word.aka?.length ? (
+              <p className="m-0 mt-4 font-mono text-[10px] uppercase leading-relaxed tracking-rail text-faint">
+                Ещё говорят: {word.aka.slice(0, 3).join(' · ')}
+              </p>
+            ) : null}
+          </div>
+        </div>
       ) : (
-        <p className="m-0 mt-8 max-w-[52ch] border-t border-line pt-6 text-[15px] leading-relaxed text-dim">
+        <p className="m-0 mt-6 max-w-[52ch] border-t border-line pt-5 text-[15px] leading-relaxed text-dim">
           {labels.empty}{' '}
           <Jump to="write" className="text-fg underline decoration-line-strong underline-offset-4 transition-colors duration-300 hover:text-accent">
             {labels.ask}
