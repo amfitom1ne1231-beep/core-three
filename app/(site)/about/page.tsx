@@ -45,7 +45,7 @@ export default function AboutPage() {
           </div>
 
           {/* короткие цифры: четыре ответа, за которыми обычно пишут */}
-          <dl className="m-0 grid grid-cols-2 gap-px border-y border-line bg-line lg:grid-cols-4 tp:grid-cols-4">
+          <dl data-tour="numbers" className="m-0 grid grid-cols-2 gap-px border-y border-line bg-line lg:grid-cols-4 tp:grid-cols-4">
             {ABOUT.numbers.items.map((it) => (
               <div key={it.text} className="bg-bg px-4 py-[clamp(20px,3.4vh,40px)] sm:px-8 lg:px-[72px] tp:px-6">
                 <dt className="display m-0 text-[clamp(30px,3.6vw,56px)] leading-none">{it.value}</dt>

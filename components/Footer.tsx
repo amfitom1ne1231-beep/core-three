@@ -56,7 +56,7 @@ export default function Footer({ cta = true }: { cta?: boolean }) {
               </nav>
             ))}
 
-            <div>
+            <div data-tour="contacts">
               <span className="rail-label">Связь</span>
               <ul className="m-0 mt-4 flex list-none flex-col gap-0.5 p-0 sm:gap-2.5">
                 <li>

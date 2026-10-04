@@ -84,7 +84,7 @@ export default function Stage({ live: Live, task }: { live: ComponentType<LivePr
   }, []);
 
   return (
-    <div className="relative">
+    <div className="relative" data-tour="stage">
       {/* Отметка живого кадра. Номер направления не дублируется: он уже
           стоит кикером над заголовком, а два одинаковых рельса рядом
           читаются как сбой вёрстки, а не как система. Пульсирующей точки

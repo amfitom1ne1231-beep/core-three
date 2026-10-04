@@ -7,6 +7,8 @@ import HeroSilk from './HeroSilk';
 import NavPod from './NavPod';
 import Preloader from './Preloader';
 import { SITE } from '@/content/site';
+import Tour from './tour/Tour';
+import TourOffer from './tour/TourOffer';
 
 /** Страницы, под которыми лежит материал. У документов и у 404 фон плоский. */
 const MATERIAL = new Set(['/', '/contact', '/about', '/concepts', '/help', ...SITE.pages.map((p) => p.href)]);
@@ -40,6 +42,8 @@ export default function SiteChrome() {
       <Preloader />
       <Header />
       <NavPod />
+      <Tour />
+      <TourOffer />
       <Cursor />
       <div className="grain" aria-hidden />
     </>

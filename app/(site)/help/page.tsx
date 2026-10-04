@@ -14,6 +14,7 @@ import { HELP } from '@/content/help';
 import { SITE } from '@/content/site';
 import { pageMeta } from '@/lib/meta';
 import Words from '@/components/Words';
+import { TOUR_HOME } from '@/lib/tour';
 
 export const metadata: Metadata = pageMeta({ title: HELP.meta.title, description: HELP.meta.description, path: '/help' });
 
@@ -201,6 +202,13 @@ export default function HelpPage() {
 
         {/* ---------- 02 что где на сайте ---------- */}
         <Part id="map" label={map.label} title={map.title} accent={map.titleAccent} lead={map.lead}>
+          <div className="mb-[clamp(32px,5vh,56px)] flex flex-wrap items-center gap-x-6 gap-y-3 border-y border-line py-[clamp(16px,2.6vh,24px)]">
+            <p className="m-0 max-w-[52ch] text-[15px] leading-relaxed text-fg">{map.tour.text}</p>
+            <Link href={TOUR_HOME} className={actionLink}>
+              {map.tour.link} <Arrow />
+            </Link>
+            <p className="m-0 w-full text-[13px] leading-relaxed text-dim">{map.tour.page}</p>
+          </div>
           {/* шапка таблицы — только на широком экране; на узком у каждой
               ячейки своя подпись, иначе колонки не прочесть */}
           <div className="hidden gap-x-[clamp(32px,4vw,72px)] pb-3 lg:grid lg:grid-cols-[minmax(180px,0.7fr)_minmax(0,1.2fr)_minmax(0,1fr)]" aria-hidden>

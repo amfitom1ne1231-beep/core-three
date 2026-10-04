@@ -15,7 +15,7 @@ import Words from '../Words';
  */
 export default function Passport({ page }: { page: ServicePage }) {
   return (
-    <section data-chapter="concepts" className="relative z-10 w-full border-t border-line" aria-label="Кому это">
+    <section data-tour="passport" data-chapter="concepts" className="relative z-10 w-full border-t border-line" aria-label="Кому это">
       <div
         data-recede
         className="grid gap-[clamp(36px,6vh,72px)] px-4 section-y sm:px-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.95fr)] lg:gap-[clamp(40px,5vw,96px)] lg:px-[72px]"

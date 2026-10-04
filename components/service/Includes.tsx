@@ -111,6 +111,7 @@ export default function Includes({
   return (
     <section
       ref={section}
+      data-tour="includes"
       data-chapter="anatomy"
       className="relative z-10 w-full border-t border-line"
       aria-label="Состав работы"

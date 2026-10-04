@@ -70,7 +70,7 @@ export default function Process({
   }, [steps.length]);
 
   return (
-    <section data-chapter={chapter} className="relative z-10 w-full border-t border-line" aria-label={label}>
+    <section data-tour="process" data-chapter={chapter} className="relative z-10 w-full border-t border-line" aria-label={label}>
       <div data-recede className="px-4 section-y sm:px-8 lg:px-[72px]">
         <div className="grid gap-[clamp(16px,3vh,32px)] lg:grid-cols-[1.7fr_1fr] lg:items-end">
           <div>

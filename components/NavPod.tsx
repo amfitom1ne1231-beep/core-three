@@ -15,6 +15,8 @@ import { isHeaderHidden, onHeaderToggle } from '@/lib/chrome';
 import { contactHref } from '@/lib/lead';
 import { scrollToEl, scrollToY } from '@/lib/scroll';
 import { SITE } from '@/content/site';
+import { askTour } from '@/lib/tour';
+import { tourFor } from '@/content/tour';
 
 /**
  * Пульт навигации.
@@ -462,6 +464,7 @@ export default function NavPod() {
       <div ref={float}>
       <div
         ref={shell}
+        data-tour="pod"
         className="pointer-events-auto relative"
         style={{ width: SIZE, height: SIZE }}
         onMouseEnter={enter}
@@ -639,6 +642,22 @@ export default function NavPod() {
               </Link>
             ))}
           </div>
+
+          {/* экскурсия по этой странице (HELP.md, этап 5) — там, где она есть */}
+          {tourFor(pathname) && (
+            <div className="px-3 pb-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  askTour();
+                }}
+                className="rounded-[8px] border-0 bg-transparent px-1.5 py-1 font-mono text-[9px] uppercase tracking-rail text-faint transition-colors duration-200 hover:text-fg"
+              >
+                Что на этой странице?
+              </button>
+            </div>
+          )}
 
           {/**
            * Быстрые действия. Заявка несёт с собой тип раздела, из

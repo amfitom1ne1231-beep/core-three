@@ -11,6 +11,8 @@ import { contactHref } from '@/lib/lead';
 import { lockScroll } from '@/lib/scroll';
 import { DEMOS } from '@/content/concepts';
 import { SITE } from '@/content/site';
+import { askTour } from '@/lib/tour';
+import { tourFor } from '@/content/tour';
 
 /**
  * Меню для узких экранов.
@@ -214,6 +216,22 @@ export default function MobileMenu({ onOpenChange }: { onOpenChange?: (open: boo
         className="mt-10"
         style={{ animation: 'ct-veil .3s ease 440ms both' }}
       >
+        {/* экскурсия по этой странице (HELP.md, этап 5): меню закрывается
+            и отпускает страницу, потом начинается экскурсия */}
+        {tourFor(pathname) && (
+          <button
+            type="button"
+            onClick={() => {
+              close(false);
+              setTimeout(askTour, 120);
+            }}
+            className="mb-5 flex w-full items-center justify-between border-0 border-b border-line bg-transparent px-0 pb-4 text-left text-[15px] text-fg"
+          >
+            Что на этой странице?
+            <span className="font-mono text-[10px] uppercase tracking-rail text-dim">Показать</span>
+          </button>
+        )}
+
         {/* тип проекта подставляется разделом, из которого открыли меню */}
         <Cta href={contactHref(pathname)} onClick={() => close(false)} className="w-full justify-between">
           {SITE.hero.primary.label}
@@ -247,6 +265,7 @@ export default function MobileMenu({ onOpenChange }: { onOpenChange?: (open: boo
       <button
         ref={trigger}
         type="button"
+        data-tour="menu"
         onClick={() => (open ? close() : setOpen(true))}
         aria-expanded={open}
         aria-controls={panelId}
