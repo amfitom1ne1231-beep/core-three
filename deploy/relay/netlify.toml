@@ -1,0 +1,7 @@
+# Ретранслятор Bot API Telegram — отдельный сайт Netlify из одной функции
+# (netlify/edge-functions/relay.ts). Страниц нет: всё, кроме запросов
+# с ключом, получает 404. Ключ — RELAY_KEY в настройках сайта.
+# Как выкладывать — deploy/README.md, «Telegram с российского сервера».
+
+[build]
+  publish = "public"
