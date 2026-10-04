@@ -56,6 +56,7 @@ export function cardText(v: LeadView, now: Date, tz: string) {
   if (lead.stage === 'lost' && lead.lostReason) status += `: ${esc(LOST_REASONS[lead.lostReason as LostReason] ?? lead.lostReason)}`;
   status += owner ? ` · ведёт ${esc(owner.name)}` : ' · никто не взял';
   lines.push('', status);
+  if (v.project) lines.push(`Проект: ${esc(v.project.title)}`);
 
   for (const n of notes.slice(0, 2).reverse()) {
     const text = n.text.length > 300 ? `${n.text.slice(0, 300)}…` : n.text;

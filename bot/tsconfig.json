@@ -13,5 +13,5 @@
     "verbatimModuleSyntax": true,
     "resolveJsonModule": true
   },
-  "include": ["src", "test", "build.mjs", "drizzle.config.ts", "../lib/lead.ts", "../lib/intake-sign.ts"]
+  "include": ["src", "test", "scripts", "build.mjs", "drizzle.config.ts", "../lib/lead.ts", "../lib/intake-sign.ts"]
 }

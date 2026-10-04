@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { ApiError, useCreateLead } from '../api';
 import { back, navigate } from '../router';
 import { hasNativeBack } from '../tg';
-import { Icon, useMeData } from '../ui';
+import { Field, Icon, useMeData } from '../ui';
 
 /**
  * Заявка вручную: клиент написал кому-то из команды напрямую. Правила
@@ -77,25 +77,5 @@ export function NewLead() {
         </button>
       </form>
     </main>
-  );
-}
-
-function Field({ id, label, hint, error, children }: { id: string; label: string; hint?: string; error?: string; children: React.ReactNode }) {
-  return (
-    <div className={`field${error ? ' field--error' : ''}`}>
-      <label htmlFor={id}>{label}</label>
-      {children}
-      {error ? (
-        <p className="field__error" id={`${id}-err`} role="alert">
-          {error}
-        </p>
-      ) : (
-        hint && (
-          <p className="field__hint" id={`${id}-hint`}>
-            {hint}
-          </p>
-        )
-      )}
-    </div>
   );
 }

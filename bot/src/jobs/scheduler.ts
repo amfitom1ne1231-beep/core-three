@@ -1,7 +1,9 @@
 import type { Db } from '../db/client';
 import { jobRuns } from '../db/schema';
 import { logAlarm, markReminded, unansweredLeads, untakenLeads } from '../domain/leads';
+import { deadlines } from '../domain/projects';
 import { alarmSlot, needsReminder, unansweredForAlarm, type Sla } from '../domain/sla';
+import { dayKey, localParts } from '../domain/worktime';
 import type { StudioBot } from '../tg/bot';
 
 /**
@@ -37,6 +39,17 @@ export async function tick(db: Db, studio: StudioBot | null, sla: Sla, now = new
         now
       );
       if (studio && list.length) await studio.alarm(list).catch((e) => console.error('[sla] тревога', e));
+    }
+  }
+
+  // сроки задач и этапов: раз в рабочий день, с его начала. Ключ — день:
+  // сервис лежал утром — напомнит, как поднимется, но не дважды
+  const local = localParts(now, sla.work.tz);
+  if (sla.work.days.includes(local.dow) && local.min >= sla.work.start) {
+    const today = dayKey(now, sla.work.tz);
+    if (await claim(db, `tasks:${today}`, now)) {
+      const due = await deadlines(db, today);
+      if (studio) await studio.deadlinesDigest(due, today).catch((e) => console.error('[tasks] сроки дня', e));
     }
   }
 }

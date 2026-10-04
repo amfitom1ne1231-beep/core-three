@@ -5,7 +5,12 @@
  * бесплатно и без регистрации. Адрес новый при каждом запуске; сервис
  * получает его в PUBLIC_URL и сам ставит команде кнопку «Студия».
  *
- *   npm run dev:tunnel        (нужен cloudflared: brew install cloudflared)
+ *   npm run dev:tunnel        сервис из исходников, перезапускается на каждую правку
+ *   npm run start:tunnel      снимок: собранный сервис и собранное приложение —
+ *                             правки в исходниках его не трогают, пока не перезапустить.
+ *                             Так бот остаётся живым для команды, пока идёт разработка
+ *
+ * Нужен cloudflared: brew install cloudflared.
  *
  * Сервис при этом виден из интернета. Наружу он отдаёт только то, что
  * закрыто подписью: приём заявок (HMAC сайта) и API приложения (initData
@@ -13,14 +18,25 @@
  * не действует.
  */
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { cpSync, existsSync, rmSync } from 'node:fs';
 
 const port = process.env.PORT ?? '8787';
+const snapshot = process.argv.includes('--built');
 
-if (!existsSync(new URL('../../admin/dist/index.html', import.meta.url))) {
+function run(cmd, args) {
+  const done = spawnSync(cmd, args, { stdio: 'inherit' });
+  if (done.status !== 0) process.exit(done.status ?? 1);
+}
+
+if (snapshot) {
+  run('npm', ['run', 'build']);
+  run('npm', ['--prefix', '../admin', 'run', 'build']);
+  // приложение — рядом с собранным сервисом: пересборка admin/dist снимок не заденет
+  rmSync('dist/app', { recursive: true, force: true });
+  cpSync('../admin/dist', 'dist/app', { recursive: true });
+} else if (!existsSync(new URL('../../admin/dist/index.html', import.meta.url))) {
   console.info('[tunnel] мини-приложение не собрано — собираю');
-  const built = spawnSync('npm', ['--prefix', '../admin', 'run', 'build'], { stdio: 'inherit' });
-  if (built.status !== 0) process.exit(built.status ?? 1);
+  run('npm', ['--prefix', '../admin', 'run', 'build']);
 }
 
 const tunnel = spawn('cloudflared', ['tunnel', '--no-autoupdate', '--url', `http://localhost:${port}`], { stdio: ['ignore', 'pipe', 'pipe'] });
@@ -50,7 +66,9 @@ const onLog = (chunk) => {
   if (!url || service) return;
   console.info(`[tunnel] ${url}`);
   // окружение сильнее файла настроек: PUBLIC_URL отсюда перекрывает пустой из .env.local
-  service = spawn('npx', ['tsx', 'watch', '--env-file=.env.local', 'src/main.ts'], { stdio: 'inherit', env: { ...process.env, PUBLIC_URL: url } });
+  service = snapshot
+    ? spawn(process.execPath, ['--env-file=.env.local', 'dist/main.js'], { stdio: 'inherit', env: { ...process.env, PUBLIC_URL: url, ADMIN_DIST: 'dist/app' } })
+    : spawn('npx', ['tsx', 'watch', '--env-file=.env.local', 'src/main.ts'], { stdio: 'inherit', env: { ...process.env, PUBLIC_URL: url } });
   service.on('exit', (code) => stop(code ?? 0));
 };
 tunnel.stdout.on('data', onLog);

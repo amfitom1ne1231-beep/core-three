@@ -20,6 +20,7 @@ import { CLOSED, FUNNEL, KIND_LABEL, LOST_REASONS, SOURCE_LABEL, STAGE_LABEL, ty
 import { team } from '../domain/team';
 import type { StudioBot } from '../tg/bot';
 import { appAuth, type AppEnv } from './auth';
+import { mountProjects } from './projects-api';
 
 /**
  * API мини-приложения. Делает то же, что кнопки под карточкой в группе,
@@ -71,11 +72,19 @@ export function createApi({
   async function detail(id: number) {
     const v = await leadView(db, id);
     if (!v) return null;
-    return { lead: v.lead, owner: v.owner ? { id: v.owner.id, name: v.owner.name } : null, events: await leadHistory(db, id) };
+    return {
+      lead: v.lead,
+      owner: v.owner ? { id: v.owner.id, name: v.owner.name } : null,
+      project: v.project,
+      events: await leadHistory(db, id)
+    };
   }
+
+  const { secretsEnabled } = mountProjects(api, { db, config, studio, now, log });
 
   api.get('/me', async (c) => {
     const me = c.get('member');
+    log(`открыто — участник ${me.id}`);
     const people = await team(db);
     return c.json({
       me: { id: me.id, name: me.name, role: me.role },
@@ -88,7 +97,9 @@ export function createApi({
         kinds: LEAD_KINDS.map((id) => ({ id, label: KIND_LABEL[id] ?? id })),
         sources: SOURCE_LABEL
       },
-      tz: config.work.tz
+      tz: config.work.tz,
+      // чего в этой установке нет: доступы — без ключа шифрования, файлы — без бота
+      features: { secrets: secretsEnabled, files: Boolean(studio) }
     });
   });
 

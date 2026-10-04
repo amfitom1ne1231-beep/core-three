@@ -1,4 +1,4 @@
-import type { LeadEvent, Me } from './api';
+import type { Day, LeadEvent, Me, ProjectEvent, ProjectStatus } from './api';
 
 /**
  * Время и подписи. Время показывается в поясе студии — том же, что
@@ -89,5 +89,92 @@ export function eventText(e: LeadEvent, dict: Me['dict']): { text: string; note?
       return { text: 'Бот напомнил группе: заявку никто не взял' };
     case 'alarmed':
       return { text: 'Бот предупредил владельцев: клиенту не ответили к вечеру' };
+  }
+}
+
+/* ---------- проекты ---------- */
+
+export const PROJECT_STATUS: Record<ProjectStatus, string> = {
+  active: 'В работе',
+  paused: 'На паузе',
+  done: 'Завершён',
+  cancelled: 'Отменён'
+};
+
+/** Сегодняшний день в поясе студии — от него считаются «сегодня» и «просрочено». */
+export function todayIn(tz: string, now = new Date()): Day {
+  const p = parts(now, tz);
+  return `${p.y}-${String(p.m).padStart(2, '0')}-${String(p.d).padStart(2, '0')}`;
+}
+
+const dayDiff = (a: Day, b: Day) => Math.round((Date.parse(`${a}T00:00:00Z`) - Date.parse(`${b}T00:00:00Z`)) / 86400000);
+
+/** Срок рядом с сегодняшним днём: «сегодня», «завтра», «вчера», «3 окт». */
+export function dueLabel(day: Day, today: Day) {
+  const diff = dayDiff(day, today);
+  if (diff === 0) return 'сегодня';
+  if (diff === 1) return 'завтра';
+  if (diff === -1) return 'вчера';
+  const [y, m, d] = day.split('-').map(Number);
+  return `${d} ${MON[m! - 1]}${y !== Number(today.slice(0, 4)) ? ` ${y}` : ''}`;
+}
+
+export const isOverdue = (day: Day | null, today: Day) => !!day && day < today;
+
+export function fileSize(bytes: number | null) {
+  if (!bytes) return '';
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} КБ`;
+  return `${(bytes / 1048576).toFixed(1).replace('.', ',')} МБ`;
+}
+
+/** «1 задача», «2 задачи», «5 задач». */
+export function plural(n: number, one: string, few: string, many: string) {
+  const tens = n % 100;
+  const ones = n % 10;
+  if (tens > 10 && tens < 20) return many;
+  if (ones === 1) return one;
+  if (ones >= 2 && ones <= 4) return few;
+  return many;
+}
+
+/** Строка истории проекта. */
+export function projectEventText(e: ProjectEvent): string {
+  const who = e.who ?? 'Кто-то';
+  const title = `«${str(e.data?.title)}»`;
+  switch (e.type) {
+    case 'created':
+      return e.data?.leadId ? `Проект вырос из заявки #${String(e.data.leadId)}` : `${who}: проект заведён`;
+    case 'status':
+      return `${who}: ${{ active: 'проект снова в работе', paused: 'проект на паузе', done: 'проект завершён', cancelled: 'проект отменён' }[str(e.data?.to)] ?? 'состояние изменено'}`;
+    case 'stage_done':
+      return `${who}: этап ${title} выполнен`;
+    case 'stage_reopened':
+      return `${who}: этап ${title} снова в работе`;
+    case 'stage_added':
+      return `${who}: добавлен этап ${title}`;
+    case 'stage_removed':
+      return `${who}: удалён этап ${title}`;
+    case 'task_added':
+      return `${who}: задача ${title}`;
+    case 'task_done':
+      return `${who}: выполнена ${title}`;
+    case 'task_reopened':
+      return `${who}: снова открыта ${title}`;
+    case 'task_removed':
+      return `${who}: удалена задача ${title}`;
+    case 'material_added':
+      return `${who}: ${e.data?.kind === 'file' ? 'файл' : 'ссылка'} ${title}`;
+    case 'material_removed':
+      return `${who}: удалён материал ${title}`;
+    case 'secret_added':
+      return `${who}: добавлен доступ ${title}`;
+    case 'secret_changed':
+      return `${who}: изменён доступ ${title}`;
+    case 'secret_viewed':
+      return `${who}: просмотр доступа ${title}`;
+    case 'secret_removed':
+      return `${who}: удалён доступ ${title}`;
+    default:
+      return who;
   }
 }

@@ -11,7 +11,8 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
-    proxy: { '/api': 'http://localhost:8787' }
+    // API_TARGET — другой сервис: демо на выдуманных данных живёт на :8788 (npm run dev:demo)
+    proxy: { '/api': process.env.API_TARGET ?? 'http://localhost:8787' }
   },
   build: {
     // WebView в Telegram на старых Android отстаёт от браузеров на пару лет

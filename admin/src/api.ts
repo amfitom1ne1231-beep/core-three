@@ -39,7 +39,13 @@ export type LeadEvent = {
   data: Record<string, unknown> | null;
 };
 
-export type Detail = { lead: Lead; owner: { id: number; name: string } | null; events: LeadEvent[] };
+export type Detail = {
+  lead: Lead;
+  owner: { id: number; name: string } | null;
+  /** Проект, выросший из заявки на «Договоре». */
+  project: { id: number; title: string } | null;
+  events: LeadEvent[];
+};
 
 export type Me = {
   me: { id: number; name: string; role: 'owner' | 'member' };
@@ -54,6 +60,8 @@ export type Me = {
   };
   /** Пояс студии: время в приложении — то же, что на карточках в группе. */
   tz: string;
+  /** Чего в этой установке нет: доступы — без ключа шифрования, файлы — без бота. */
+  features: { secrets: boolean; files: boolean };
 };
 
 export class ApiError extends Error {
@@ -112,6 +120,8 @@ export function useLeadAction(id: number) {
     onSuccess: (detail) => {
       qc.setQueryData(['lead', id], detail);
       void qc.invalidateQueries({ queryKey: ['leads'] });
+      // «Договор» заводит проект
+      void qc.invalidateQueries({ queryKey: ['projects'] });
       haptic.done();
     },
     onError: () => haptic.fail()
@@ -132,3 +142,110 @@ export function useCreateLead() {
     onError: () => haptic.fail()
   });
 }
+
+/* ---------- проекты ---------- */
+
+export type ProjectStatus = 'active' | 'paused' | 'done' | 'cancelled';
+
+export type Project = {
+  id: number;
+  title: string;
+  client: string;
+  contact: string | null;
+  kind: string;
+  status: ProjectStatus;
+  leadId: number | null;
+  ownerId: number | null;
+  createdAt: string;
+  closedAt: string | null;
+};
+
+export type ProjectRow = Project & {
+  ownerName: string | null;
+  stage: string | null;
+  stagesDone: number;
+  stagesTotal: number;
+  openTasks: number;
+  overdue: number;
+  nextDue: string | null;
+};
+
+/** Срок — день без времени: «2026-10-15». */
+export type Day = string;
+
+export type ProjectStage = { id: number; projectId: number; position: number; title: string; dueOn: Day | null; doneAt: string | null };
+export type Task = {
+  id: number;
+  projectId: number;
+  stageId: number | null;
+  title: string;
+  assigneeId: number | null;
+  dueOn: Day | null;
+  doneAt: string | null;
+  createdAt: string;
+};
+export type MyTask = Task & { project: string };
+export type Material = {
+  id: number;
+  projectId: number;
+  kind: 'link' | 'file';
+  title: string;
+  url: string | null;
+  fileKind: 'document' | 'photo' | 'video' | 'audio' | 'voice' | null;
+  fileName: string | null;
+  fileSize: number | null;
+  createdAt: string;
+};
+export type SecretRef = { id: number; title: string; updatedAt: string };
+export type ProjectEvent = { id: number; type: string; at: string; who: string | null; data: Record<string, unknown> | null };
+
+export type ProjectView = {
+  project: Project;
+  ownerName: string | null;
+  stages: ProjectStage[];
+  tasks: Task[];
+  materials: Material[];
+  secrets: SecretRef[];
+  events: ProjectEvent[];
+};
+
+export function useProjects(scope: 'active' | 'archive') {
+  return useQuery({
+    queryKey: ['projects', scope],
+    queryFn: () => call<{ projects: ProjectRow[]; today: Day }>(`/projects?scope=${scope}`),
+    refetchInterval: 30_000,
+    placeholderData: (prev) => prev
+  });
+}
+
+export const useProject = (id: number) =>
+  useQuery({ queryKey: ['project', id], queryFn: () => call<ProjectView>(`/projects/${id}`), refetchInterval: 30_000 });
+
+export const useMyTasks = () =>
+  useQuery({ queryKey: ['tasks', 'mine'], queryFn: () => call<{ tasks: MyTask[]; today: Day }>('/tasks/mine'), refetchInterval: 30_000 });
+
+/**
+ * Любое изменение проекта: сервис отвечает проектом целиком, им и
+ * обновляется экран. `path` — адрес действия, `body` — его данные.
+ */
+export function useProjectChange() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ path, body }: { path: string; body?: unknown }) => call<ProjectView>(path, body ?? {}),
+    onSuccess: (view) => {
+      qc.setQueryData(['project', view.project.id], view);
+      void qc.invalidateQueries({ queryKey: ['projects'] });
+      void qc.invalidateQueries({ queryKey: ['tasks'] });
+      // проект вырос из заявки — у неё на экране есть ссылка на него
+      void qc.invalidateQueries({ queryKey: ['lead'] });
+      haptic.done();
+    },
+    onError: () => haptic.fail()
+  });
+}
+
+/** Показать доступ: значение приходит отдельным запросом и нигде не хранится. */
+export const revealSecret = (id: number) => call<{ value: string }>(`/secrets/${id}/reveal`, {});
+
+/** Файл лежит в Telegram — бот присылает его в личку. */
+export const sendMaterial = (id: number) => call<{ ok: true }>(`/materials/${id}/send`, {});

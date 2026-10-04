@@ -75,7 +75,7 @@ export function Leads() {
   const groups = grouped ? dict.funnel.map((stage) => ({ stage, items: rows.filter((l) => l.stage === stage) })).filter((g) => g.items.length > 0) : [];
 
   return (
-    <main className="screen">
+    <main className="screen screen--tabbed">
       <header className="top">
         <h1 className="top__title">Заявки</h1>
         <button type="button" className="btn btn--tinted btn--small" onClick={() => navigate({ name: 'new' })}>

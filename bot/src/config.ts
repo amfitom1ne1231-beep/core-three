@@ -75,6 +75,16 @@ const Env = z.object({
    */
   MINI_APP_LINK: z.enum(['chat', 'direct']).default('chat'),
 
+  /**
+   * Ключ шифрования доступов: 32 байта в base64 (openssl rand -base64 32).
+   * Только в окружении сервиса — в базе и бэкапах его нет. Потерять ключ —
+   * потерять сохранённые доступы. Пусто — раздел доступов выключен.
+   */
+  SECRETS_KEY: z
+    .string()
+    .refine((s) => Buffer.from(s, 'base64').length === 32, '32 байта в base64: openssl rand -base64 32')
+    .optional(),
+
   /** Адрес сайта — для ответа посторонним в боте. */
   SITE_URL: z.url().default('https://corethree.ru'),
 

@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 import { Bot, GrammyError, InlineKeyboard, type Context } from 'grammy';
-import type { UserFromGetMe } from 'grammy/types';
+import type { Message, UserFromGetMe } from 'grammy/types';
 import type { Config } from '../config';
 import type { Db } from '../db/client';
 import { prompts } from '../db/schema';
@@ -16,10 +16,11 @@ import {
   type Lead,
   type Member
 } from '../domain/leads';
+import { addFile, getProject, listProjects, type Deadlines, type Material, type NewFile } from '../domain/projects';
 import { getGroup, getSetting, setGroup, setSetting } from '../domain/settings';
 import { FUNNEL, LOST_REASONS, STAGE_LABEL, type LostReason } from '../domain/stages';
 import { acceptInvite, createInvite, ensureOwner, memberByTg, team } from '../domain/team';
-import { shortTime } from '../domain/worktime';
+import { dayKey, shortTime } from '../domain/worktime';
 import { cardKeyboard, cardText, cb, esc, mention, parseCb, type Menu } from './card';
 
 /**
@@ -173,6 +174,83 @@ export function createBot({ db, config, now = () => new Date(), botInfo }: Deps)
     log(`вечерняя тревога: ${list.length}`);
   }
 
+  /* ---------- проекты: сроки и файлы ---------- */
+
+  const MON = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+  /** «сегодня» или «с 3 окт» — срок прошёл, и видно, давно ли. */
+  const dueLabel = (dueOn: string | null, today: string) => {
+    if (!dueOn || dueOn === today) return 'сегодня';
+    const [, m, d] = dueOn.split('-').map(Number);
+    return `с ${d} ${MON[m! - 1]}`;
+  };
+
+  /**
+   * Сроки дня — одним сообщением в группу: задачи по исполнителям, каждый
+   * отмечен; этапы — с отметкой того, кто ведёт проект. Просроченное
+   * повторяется каждый рабочий день, пока не закроют.
+   */
+  async function deadlinesDigest(due: Deadlines, today: string) {
+    const group = await getGroup(db);
+    if (!group || (!due.tasks.length && !due.stages.length)) return false;
+    const lines: string[] = ['<b>Сроки на сегодня</b>'];
+
+    const byPerson = new Map<number | null, Deadlines['tasks']>();
+    for (const t of due.tasks) byPerson.set(t.assigneeId, [...(byPerson.get(t.assigneeId) ?? []), t]);
+    for (const [, list] of byPerson) {
+      const who = list[0]!.assignee;
+      lines.push('', who ? mention(who) : 'Без исполнителя');
+      for (const t of list) lines.push(`— ${esc(t.title)} · ${esc(t.project)} · ${dueLabel(t.dueOn, today)}`);
+    }
+
+    if (due.stages.length) {
+      lines.push('', 'Этапы');
+      for (const st of due.stages) {
+        lines.push(`— «${esc(st.title)}» · ${esc(st.project)} · ${dueLabel(st.dueOn, today)}${st.owner ? ` · ${mention(st.owner)}` : ''}`);
+      }
+    }
+
+    await bot.api.sendMessage(group.chatId, lines.join('\n'), {
+      parse_mode: 'HTML',
+      message_thread_id: group.threadId ?? undefined,
+      link_preview_options: { is_disabled: true }
+    });
+    log(`сроки дня: задач ${due.tasks.length}, этапов ${due.stages.length}`);
+    return true;
+  }
+
+  /** Файл проекта хранится в самом Telegram — бот присылает его в личку по file_id. */
+  async function sendFile(tgId: number, m: Material) {
+    if (!m.fileId) return;
+    const other = { caption: m.title };
+    switch (m.fileKind) {
+      case 'photo':
+        return bot.api.sendPhoto(tgId, m.fileId, other);
+      case 'video':
+        return bot.api.sendVideo(tgId, m.fileId, other);
+      case 'audio':
+        return bot.api.sendAudio(tgId, m.fileId, other);
+      case 'voice':
+        return bot.api.sendVoice(tgId, m.fileId, other);
+      default:
+        return bot.api.sendDocument(tgId, m.fileId, other);
+    }
+  }
+
+  /** Что за файл в сообщении: документ, фото (берём самое большое), видео, звук. */
+  function fileOf(msg: Message | undefined): NewFile | null {
+    if (!msg) return null;
+    const title = msg.caption?.trim() || undefined;
+    if (msg.document) return { fileId: msg.document.file_id, fileKind: 'document', fileName: msg.document.file_name ?? null, fileSize: msg.document.file_size ?? null, title };
+    if (msg.photo?.length) {
+      const p = msg.photo[msg.photo.length - 1]!;
+      return { fileId: p.file_id, fileKind: 'photo', fileName: 'Фото', fileSize: p.file_size ?? null, title };
+    }
+    if (msg.video) return { fileId: msg.video.file_id, fileKind: 'video', fileName: msg.video.file_name ?? 'Видео', fileSize: msg.video.file_size ?? null, title };
+    if (msg.audio) return { fileId: msg.audio.file_id, fileKind: 'audio', fileName: msg.audio.file_name ?? msg.audio.title ?? 'Аудио', fileSize: msg.audio.file_size ?? null, title };
+    if (msg.voice) return { fileId: msg.voice.file_id, fileKind: 'voice', fileName: 'Голосовое', fileSize: msg.voice.file_size ?? null, title };
+    return null;
+  }
+
   /* ---------- кто пишет ---------- */
 
   bot.use(async (ctx, next) => {
@@ -193,6 +271,7 @@ export function createBot({ db, config, now = () => new Date(), botInfo }: Deps)
     '<b>Бот студии CoreThree</b>',
     '',
     'Заявки приходят карточками в рабочую группу: «Беру», шаг по воронке, заметка, отказ — кнопками под карточкой.',
+    'Файл к проекту — перешлите его сюда, в личку: спрошу, к какому.',
     '',
     '/leads — открытые заявки',
     '/team — команда',
@@ -221,6 +300,13 @@ export function createBot({ db, config, now = () => new Date(), botInfo }: Deps)
       if (!r) return ctx.reply(`Заявки #${leadId} нет.`);
       const kb = appBase ? new InlineKeyboard().webApp(`Открыть заявку #${leadId}`, `${appBase}leads/${leadId}`) : undefined;
       return ctx.reply(r.text, { parse_mode: 'HTML', reply_markup: kb, link_preview_options: { is_disabled: true } });
+    }
+    const projectId = Number(payload.match(/^project_(\d{1,9})$/)?.[1]);
+    if (projectId) {
+      const p = await getProject(db, projectId);
+      if (!p) return ctx.reply(`Проекта #${projectId} нет.`);
+      const kb = appBase ? new InlineKeyboard().webApp('Открыть проект', `${appBase}projects/${projectId}`) : undefined;
+      return ctx.reply(`<b>${esc(p.title)}</b>`, { parse_mode: 'HTML', reply_markup: kb });
     }
     return ctx.reply(appBase ? `${HELP}\n\nВсё то же и подробнее — в приложении: кнопка «Студия» слева от поля ввода.` : HELP, { parse_mode: 'HTML' });
   });
@@ -266,6 +352,29 @@ export function createBot({ db, config, now = () => new Date(), botInfo }: Deps)
     await setGroup(db, { chatId: ctx.chat.id, threadId, title: 'title' in ctx.chat ? (ctx.chat.title ?? null) : null });
     log(`/bind: ${threadId ? `тема ${threadId}` : 'группа без темы'}`);
     return ctx.reply(threadId ? 'Готово: заявки будут приходить в эту тему.' : 'Готово: заявки будут приходить в эту группу.');
+  });
+
+  /** «К какому проекту?» — ответ на файл, присланный в личку. Сам файл — в сообщении, на которое отвечали. */
+  bot.callbackQuery(/^m:(\d{1,9})$/, async (ctx) => {
+    if (!ctx.member) return ctx.answerCallbackQuery({ text: 'Кнопки — только для команды.', show_alert: true });
+    const projectId = Number(ctx.match[1]);
+    if (!projectId) {
+      await ctx.editMessageText('Не прикрепляю.');
+      return ctx.answerCallbackQuery();
+    }
+    const file = fileOf(ctx.callbackQuery.message?.reply_to_message);
+    const m = file ? await addFile(db, projectId, ctx.member.id, file, now()) : null;
+    if (!m) {
+      await ctx.editMessageText('Не получилось: файла или проекта уже нет. Пришлите файл ещё раз.');
+      return ctx.answerCallbackQuery();
+    }
+    const p = await getProject(db, projectId);
+    log(`проект #${projectId}: файл — участник ${ctx.member.id}`);
+    await ctx.editMessageText(`Прикреплено к проекту «${esc(p?.title ?? '')}»: ${esc(m.title)}`, {
+      parse_mode: 'HTML',
+      reply_markup: appBase ? new InlineKeyboard().webApp('Открыть проект', `${appBase}projects/${projectId}`) : undefined
+    });
+    return ctx.answerCallbackQuery({ text: 'Прикреплено' });
   });
 
   bot.on('callback_query:data', async (ctx) => {
@@ -340,13 +449,24 @@ export function createBot({ db, config, now = () => new Date(), botInfo }: Deps)
     await ctx.api.deleteMessage(ctx.chat.id, ctx.msg.message_id).catch(() => {});
   });
 
+  /** Файл в личку от своего — материал проекта: спрашиваем, какого. */
+  bot.on('message', async (ctx, next) => {
+    if (ctx.chat.type !== 'private' || !ctx.member || !fileOf(ctx.msg)) return next();
+    const list = (await listProjects(db, 'active', dayKey(now(), tz))).slice(0, 12);
+    if (!list.length) return ctx.reply('Проектов в работе нет — прикрепить не к чему. Проект заводится из заявки на «Договоре» или в приложении.');
+    const kb = new InlineKeyboard();
+    for (const p of list) kb.text(p.title.slice(0, 48), `m:${p.id}`).row();
+    kb.text('Не прикреплять', 'm:0');
+    return ctx.reply('К какому проекту прикрепить?', { reply_markup: kb, reply_parameters: { message_id: ctx.msg.message_id } });
+  });
+
   bot.on('message', async (ctx) => {
     if (ctx.chat.type === 'private' && !ctx.member) await outsider(ctx);
   });
 
   bot.catch((err) => console.error('[bot]', err.error));
 
-  return { bot, publishLead, refreshCard, remind, alarm, syncMenu, syncCards };
+  return { bot, publishLead, refreshCard, remind, alarm, deadlinesDigest, sendFile, syncMenu, syncCards };
 }
 
 /** Ссылка на карточку в супергруппе: t.me/c/<id без -100>/<сообщение>. */

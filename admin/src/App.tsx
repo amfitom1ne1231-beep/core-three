@@ -1,19 +1,39 @@
 import { useEffect } from 'react';
 import { ApiError, useMe } from './api';
-import { back, navigate, useRoute } from './router';
+import { back, isRoot, navigate, useRoute, type Route } from './router';
 import { LeadScreen } from './screens/Lead';
 import { Leads } from './screens/Leads';
 import { NewLead } from './screens/NewLead';
-import { inTelegram, nativeBack, startLeadId } from './tg';
-import { MeContext, Notice, RowsPlaceholder } from './ui';
+import { NewProject } from './screens/NewProject';
+import { ProjectScreen } from './screens/Project';
+import { Projects } from './screens/Projects';
+import { inTelegram, nativeBack, startTarget } from './tg';
+import { MeContext, Notice, RowsPlaceholder, TabBar } from './ui';
 
-// приложение открыли по прямой ссылке на заявку — один раз переходим на неё
+// приложение открыли по прямой ссылке на заявку или проект — один раз переходим туда
 let startHandled = false;
+
+function Screen({ route }: { route: Route }) {
+  switch (route.name) {
+    case 'lead':
+      return <LeadScreen key={route.id} id={route.id} />;
+    case 'new':
+      return <NewLead />;
+    case 'projects':
+      return <Projects />;
+    case 'project':
+      return <ProjectScreen key={route.id} id={route.id} />;
+    case 'project-new':
+      return <NewProject />;
+    default:
+      return <Leads />;
+  }
+}
 
 export function App() {
   const me = useMe();
   const route = useRoute();
-  const inner = route.name !== 'leads';
+  const inner = !isRoot(route);
 
   useEffect(() => {
     const off = nativeBack(inner, back);
@@ -23,8 +43,8 @@ export function App() {
   useEffect(() => {
     if (startHandled) return;
     startHandled = true;
-    const id = startLeadId();
-    if (id && route.name === 'leads') navigate({ name: 'lead', id }, { replace: true });
+    const target = startTarget();
+    if (target && route.name === 'leads') navigate(target, { replace: true });
   }, [route.name]);
 
   if (me.isPending) {
@@ -55,7 +75,8 @@ export function App() {
 
   return (
     <MeContext.Provider value={me.data}>
-      {route.name === 'lead' ? <LeadScreen key={route.id} id={route.id} /> : route.name === 'new' ? <NewLead /> : <Leads />}
+      <Screen route={route} />
+      {!inner && <TabBar current={route.name} />}
     </MeContext.Provider>
   );
 }

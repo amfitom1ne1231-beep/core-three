@@ -43,6 +43,17 @@
       "port": 8787
     },
     {
+      "name": "corethree-bot-live",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "bot",
+        "run",
+        "start:tunnel"
+      ],
+      "port": 8787
+    },
+    {
       "name": "corethree-admin",
       "runtimeExecutable": "npm",
       "runtimeArgs": [
@@ -52,6 +63,28 @@
         "dev"
       ],
       "port": 5173
+    },
+    {
+      "name": "corethree-demo-api",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "bot",
+        "run",
+        "demo"
+      ],
+      "port": 8788
+    },
+    {
+      "name": "corethree-demo",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "admin",
+        "run",
+        "dev:demo"
+      ],
+      "port": 5174
     },
     {
       "name": "proto",

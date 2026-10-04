@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, ilike, inArray, isNull, notInArray, or, type SQL } from 'drizzle-orm';
 import type { Db } from '../db/client';
-import { leadEvents, leads, members, type Source, type Stage } from '../db/schema';
+import { leadEvents, leads, members, projects, type Source, type Stage } from '../db/schema';
+import { projectFromLead } from './projects';
 import { ANSWERED, CLOSED, LOST_REASONS, type LostReason } from './stages';
 
 /**
@@ -60,7 +61,7 @@ export async function takeLead(db: Db, id: number, memberId: number, at = new Da
 /**
  * Смена этапа. Попутно: первый ответ клиенту (с «Связались» и дальше),
  * закрытие на «Договоре», и «Беру» за того, кто двигает ничейную заявку —
- * раз двигает, значит ведёт.
+ * раз двигает, значит ведёт. На «Договоре» заявка становится проектом.
  */
 export async function setStage(db: Db, id: number, memberId: number, stage: Stage, at = new Date()) {
   return db.transaction(async (tx) => {
@@ -87,6 +88,7 @@ export async function setStage(db: Db, id: number, memberId: number, stage: Stag
       data: { from: lead.stage, to: stage },
       createdAt: at
     });
+    if (stage === 'contract') await projectFromLead(tx, next!, memberId, at);
     return next!;
   });
 }
@@ -136,9 +138,11 @@ export type LeadView = {
   lead: Lead;
   owner: Member | null;
   notes: { text: string; who: string | null; at: Date }[];
+  /** Проект, выросший из заявки на «Договоре». */
+  project: { id: number; title: string } | null;
 };
 
-/** Всё, что нужно карточке: заявка, кто ведёт, последние заметки. */
+/** Всё, что нужно карточке: заявка, кто ведёт, последние заметки, проект. */
 export async function leadView(db: Db, id: number): Promise<LeadView | null> {
   const lead = await getLead(db, id);
   if (!lead) return null;
@@ -150,10 +154,12 @@ export async function leadView(db: Db, id: number): Promise<LeadView | null> {
     .where(and(eq(leadEvents.leadId, id), eq(leadEvents.type, 'note')))
     .orderBy(desc(leadEvents.createdAt), desc(leadEvents.id))
     .limit(3);
+  const [project] = await db.select({ id: projects.id, title: projects.title }).from(projects).where(eq(projects.leadId, id));
   return {
     lead,
     owner,
-    notes: rows.map((r) => ({ text: String((r.data as { text?: string } | null)?.text ?? ''), who: r.who, at: r.at }))
+    notes: rows.map((r) => ({ text: String((r.data as { text?: string } | null)?.text ?? ''), who: r.who, at: r.at })),
+    project: project ?? null
   };
 }
 

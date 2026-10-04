@@ -7,6 +7,8 @@
   "scripts": {
     "dev": "tsx watch --env-file=.env.local src/main.ts",
     "dev:tunnel": "node --env-file=.env.local scripts/tunnel.mjs",
+    "start:tunnel": "node --env-file=.env.local scripts/tunnel.mjs --built",
+    "demo": "rm -rf .data/demo && tsx --env-file=.env.demo scripts/seed.ts && tsx watch --env-file=.env.demo src/main.ts",
     "build": "node build.mjs",
     "start": "node dist/main.js",
     "typecheck": "tsc --noEmit",

@@ -7,6 +7,7 @@
 /* Обычный браузер (разработка): Telegram нет, тема — запасная, по теме системы.
    Значения — из демо «Бритва» на сайте, контраст там проверен. */
 html.browser {
+  color-scheme: light dark;
   --tg-theme-bg-color: #ffffff;
   --tg-theme-secondary-bg-color: #f1f1f4;
   --tg-theme-section-bg-color: #ffffff;
@@ -165,6 +166,11 @@ button:disabled {
   max-width: 640px;
   margin: 0 auto;
   padding: 12px 16px calc(28px + var(--safe-b));
+}
+
+/* корневой экран: под списком — место для вкладок разделов */
+.screen--tabbed {
+  padding-bottom: calc(88px + var(--safe-b));
 }
 
 .top {
@@ -349,6 +355,10 @@ button:disabled {
   scrollbar-width: none;
 }
 
+.tabs--first {
+  margin-top: 0;
+}
+
 .tabs::-webkit-scrollbar {
   display: none;
 }
@@ -454,6 +464,140 @@ a.row:active {
   font-size: 13px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+/* строка-действие: «+ Задача», «Название, клиент…» */
+.row--action {
+  min-height: 48px;
+  gap: 8px;
+  color: var(--link);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.row__icon {
+  flex: none;
+  display: flex;
+  color: var(--hint);
+}
+
+.row__title--plain {
+  font-weight: 400;
+}
+
+.row__title--wrap {
+  white-space: normal;
+}
+
+.row__now {
+  color: var(--hint);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+/* строка с отметкой: слева — «сделано», остальное открывает правку */
+.row--task {
+  align-items: stretch;
+  gap: 0;
+  padding: 0 0 0 6px;
+}
+
+.row__open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-height: 52px;
+  padding: 9px 14px 9px 2px;
+  text-align: left;
+}
+
+.row__open--line {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.row__open:active {
+  background: var(--press);
+}
+
+.row.is-done .row__title {
+  color: var(--hint);
+}
+
+.check-btn {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  min-height: 44px;
+}
+
+.check-btn__box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--hint);
+  border-radius: 50%;
+  color: var(--on-accent);
+  transition: background-color 0.12s ease-out, border-color 0.12s ease-out;
+}
+
+.check-btn.is-done .check-btn__box {
+  border-color: var(--accent-fill);
+  background: var(--accent-fill);
+}
+
+.check-btn:active .check-btn__box {
+  background: var(--press);
+}
+
+.check-btn:disabled {
+  opacity: 0.5;
+}
+
+/* сколько этапов пройдено — полоской в строке проекта */
+.progress {
+  display: flex;
+  gap: 3px;
+  margin: 5px 0 3px;
+}
+
+.progress__seg {
+  flex: 1;
+  max-width: 44px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--press);
+}
+
+.progress__seg.is-done {
+  background: var(--accent);
+}
+
+.hint {
+  margin: 8px 16px 0;
+  color: var(--hint);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.hint--box {
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  background: var(--fill);
+}
+
+.linkbtn--under {
+  margin-left: 16px;
 }
 
 .row--ghost {
@@ -641,7 +785,8 @@ div.contact__open .contact__value {
 }
 
 textarea,
-.field input {
+.field input,
+.field select {
   display: block;
   width: 100%;
   padding: 10px 12px;
@@ -661,8 +806,33 @@ textarea::placeholder,
   color: var(--hint);
 }
 
+/* пустое поле даты в iOS схлопывается — держим высоту */
+.field input[type='date'],
+.field select {
+  min-height: 46px;
+  color: var(--text);
+}
+
+/* свой уголок вместо системного: красится цветом текста темы */
+.field select {
+  padding-right: 36px;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 19px) 20px, calc(100% - 14px) 20px;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+a.btn {
+  text-decoration: none;
+}
+
 textarea:focus,
-.field input:focus {
+.field input:focus,
+.field select:focus {
   outline: 0;
   border-color: var(--accent);
   box-shadow: 0 0 0 1px var(--accent);
@@ -774,6 +944,63 @@ textarea:focus,
 
 .option--danger {
   color: var(--danger-text);
+}
+
+.sheet__form {
+  display: grid;
+  gap: 14px;
+  padding: 6px 16px 16px;
+}
+
+.sheet__form .btn--wide {
+  margin-top: 0;
+}
+
+.sheet__text {
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.sheet__text--break {
+  color: var(--hint);
+  word-break: break-all;
+}
+
+/* ---------- вкладки разделов ---------- */
+
+.tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  justify-content: center;
+  padding-bottom: var(--safe-b);
+  border-top: 1px solid var(--sep);
+  background: var(--tg-theme-bg-color, var(--surface));
+}
+
+.tabbar__item {
+  flex: 1;
+  max-width: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 56px;
+  color: var(--hint);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.tabbar__item[aria-current='page'] {
+  color: var(--link);
+}
+
+.tabbar__item:active {
+  background: var(--press);
 }
 
 @keyframes rise {

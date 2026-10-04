@@ -6,6 +6,7 @@
   "description": "Мини-приложение студии в Telegram: заявки, проекты. Отдаётся сервисом бота по /app/. План — BOT.md в корне.",
   "scripts": {
     "dev": "vite",
+    "dev:demo": "API_TARGET=http://localhost:8788 vite --port 5174",
     "build": "vite build",
     "typecheck": "tsc --noEmit"
   },
@@ -19,6 +20,7 @@
     "react-dom": "^19.3.0"
   },
   "devDependencies": {
+    "@types/node": "^26.6.4",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",

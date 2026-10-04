@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react';
 
 /**
- * Маршруты приложения — три экрана, поэтому без библиотеки. Адрес — путь
+ * Маршруты приложения — шесть экранов, поэтому без библиотеки. Адрес — путь
  * под /app/ (History API): в браузере экран переживает перезагрузку,
  * а бот может открыть приложение сразу на заявке (`/app/leads/12`).
  *
@@ -10,20 +10,44 @@ import { useSyncExternalStore } from 'react';
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
 
-export type Route = { name: 'leads' } | { name: 'lead'; id: number } | { name: 'new' };
+export type Route =
+  | { name: 'leads' }
+  | { name: 'lead'; id: number }
+  | { name: 'new' }
+  | { name: 'projects' }
+  | { name: 'project'; id: number }
+  | { name: 'project-new' };
+
+/** Корневые экраны — те, что стоят на вкладках внизу. */
+export const isRoot = (route: Route) => route.name === 'leads' || route.name === 'projects';
 
 function parse(pathname: string): Route {
   const path = pathname.startsWith(BASE) ? pathname.slice(BASE.length) : pathname;
   const lead = path.match(/^\/leads\/(\d{1,9})\/?$/);
   if (lead) return { name: 'lead', id: Number(lead[1]) };
   if (/^\/new\/?$/.test(path)) return { name: 'new' };
+  const project = path.match(/^\/projects\/(\d{1,9})\/?$/);
+  if (project) return { name: 'project', id: Number(project[1]) };
+  if (/^\/projects\/new\/?$/.test(path)) return { name: 'project-new' };
+  if (/^\/projects\/?$/.test(path)) return { name: 'projects' };
   return { name: 'leads' };
 }
 
 export function hrefOf(route: Route) {
-  if (route.name === 'lead') return `${BASE}/leads/${route.id}`;
-  if (route.name === 'new') return `${BASE}/new`;
-  return `${BASE}/`;
+  switch (route.name) {
+    case 'lead':
+      return `${BASE}/leads/${route.id}`;
+    case 'new':
+      return `${BASE}/new`;
+    case 'projects':
+      return `${BASE}/projects`;
+    case 'project':
+      return `${BASE}/projects/${route.id}`;
+    case 'project-new':
+      return `${BASE}/projects/new`;
+    default:
+      return `${BASE}/`;
+  }
 }
 
 const listeners = new Set<() => void>();
@@ -40,10 +64,11 @@ export function navigate(route: Route, opts: { replace?: boolean } = {}) {
   emit();
 }
 
-/** Назад; если приложение открыли сразу на внутреннем экране — к списку. */
+/** Назад; если приложение открыли сразу на внутреннем экране — к его списку. */
 export function back() {
-  if (depth > 0) window.history.back();
-  else navigate({ name: 'leads' }, { replace: true });
+  if (depth > 0) return window.history.back();
+  const here = parse(window.location.pathname).name;
+  navigate({ name: here === 'project' || here === 'project-new' ? 'projects' : 'leads' }, { replace: true });
 }
 
 window.addEventListener('popstate', (e) => {

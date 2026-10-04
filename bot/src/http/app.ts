@@ -31,7 +31,7 @@ const Intake = z.object({
   meta: Meta
 });
 
-export function createApp({ db, config, studio }: { db: Db; config: Config; studio: StudioBot | null }) {
+export function createApp({ db, config, studio, now }: { db: Db; config: Config; studio: StudioBot | null; now?: () => Date }) {
   const app = new Hono();
 
   app.get('/health', (c) => c.json({ ok: true }));
@@ -74,7 +74,7 @@ export function createApp({ db, config, studio }: { db: Db; config: Config; stud
     return c.json({ id: lead.id }, 201);
   });
 
-  app.route('/api/app', createApi({ db, config, studio }));
+  app.route('/api/app', createApi({ db, config, studio, now }));
 
   // Мини-приложение: файлы сборки — как есть, любой другой адрес под /app/
   // отдаёт index.html — приложение одностраничное и дальше разбирается само.
