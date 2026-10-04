@@ -191,6 +191,14 @@ export const SITE = {
         ready: true
       },
       {
+        slug: 'barber',
+        kind: 'bot' as const,
+        title: 'Барбершоп: запись в Telegram',
+        niche: 'Услуги · запись',
+        points: ['Мастер и свободное время', 'Предоплата в окне Telegram', 'Перенос и отмена без звонка'],
+        ready: true
+      },
+      {
         slug: 'status',
         kind: 'status' as const,
         title: 'Страница статуса',
