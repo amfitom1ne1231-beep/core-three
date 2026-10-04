@@ -1,4 +1,4 @@
-# Сайт CoreThree в контейнере — под переезд с Vercel на VPS в РФ.
+# Сайт CoreThree в контейнере — для сервера в РФ (deploy/README.md).
 #
 #   docker build -t corethree \
 #     --build-arg NEXT_PUBLIC_SITE_URL=https://example.ru \
@@ -6,7 +6,8 @@
 #   docker run -p 3000:3000 --env-file .env.local corethree
 #
 # NEXT_PUBLIC_* вшиваются в клиентский код на сборке, поэтому это
-# аргументы сборки. Серверные секреты (SUPABASE_*) — только при запуске.
+# аргументы сборки. Серверные секреты (INTAKE_SECRET, TELEGRAM_*) —
+# только при запуске.
 
 FROM node:22-alpine AS deps
 WORKDIR /app

@@ -5,7 +5,7 @@ import { getGroup, setGroup } from './domain/settings';
 import { createApp } from './http/app';
 import { startScheduler } from './jobs/scheduler';
 import { sheetsTick } from './sheets/sync';
-import { createBot } from './tg/bot';
+import { createBot, type StudioBot } from './tg/bot';
 
 /**
  * Сервис бота: база, бот, HTTP и расписание в одном процессе.
@@ -24,33 +24,56 @@ if (config.GROUP_CHAT_ID && !(await getGroup(db))) {
 
 const studio = config.BOT_TOKEN ? createBot({ db, config }) : null;
 if (!studio) console.warn('[bot] BOT_TOKEN не задан — бот выключен, заявки только в базу');
-// имя бота нужно ссылкам на карточках раньше, чем придёт первое обновление
-if (studio) await studio.bot.init();
+if (studio && config.BOT_MODE === 'webhook' && (!config.PUBLIC_URL || !config.WEBHOOK_SECRET)) {
+  throw new Error('Для webhook нужны PUBLIC_URL и WEBHOOK_SECRET');
+}
 
+// HTTP — раньше Telegram: заявки с сайта принимаются, даже если до Telegram
+// сейчас не достать. Раньше сервис сначала ждал ответа Telegram и без него
+// не открывал порт вовсе — сайт в это время терял заявки.
 const app = createApp({ db, config, studio });
 const server = serve({ fetch: app.fetch, port: config.PORT }, (info) => console.info(`[http] :${info.port}`));
 
-if (studio) {
+/**
+ * Подключение к Telegram: имя бота (нужно ссылкам на карточках), webhook
+ * или опрос, меню и карточки. Не удалось — сервис работает дальше и
+ * пробует снова: в России Telegram заблокирован, и связь с ним — через
+ * ретранслятор (TELEGRAM_API_ROOT), который тоже может пропадать.
+ */
+async function connectTelegram(studio: StudioBot) {
+  // Свой срок на первые запросы: без него недоступный Telegram держит попытку
+  // восемь минут. Тип сигнала у grammY — из его собственной прослойки, обычный подходит.
+  const soon = () => AbortSignal.timeout(20_000) as unknown as Parameters<StudioBot['bot']['init']>[0];
+  await studio.bot.init(soon());
   if (config.BOT_MODE === 'webhook') {
-    if (!config.PUBLIC_URL || !config.WEBHOOK_SECRET) throw new Error('Для webhook нужны PUBLIC_URL и WEBHOOK_SECRET');
-    await studio.bot.api.setWebhook(`${config.PUBLIC_URL}/tg/${config.WEBHOOK_SECRET}`, {
-      secret_token: config.WEBHOOK_SECRET,
-      allowed_updates: ['message', 'callback_query', 'my_chat_member']
-    });
-    console.info('[bot] webhook');
+    await studio.bot.api.setWebhook(
+      `${config.PUBLIC_URL}/tg/${config.WEBHOOK_SECRET}`,
+      { secret_token: config.WEBHOOK_SECRET, allowed_updates: ['message', 'callback_query', 'my_chat_member'] },
+      soon()
+    );
+    console.info(`[bot] @${studio.bot.botInfo.username}, webhook`);
   } else {
-    await studio.bot.api.deleteWebhook();
+    await studio.bot.api.deleteWebhook(undefined, soon());
     void studio.bot.start({
       allowed_updates: ['message', 'callback_query', 'my_chat_member'],
       onStart: (me) => console.info(`[bot] @${me.username}, polling`)
     });
   }
-}
-
-if (studio) {
   await studio.syncMenu();
   await studio.syncCards();
   console.info(config.PUBLIC_URL ? `[app] ${config.PUBLIC_URL}/app/` : '[app] публичного адреса нет — мини-приложение только в браузере');
+}
+
+let reconnect: ReturnType<typeof setTimeout> | undefined;
+if (studio) {
+  let delay = 5_000;
+  const attempt = () =>
+    void connectTelegram(studio).catch((e) => {
+      console.error(`[bot] Telegram недоступен, повтор через ${delay / 1000} с:`, e instanceof Error ? e.message : e);
+      reconnect = setTimeout(attempt, delay);
+      delay = Math.min(delay * 2, 5 * 60_000);
+    });
+  attempt();
 }
 
 const stopScheduler = startScheduler(db, studio, {
@@ -70,6 +93,7 @@ async function shutdown(signal: string) {
   console.info(`[main] ${signal}, останавливаюсь`);
   stopScheduler();
   if (sheets) clearInterval(sheets);
+  clearTimeout(reconnect);
   if (studio && config.BOT_MODE === 'polling') await studio.bot.stop();
   server.close();
   await close();

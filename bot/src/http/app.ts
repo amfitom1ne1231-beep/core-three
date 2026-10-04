@@ -31,7 +31,26 @@ const Intake = z.object({
   meta: Meta
 });
 
-export function createApp({ db, config, studio, now }: { db: Db; config: Config; studio: StudioBot | null; now?: () => Date }) {
+/**
+ * Сколько сайт ждёт карточку. Telegram обычно отвечает за доли секунды;
+ * если медлит или недоступен (в России он заблокирован), человек на сайте
+ * ждать не должен: заявка уже в базе, карточку сервис догонит сам.
+ */
+const CARD_WAIT_MS = 2500;
+
+export function createApp({
+  db,
+  config,
+  studio,
+  now,
+  cardWaitMs = CARD_WAIT_MS
+}: {
+  db: Db;
+  config: Config;
+  studio: StudioBot | null;
+  now?: () => Date;
+  cardWaitMs?: number;
+}) {
   const app = new Hono();
 
   app.get('/health', (c) => c.json({ ok: true }));
@@ -62,15 +81,26 @@ export function createApp({ db, config, studio, now }: { db: Db; config: Config;
       meta: parsed.data.meta ?? null,
       spam: check.bot
     });
-    // карточка в группу — не повод отвечать сайту ошибкой: заявка уже в базе
-    const card = studio
-      ? await studio.publishLead(lead.id).catch((e) => {
-          console.error('[intake] карточка', e);
+    // Карточка в группу — не повод ни отвечать сайту ошибкой, ни держать его:
+    // заявка уже в базе. Не успела за отведённое время — ответ уходит без неё,
+    // а карточку догонит расписание (publishPending).
+    const publishing = studio
+      ? studio.publishLead(lead.id).catch((e) => {
+          console.error('[intake] карточка', e instanceof Error ? e.message : e);
           return false;
         })
-      : false;
+      : Promise.resolve(false);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const card = await Promise.race([
+      publishing,
+      new Promise<'late'>((resolve) => {
+        timer = setTimeout(() => resolve('late'), cardWaitMs);
+      })
+    ]);
+    clearTimeout(timer);
     if (config.NODE_ENV !== 'test') {
-      console.info(`[intake] заявка #${lead.id}: ${card ? 'карточка в группе' : 'только в базе'}${check.bot ? ', ловушка' : ''}`);
+      const where = card === 'late' ? 'в базе, карточка позже' : card ? 'карточка в группе' : 'только в базе';
+      console.info(`[intake] заявка #${lead.id}: ${where}${check.bot ? ', ловушка' : ''}`);
     }
     return c.json({ id: lead.id }, 201);
   });

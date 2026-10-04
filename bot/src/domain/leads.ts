@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, ilike, inArray, isNull, notInArray, or, type SQL } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, ilike, inArray, isNull, notInArray, or, type SQL } from 'drizzle-orm';
 import type { Db } from '../db/client';
 import { leadEvents, leads, members, projects, type Source, type Stage } from '../db/schema';
 import { projectFromLead } from './projects';
@@ -237,6 +237,19 @@ export async function openLeads(db: Db) {
 }
 
 /** Ничейные новые заявки без напоминания — кандидаты на «никто не взял». */
+/**
+ * Заявки без карточки в группе, не старше `since`: пришли, пока Telegram
+ * был недоступен. Давние не трогаем — старая заявка без карточки уже
+ * разобрана в приложении, и карточка задним числом только запутает.
+ */
+export async function cardlessLeads(db: Db, since: Date) {
+  return db
+    .select()
+    .from(leads)
+    .where(and(isNull(leads.cardMessageId), gte(leads.createdAt, since)))
+    .orderBy(asc(leads.createdAt));
+}
+
 export async function untakenLeads(db: Db) {
   return db
     .select()

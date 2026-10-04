@@ -3,20 +3,29 @@
 # на сервер и перезапустить. Сервер ничего не собирает — хватает
 # дешёвого тарифа.
 #
-#   SERVER=root@<ip> deploy/push.sh
+#   SERVER=<логин>@<ip> deploy/push.sh
 #
 # Номер счётчика Метрики, когда появится: NEXT_PUBLIC_YM_ID=… перед командой.
 set -euo pipefail
-: "${SERVER:?укажите SERVER=root@<ip>}"
+: "${SERVER:?укажите SERVER=<логин>@<ip>}"
 KEY="${SSH_KEY:-$HOME/.ssh/corethree_vps}"
 PLATFORM="${PLATFORM:-linux/amd64}"
 DIR=/opt/corethree
 cd "$(dirname "$0")/.."
 
 echo "Сборка под $PLATFORM…"
-docker buildx build --platform "$PLATFORM" --load -t corethree-site:latest \
-  --build-arg NEXT_PUBLIC_SITE_URL=https://corethree.ru \
-  --build-arg NEXT_PUBLIC_YM_ID="${NEXT_PUBLIC_YM_ID:-}" .
+# Сборка сайта скачивает шрифты с Google Fonts и изредка получает оттуда
+# негодный ответ («An error occurred in next/font») — вторая попытка проходит.
+build_site() {
+  docker buildx build --platform "$PLATFORM" --load -t corethree-site:latest \
+    --build-arg NEXT_PUBLIC_SITE_URL=https://corethree.ru \
+    --build-arg NEXT_PUBLIC_YM_ID="${NEXT_PUBLIC_YM_ID:-}" .
+}
+for n in 1 2 3; do
+  build_site && break
+  [ "$n" = 3 ] && { echo 'Сайт не собрался с трёх попыток.'; exit 1; }
+  echo "Сборка сайта не удалась (попытка $n из 3), повтор…"
+done
 docker buildx build --platform "$PLATFORM" --load -t corethree-bot:latest -f bot/Dockerfile .
 
 echo 'Файлы запуска…'

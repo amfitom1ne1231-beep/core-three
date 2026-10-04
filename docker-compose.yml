@@ -7,7 +7,8 @@
 # раз в сутки копия базы ложится в ./backups (хранится две недели).
 #
 # Секреты на сервере, в git их нет:
-#   .env              — POSTGRES_PASSWORD (и NEXT_PUBLIC_YM_ID, когда будет счётчик)
+#   .env              — POSTGRES_PASSWORD (NEXT_PUBLIC_YM_ID, когда будет счётчик;
+#                       BOT_MODE=polling, если нужен опрос вместо webhook)
 #   deploy/site.env   — по образцу deploy/site.env.example
 #   deploy/bot.env    — по образцу deploy/bot.env.example
 #
@@ -52,7 +53,9 @@ services:
     restart: unless-stopped
     env_file: deploy/bot.env
     environment:
-      BOT_MODE: webhook
+      # polling — когда входящие от Telegram до сервера не доходят:
+      # строка BOT_MODE=polling в .env рядом с этим файлом
+      BOT_MODE: ${BOT_MODE:-webhook}
       PUBLIC_URL: https://bot.corethree.ru
       SITE_URL: https://corethree.ru
       DATABASE_URL: postgres://corethree:${POSTGRES_PASSWORD:?нужен POSTGRES_PASSWORD в .env}@db:5432/corethree

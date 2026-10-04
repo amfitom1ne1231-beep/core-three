@@ -6,6 +6,7 @@ import type { Db } from '../db/client';
 import { prompts } from '../db/schema';
 import {
   addNote,
+  cardlessLeads,
   leadView,
   markLost,
   openLeads,
@@ -46,8 +47,15 @@ export type Deps = {
 
 export type StudioBot = ReturnType<typeof createBot>;
 
+/** Сколько заявка без карточки считается «ещё не доехавшей», а не разобранной без неё. */
+const PENDING_MS = 48 * 60 * 60 * 1000;
+
 export function createBot({ db, config, now = () => new Date(), botInfo }: Deps) {
-  const bot = new Bot<Ctx>(config.BOT_TOKEN ?? 'offline', botInfo ? { botInfo } : undefined);
+  const bot = new Bot<Ctx>(config.BOT_TOKEN ?? 'offline', {
+    ...(botInfo ? { botInfo } : {}),
+    // свой адрес Bot API — когда с сервера до Telegram напрямую не достать
+    ...(config.TELEGRAM_API_ROOT ? { client: { apiRoot: config.TELEGRAM_API_ROOT.replace(/\/+$/, '') } } : {})
+  });
   const tz = config.work.tz;
   /** Что происходит в группе — в лог: при первом прогоне это единственное окно. Без имён. */
   const log = config.NODE_ENV === 'test' ? () => {} : (line: string) => console.info(`[bot] ${line}`);
@@ -105,19 +113,51 @@ export function createBot({ db, config, now = () => new Date(), botInfo }: Deps)
     return { v, text: cardText(v, now(), tz), keyboard: cardKeyboard(v, menu, openLink(id)) };
   }
 
+  /** Карточки, которые отправляются прямо сейчас: вторую на ту же заявку не ставим. */
+  const publishing = new Set<number>();
+
   /** Новая заявка — карточкой в рабочую группу. Без группы молчит: заявка уже в базе. */
   async function publishLead(id: number) {
-    const group = await getGroup(db);
-    const r = await render(id);
-    if (!group || !r) return false;
-    const msg = await bot.api.sendMessage(group.chatId, r.text, {
-      parse_mode: 'HTML',
-      reply_markup: r.keyboard,
-      message_thread_id: group.threadId ?? undefined,
-      link_preview_options: { is_disabled: true }
-    });
-    await setCard(db, id, msg.chat.id, msg.message_id);
-    return true;
+    // Telegram ещё ни разу не ответил (имя бота нужно ссылке «Открыть») — карточка встанет позже
+    if (!bot.isInited() || publishing.has(id)) return false;
+    publishing.add(id);
+    try {
+      const group = await getGroup(db);
+      const r = await render(id);
+      if (!group || !r) return false;
+      const msg = await bot.api.sendMessage(group.chatId, r.text, {
+        parse_mode: 'HTML',
+        reply_markup: r.keyboard,
+        message_thread_id: group.threadId ?? undefined,
+        link_preview_options: { is_disabled: true }
+      });
+      await setCard(db, id, msg.chat.id, msg.message_id);
+      return true;
+    } finally {
+      publishing.delete(id);
+    }
+  }
+
+  /**
+   * Догнать карточки заявок, которые пришли, пока Telegram был недоступен.
+   * Заявка в таком случае уже в базе — сайт получил ответ, человек ничего
+   * не заметил; здесь она доезжает до группы. Зовётся по расписанию.
+   * Только свежие (двое суток): давняя заявка без карточки — не сбой.
+   */
+  async function publishPending(at = now()) {
+    if (!bot.isInited() || !(await getGroup(db))) return 0;
+    let sent = 0;
+    for (const lead of await cardlessLeads(db, new Date(at.getTime() - PENDING_MS))) {
+      try {
+        if (await publishLead(lead.id)) sent++;
+      } catch (e) {
+        // связи всё ещё нет — остальные ждут следующего захода, Telegram зря не дёргаем
+        log(`карточка #${lead.id} не ушла: ${e instanceof Error ? e.message : e}`);
+        break;
+      }
+    }
+    if (sent) log(`догнали карточек: ${sent}`);
+    return sent;
   }
 
   async function refreshCard(id: number, menu: Menu = 'main') {
@@ -544,7 +584,7 @@ export function createBot({ db, config, now = () => new Date(), botInfo }: Deps)
 
   bot.catch((err) => console.error('[bot]', err.error));
 
-  return { bot, publishLead, refreshCard, remind, alarm, morningDigest, weeklyDigest, sendFile, syncMenu, syncCards };
+  return { bot, publishLead, publishPending, refreshCard, remind, alarm, morningDigest, weeklyDigest, sendFile, syncMenu, syncCards };
 }
 
 /** Ссылка на карточку в супергруппе: t.me/c/<id без -100>/<сообщение>. */

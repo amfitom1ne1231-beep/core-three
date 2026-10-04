@@ -2,15 +2,19 @@
 # Секреты на сервер — из настроек, с которыми бот и сайт работают сейчас
 # (bot/.env.local и .env.local основной папки). Значения не печатаются.
 #
-#   SERVER=root@<ip> deploy/secrets.sh
+#   SERVER=<логин>@<ip> deploy/secrets.sh
 #
 # Создаёт на сервере, если их ещё нет:
 #   /opt/corethree/.env             — POSTGRES_PASSWORD (новый, случайный)
 #   /opt/corethree/deploy/bot.env   — токен, владельцы, группа, ключи + новый WEBHOOK_SECRET
 #   /opt/corethree/deploy/site.env  — секрет заявок и запасной Telegram
 # Существующие файлы не трогает: перезаписать — удалить их на сервере.
+#
+# Google-таблица на сервер не переносится: копия заявок на серверах Google —
+# передача персональных данных за границу, о ней в политике не сказано
+# и Роскомнадзор не уведомлён. Включить осознанно — WITH_SHEETS=1.
 set -euo pipefail
-: "${SERVER:?укажите SERVER=root@<ip>}"
+: "${SERVER:?укажите SERVER=<логин>@<ip>}"
 KEY="${SSH_KEY:-$HOME/.ssh/corethree_vps}"
 MAIN="${MAIN_DIR:-/Users/island001/CoreThree}"
 DIR=/opt/corethree
@@ -30,8 +34,9 @@ OWNER_TG_IDS=$(get OWNER_TG_IDS "$BOT_ENV")
 GROUP_CHAT_ID=$(get GROUP_CHAT_ID "$BOT_ENV")
 GROUP_THREAD_ID=${GROUP_THREAD_ID:-$(get GROUP_THREAD_ID "$BOT_ENV")}
 MINI_APP_LINK=$(get MINI_APP_LINK "$BOT_ENV")
-SHEETS_URL=$(get SHEETS_URL "$BOT_ENV")
-SHEETS_SECRET=$(get SHEETS_SECRET "$BOT_ENV")
+SHEETS_URL=$([ "${WITH_SHEETS:-}" = 1 ] && get SHEETS_URL "$BOT_ENV" || true)
+SHEETS_SECRET=$([ "${WITH_SHEETS:-}" = 1 ] && get SHEETS_SECRET "$BOT_ENV" || true)
+TELEGRAM_API_ROOT=${TELEGRAM_API_ROOT:-$(get TELEGRAM_API_ROOT "$BOT_ENV")}
 WORK_TZ=Europe/Moscow
 B
 )
@@ -40,6 +45,7 @@ INTAKE_SECRET=$(get INTAKE_SECRET "$SITE_ENV")
 TELEGRAM_BOT_TOKEN=$(get TELEGRAM_BOT_TOKEN "$SITE_ENV")
 TELEGRAM_CHAT_ID=$(get TELEGRAM_CHAT_ID "$SITE_ENV")
 TELEGRAM_THREAD_ID=$(get TELEGRAM_THREAD_ID "$SITE_ENV")
+TELEGRAM_API_ROOT=${TELEGRAM_API_ROOT:-$(get TELEGRAM_API_ROOT "$SITE_ENV")}
 S
 )
 

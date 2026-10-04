@@ -3,7 +3,14 @@
 
 corethree.ru {
 	encode zstd gzip
-	reverse_proxy site:3000
+	# браузер запоминает на год, что сюда — только по HTTPS
+	header Strict-Transport-Security "max-age=31536000"
+	reverse_proxy site:3000 {
+		# Адрес посетителя для лимита заявок ставит Caddy. Без этой строки
+		# заголовок доходил до сайта таким, каким его прислал сам посетитель:
+		# менять его в каждом запросе — и лимита нет.
+		header_up X-Real-IP {remote_host}
+	}
 }
 
 www.corethree.ru {
@@ -13,5 +20,6 @@ www.corethree.ru {
 # сервис бота: webhook Telegram (/tg/<секрет>), мини-приложение (/app/), его API
 bot.corethree.ru {
 	encode zstd gzip
+	header Strict-Transport-Security "max-age=31536000"
 	reverse_proxy bot:8787
 }

@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createApp } from '../src/http/app';
 import { sign, verify } from '../../lib/intake-sign';
-import { getLead } from '../src/domain/leads';
+import { createLead, getLead } from '../src/domain/leads';
 import { setGroup } from '../src/domain/settings';
 import { GROUP, siteForm, testBot } from './helpers';
 
@@ -97,5 +97,69 @@ test('«Мы напишем сами» из «Помощи»: свой кана�
   // по нику написать в WhatsApp нельзя — сервис такую форму не примет
   const tg = await post(app, { lead: { ...form, contact: '@anna_writes' } });
   assert.equal(tg.status, 422);
+  await t.close();
+});
+
+test('Telegram недоступен — заявка в базе, сайт получает ответ, карточка догоняет позже', async () => {
+  const t = await testBot();
+  await setGroup(t.db, { chatId: GROUP.id, threadId: null, title: null });
+  const app = createApp({ db: t.db, config: t.config, studio: t.studio });
+
+  // связи нет: любой вызов Telegram падает, как при блокировке
+  let down = true;
+  t.studio.bot.api.config.use((prev, method, payload, signal) => {
+    if (down) throw new Error('connect ETIMEDOUT');
+    return prev(method, payload, signal);
+  });
+
+  const res = await post(app, { lead: siteForm() });
+  assert.equal(res.status, 201);
+  const { id } = (await res.json()) as { id: number };
+  assert.equal((await getLead(t.db, id))?.cardMessageId, null);
+  assert.equal(await t.studio.publishPending(), 0);
+
+  // связь вернулась — карточка встаёт, и ровно одна
+  down = false;
+  assert.equal(await t.studio.publishPending(), 1);
+  assert.ok((await getLead(t.db, id))?.cardMessageId);
+  assert.equal(await t.studio.publishPending(), 0);
+  assert.equal(t.calls.filter((c) => c.method === 'sendMessage' && c.payload.chat_id === GROUP.id).length, 1);
+  await t.close();
+});
+
+test('Telegram молчит — сайт не ждёт дольше отведённого', async () => {
+  const t = await testBot();
+  await setGroup(t.db, { chatId: GROUP.id, threadId: null, title: null });
+  const app = createApp({ db: t.db, config: t.config, studio: t.studio, cardWaitMs: 40 });
+
+  // запрос к Telegram повис: ни ответа, ни ошибки
+  let release = () => {};
+  const hang = new Promise<void>((resolve) => (release = resolve));
+  t.studio.bot.api.config.use(async (prev, method, payload, signal) => {
+    if (method === 'sendMessage') await hang;
+    return prev(method, payload, signal);
+  });
+
+  const started = Date.now();
+  const res = await post(app, { lead: siteForm() });
+  assert.equal(res.status, 201);
+  assert.ok(Date.now() - started < 1500, 'ответ сайту не должен ждать Telegram');
+  const { id } = (await res.json()) as { id: number };
+
+  // пока первая отправка висит, вторую карточку расписание не ставит
+  assert.equal(await t.studio.publishPending(), 0);
+  release();
+  await new Promise((r) => setTimeout(r, 50));
+  assert.ok((await getLead(t.db, id))?.cardMessageId);
+  assert.equal(t.calls.filter((c) => c.method === 'sendMessage' && c.payload.chat_id === GROUP.id).length, 1);
+  await t.close();
+});
+
+test('давняя заявка без карточки задним числом в группу не идёт', async () => {
+  const t = await testBot();
+  await setGroup(t.db, { chatId: GROUP.id, threadId: null, title: null });
+  const old = await createLead(t.db, { source: 'site', name: 'Анна', contact: '@anna_writes', task: 'Лендинг', kind: 'sites' }, new Date(Date.now() - 5 * 24 * 3600 * 1000));
+  assert.equal(await t.studio.publishPending(), 0);
+  assert.equal((await getLead(t.db, old.id))?.cardMessageId, null);
   await t.close();
 });

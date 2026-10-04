@@ -15,6 +15,10 @@ import type { SourceMeta } from './source';
  * TELEGRAM_THREAD_ID — тема, если в группе включены темы. Без неё
  * сообщение уходит в общую ветку, и заявки тонут среди болтовни.
  *
+ * TELEGRAM_API_ROOT — свой адрес Bot API вместо api.telegram.org: нужен,
+ * когда с сервера до Telegram напрямую не достать (в России он
+ * заблокирован). Тот же, что у сервиса бота.
+ *
  * Сообщение — простой текст, без parse_mode: в имени или задаче может
  * оказаться что угодно, и разметка Telegram сломалась бы на первой
  * звёздочке или подчёркивании.
@@ -70,7 +74,8 @@ export async function notifyLead(lead: Lead, status: 'new' | 'spam' = 'new', met
   const thread = Number(process.env.TELEGRAM_THREAD_ID) || undefined;
 
   try {
-    const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    const root = (process.env.TELEGRAM_API_ROOT || 'https://api.telegram.org').replace(/\/+$/, '');
+    const res = await fetch(`${root}/bot${token}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       // предел сообщения Telegram — 4096 знаков, задача бывает до 4000

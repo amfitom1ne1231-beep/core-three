@@ -23,6 +23,12 @@ const Env = z.object({
 
   /** Токен бота от @BotFather. Пусто — бот выключен, сервис работает. */
   BOT_TOKEN: z.string().optional(),
+  /**
+   * Адрес Bot API. Пусто — api.telegram.org. Свой нужен, когда с сервера
+   * до Telegram напрямую не достать: в России он заблокирован, и сервис
+   * ходит через ретранслятор за границей (deploy/README.md, «Telegram»).
+   */
+  TELEGRAM_API_ROOT: z.url().optional(),
   /** polling — для разработки, webhook — на сервере за HTTPS. */
   BOT_MODE: z.enum(['polling', 'webhook']).default('polling'),
   /**

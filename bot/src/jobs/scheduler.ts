@@ -23,6 +23,9 @@ export async function claim(db: Db, key: string, at = new Date()) {
 }
 
 export async function tick(db: Db, studio: StudioBot | null, sla: Sla, now = new Date()) {
+  // заявки, пришедшие при недоступном Telegram: карточки догоняют, как только связь есть
+  if (studio) await studio.publishPending(now).catch((e) => console.error('[bot] карточки', e instanceof Error ? e.message : e));
+
   // напоминание «никто не взял»: одно на заявку
   for (const lead of await untakenLeads(db)) {
     if (!needsReminder(lead, now, sla)) continue;
