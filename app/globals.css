@@ -462,29 +462,7 @@ body {
   }
 }
 
-/* ============================================================
-   Финал страницы (components/footer): чернила, чипы брифа, большая
-   круглая кнопка и «Дальше».
-   ============================================================ */
-
-/* Чернила светятся сквозь материал в тёмной теме; в светлой — та же
-   съёмка, вывернутая в негатив с сохранением оттенка: тушь на бумаге. */
-.finale-ink {
-  mix-blend-mode: screen;
-}
-/* Финал входит в страницу без кромки. Чернила и затемнение сверху
-   начинались ровно по краю секции — непрозрачной полосой поверх
-   материала, и на каждой странице над финалом стояла горизонтальная
-   линия. Маска растворяет оба слоя: сверху виден тот же материал,
-   что и над секцией, чернила проступают из него. */
-.finale-fade {
-  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 20%);
-  mask-image: linear-gradient(180deg, transparent 0%, #000 20%);
-}
-:root[data-theme='light'] .finale-ink {
-  mix-blend-mode: multiply;
-  filter: invert(1) hue-rotate(180deg);
-}
+/* чипы-ссылки: «посмотреть концепты», «написать в Telegram» в брифе */
 
 .need-chip {
   display: inline-flex;
@@ -508,105 +486,6 @@ body {
 .need-chip:focus-visible {
   outline: 2px solid var(--fg);
   outline-offset: 3px;
-}
-
-/* Большая круглая кнопка: текст бежит по кругу, в центре стрелка. */
-.round-cta {
-  --size: clamp(128px, 12vw, 176px);
-  display: grid;
-  place-items: center;
-  width: var(--size);
-  height: var(--size);
-  border-radius: 50%;
-  color: var(--bg);
-}
-.round-cta::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: var(--fg);
-  box-shadow: 0 24px 60px rgb(0 0 0 / 0.35);
-  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.4s;
-}
-.round-cta:hover::before,
-.round-cta:focus-visible::before {
-  transform: scale(1.08);
-  background: var(--accent);
-}
-.round-cta:hover,
-.round-cta:focus-visible {
-  color: #fff;
-}
-.round-cta-ring {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 12.5px;
-  letter-spacing: 0.22em;
-  fill: currentColor;
-  animation: round-spin 18s linear infinite;
-}
-.round-cta:hover .round-cta-ring {
-  animation-duration: 7s;
-}
-.round-cta-core {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 38%;
-  height: 38%;
-  border-radius: 50%;
-  border: 1px solid currentColor;
-  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.round-cta-core svg {
-  width: 44%;
-  height: 44%;
-  transform: rotate(-45deg);
-  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.round-cta:hover .round-cta-core svg {
-  transform: rotate(0deg);
-}
-.round-cta:focus-visible {
-  outline: 2px solid var(--fg);
-  outline-offset: 6px;
-}
-@keyframes round-spin {
-  to { transform: rotate(360deg); }
-}
-
-/* «Дальше» */
-.next-page-label {
-  background: linear-gradient(90deg, var(--fg) 50%, var(--fg-dim) 50%);
-  background-size: 200% 100%;
-  background-position: 100% 0;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  transition: background-position 0.8s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.next-page:hover .next-page-label,
-.next-page:focus-visible .next-page-label {
-  background-position: 0 0;
-}
-.next-page-arrow {
-  transition: background-color 0.4s, color 0.4s, border-color 0.4s, transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.next-page:hover .next-page-arrow {
-  background: var(--fg);
-  color: var(--bg);
-  border-color: var(--fg);
-  transform: translateX(6px);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .round-cta-ring {
-    animation: none;
-  }
 }
 
 /* ============================================================
@@ -1340,18 +1219,343 @@ body {
   to { opacity: 1; }
 }
 
-/* Рост полосы слева направо — для мини-схем в составе работы.
-   Через scaleX, а не width: ширина считается вёрсткой каждый кадр,
-   трансформ идёт на композиторе. */
-@keyframes ct-grow {
+/* ============================================================
+   «Одна сборка» — блок направлений на главной (components/Assembly.tsx).
+   Кадр грани и ролик поворота лежат друг на друге; края кадра
+   растворены в странице — предмет стоит на ней, а не в рамке.
+   ============================================================ */
+.asm-stage {
+  position: relative;
+  width: min(100%, 76vh);
+  aspect-ratio: 1;
+  margin-inline: auto;
+  cursor: grab;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.asm-stage[data-dragging] {
+  cursor: grabbing;
+}
+.asm-view {
+  position: absolute;
+  inset: 0;
+  -webkit-mask-image: radial-gradient(ellipse 50% 48% at 50% 50%, #000 58%, transparent 96%);
+  mask-image: radial-gradient(ellipse 50% 48% at 50% 50%, #000 58%, transparent 96%);
+}
+.asm-still,
+.asm-turn {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  pointer-events: none;
+}
+.asm-still[data-on],
+.asm-turn[data-on] {
+  opacity: 1;
+}
+/* Смена без ролика: новая грань проявляется поверх прежней, и та уходит
+   только когда её уже не видно — иначе на середине наплыва обе
+   полупрозрачны и сквозь блок просвечивает страница. */
+.asm-view[data-cut] .asm-still {
+  transition: opacity 0s 0.45s;
+}
+.asm-view[data-cut] .asm-still[data-on] {
+  z-index: 1;
+  transition: opacity 0.45s ease;
+}
+
+/* подсказка под блоком: уходит с первым поворотом рукой */
+.asm-hint {
+  position: absolute;
+  bottom: 7%;
+  left: 50%;
+  display: flex;
+  gap: 12px;
+  transform: translateX(-50%);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--fg-faint);
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+.asm-hint[data-gone] {
+  opacity: 0;
+}
+
+/* рельс под блоком: заполнение активного деления и есть обратный отсчёт */
+.asm-timer {
+  position: absolute;
+  inset: 0;
+  background: var(--accent);
+  transform-origin: left center;
+  animation: asm-timer linear both;
+}
+@keyframes asm-timer {
   from { transform: scaleX(0); }
   to { transform: scaleX(1); }
 }
 
-/* Штрих, который рисуется: галочка чека в схеме оплаты. */
-@keyframes ct-draw {
-  from { stroke-dashoffset: 26; }
-  to { stroke-dashoffset: 0; }
+/* ============================================================
+   Мини-схемы состава работы (components/service/viz).
+
+   Рисунок в сетке 400×210, цвета — сайта. Движение двух видов:
+   вход (устройство схемы рисуется один раз, когда пункт открыли)
+   и круг (главное событие пункта повторяется, пока он открыт).
+   Круг начинается через `--w` — после входа — и идёт с периодом
+   `--T`; всё в нём либо проявляется, либо едет трансформом.
+   Пока секции нет на экране, круг стоит (`--vz-play` из Includes).
+   ============================================================ */
+.vz {
+  position: absolute;
+  inset: 0;
+}
+.vz-art {
+  --T: 5.6s;
+  --w: 1s;
+  position: absolute;
+  inset: 0 0 30px;
+  display: block;
+  width: 100%;
+  height: calc(100% - 30px);
+  overflow: visible;
+}
+.vz-art * {
+  transform-box: fill-box;
+  animation-play-state: var(--vz-play, running);
+}
+.vz-note {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10px;
+  line-height: 1.3;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+  animation: ct-veil 0.5s ease 0.45s both;
+}
+.vz-note::before {
+  content: '';
+  flex: none;
+  width: 14px;
+  height: 1px;
+  background: var(--accent);
+}
+
+/* ---------- краски ---------- */
+.vz-panel { fill: rgb(var(--bg-rgb) / 0.5); stroke: rgb(var(--accent-rgb) / 0.45); }
+.vz-rule { stroke: rgb(var(--fg-rgb) / 0.18); }
+.vz-cell { stroke: rgb(var(--fg-rgb) / 0.16); }
+.vz-dash { stroke: rgb(var(--accent-rgb) / 0.55); stroke-dasharray: 2 4; }
+.vz-fold { stroke: var(--accent); stroke-dasharray: 4 4; }
+.vz-bar { fill: rgb(var(--fg-rgb) / 0.2); }
+.vz-bar-hi { fill: rgb(var(--fg-rgb) / 0.46); }
+.vz-bar-on { fill: rgb(var(--fg-rgb) / 0.92); }
+.vz-ink { fill: rgb(var(--bg-rgb) / 0.82); }
+.vz-ink-s { stroke: rgb(var(--bg-rgb) / 0.9); }
+.vz-tint { fill: rgb(var(--accent-rgb) / 0.16); }
+.vz-edge { fill: rgb(var(--accent-rgb) / 0.12); stroke: rgb(var(--accent-rgb) / 0.7); }
+.vz-pick { fill: rgb(var(--accent-rgb) / 0.2); stroke: var(--accent); }
+.vz-hot { fill: var(--accent); }
+.vz-hot-s { stroke: var(--accent); stroke-width: 1.5; }
+.vz-dot { fill: var(--bg); stroke: var(--accent); stroke-width: 2; }
+.vz-check { stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.vz-tag {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 8.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  fill: var(--fg-faint);
+}
+.vz-tag-hot { fill: var(--fg); }
+
+/* ---------- вход ---------- */
+.vz-in { animation: vz-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) var(--d, 0ms) both; }
+.vz-fade { animation: ct-veil 0.5s ease var(--d, 0ms) both; }
+.vz-gy {
+  transform-origin: center bottom;
+  animation: vz-gy var(--t, 0.7s) cubic-bezier(0.22, 1, 0.36, 1) var(--d, 0ms) both;
+}
+@keyframes vz-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes vz-gy {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+/* ---------- круг: детали приходят по очереди и вместе уходят ---------- */
+.vz-s1, .vz-s2, .vz-s3, .vz-s4, .vz-s5 { animation: var(--T) linear var(--w) infinite both; }
+.vz-s1 { animation-name: vz-seq-1; }
+.vz-s2 { animation-name: vz-seq-2; }
+.vz-s3 { animation-name: vz-seq-3; }
+.vz-s4 { animation-name: vz-seq-4; }
+.vz-s5 { animation-name: vz-seq-5; }
+@keyframes vz-seq-1 {
+  0%, 8% { opacity: 0; transform: translateY(6px); }
+  14%, 94% { opacity: 1; transform: none; }
+  99%, 100% { opacity: 0; transform: none; }
+}
+@keyframes vz-seq-2 {
+  0%, 24% { opacity: 0; transform: translateY(6px); }
+  30%, 94% { opacity: 1; transform: none; }
+  99%, 100% { opacity: 0; transform: none; }
+}
+@keyframes vz-seq-3 {
+  0%, 40% { opacity: 0; transform: translateY(6px); }
+  46%, 94% { opacity: 1; transform: none; }
+  99%, 100% { opacity: 0; transform: none; }
+}
+@keyframes vz-seq-4 {
+  0%, 56% { opacity: 0; transform: translateY(6px); }
+  62%, 94% { opacity: 1; transform: none; }
+  99%, 100% { opacity: 0; transform: none; }
+}
+@keyframes vz-seq-5 {
+  0%, 72% { opacity: 0; transform: translateY(6px); }
+  78%, 94% { opacity: 1; transform: none; }
+  99%, 100% { opacity: 0; transform: none; }
+}
+
+/* ---------- круг: подсветка переходит с одной детали на другую ---------- */
+.vz-turn {
+  --T: 6.4s;
+  animation: vz-turn-4 var(--T) linear calc(var(--w) + var(--i, 0) * var(--T) / 4) infinite backwards;
+}
+.vz-turn[data-of='3'] {
+  --T: 6s;
+  animation-name: vz-turn-3;
+  animation-delay: calc(var(--w) + var(--i, 0) * var(--T) / 3);
+}
+@keyframes vz-turn-4 {
+  0% { opacity: 0; }
+  3%, 24% { opacity: 1; }
+  28%, 100% { opacity: 0; }
+}
+@keyframes vz-turn-3 {
+  0% { opacity: 0; }
+  3%, 32% { opacity: 1; }
+  37%, 100% { opacity: 0; }
+}
+
+/* ---------- круг: деталь едет из точки в точку ---------- */
+.vz-go { animation: vz-go var(--T) linear var(--w) infinite both; }
+@keyframes vz-go {
+  0%, 18% { opacity: 0; transform: translate(0, 0); }
+  21% { opacity: 1; transform: translate(0, 0); animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1); }
+  38% { opacity: 1; transform: translate(var(--dx, 0px), var(--dy, 0px)); }
+  42%, 100% { opacity: 0; transform: translate(var(--dx, 0px), var(--dy, 0px)); }
+}
+
+/* полоса загрузки: первый экран рывком, остальное следом */
+.vz-fill-a, .vz-fill-b { transform-origin: left center; animation: var(--T) linear var(--w) infinite both; }
+.vz-fill-a { animation-name: vz-fill-a; }
+.vz-fill-b { animation-name: vz-fill-b; }
+@keyframes vz-fill-a {
+  0%, 3% { opacity: 1; transform: scaleX(0); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  10%, 94% { opacity: 1; transform: scaleX(1); }
+  99%, 100% { opacity: 0; transform: scaleX(1); }
+}
+@keyframes vz-fill-b {
+  0%, 11% { opacity: 1; transform: scaleX(0); }
+  64%, 94% { opacity: 1; transform: scaleX(1); }
+  99%, 100% { opacity: 0; transform: scaleX(1); }
+}
+
+/* столбец наливается снизу */
+.vz-up { transform-origin: center bottom; animation: vz-up var(--T) linear var(--w) infinite both; }
+@keyframes vz-up {
+  0%, 12% { opacity: 1; transform: scaleY(0); animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1); }
+  44%, 94% { opacity: 1; transform: scaleY(1); }
+  99%, 100% { opacity: 0; transform: scaleY(1); }
+}
+
+/* штрих, который рисуется: линия графика, круг и галочка оплаты */
+.vz-trace, .vz-trace-b, .vz-trace-c { stroke-dasharray: 1; animation: var(--T) linear var(--w) infinite both; }
+.vz-trace { animation-name: vz-trace; }
+.vz-trace-b { animation-name: vz-trace-b; }
+.vz-trace-c { animation-name: vz-trace-c; }
+@keyframes vz-trace {
+  0%, 8% { opacity: 0; stroke-dashoffset: 1; }
+  9% { opacity: 1; stroke-dashoffset: 1; animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1); }
+  42%, 94% { opacity: 1; stroke-dashoffset: 0; }
+  99%, 100% { opacity: 0; stroke-dashoffset: 0; }
+}
+@keyframes vz-trace-b {
+  0%, 38% { opacity: 0; stroke-dashoffset: 1; }
+  39% { opacity: 1; stroke-dashoffset: 1; animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1); }
+  54%, 94% { opacity: 1; stroke-dashoffset: 0; }
+  99%, 100% { opacity: 0; stroke-dashoffset: 0; }
+}
+@keyframes vz-trace-c {
+  0%, 54% { opacity: 0; stroke-dashoffset: 1; }
+  55% { opacity: 1; stroke-dashoffset: 1; animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  63%, 94% { opacity: 1; stroke-dashoffset: 0; }
+  99%, 100% { opacity: 0; stroke-dashoffset: 0; }
+}
+
+/* две дороги по очереди: штрих доезжает, цель загорается */
+.vz-route, .vz-arrive {
+  --T: 6.4s;
+  animation: var(--T) linear calc(var(--w) + var(--i, 0) * var(--T) / 2) infinite backwards;
+}
+.vz-route { stroke-dasharray: 1; animation-name: vz-route; }
+.vz-arrive { animation-name: vz-arrive; }
+@keyframes vz-route {
+  0%, 2% { opacity: 0; stroke-dashoffset: 1; }
+  3% { opacity: 1; stroke-dashoffset: 1; animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1); }
+  30%, 44% { opacity: 1; stroke-dashoffset: 0; }
+  50%, 100% { opacity: 0; stroke-dashoffset: 0; }
+}
+@keyframes vz-arrive {
+  0%, 27% { opacity: 0; }
+  31%, 44% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+/* проверка идёт вдоль ряда */
+.vz-sweep { animation: vz-sweep var(--T) linear var(--w) infinite both; }
+@keyframes vz-sweep {
+  0%, 8% { opacity: 0; transform: translateX(0); }
+  10% { opacity: 1; transform: translateX(0); }
+  86% { opacity: 1; transform: translateX(var(--dx, 0px)); }
+  91%, 100% { opacity: 0; transform: translateX(var(--dx, 0px)); }
+}
+
+/* дни идут по клеткам: шагом, а не скольжением */
+.vz-days { animation: vz-days var(--T) linear var(--w) infinite both; }
+@keyframes vz-days {
+  0%, 8% { opacity: 0; transform: translateX(0); }
+  10% { opacity: 1; transform: translateX(0); animation-timing-function: steps(4, jump-end); }
+  74%, 90% { opacity: 1; transform: translateX(var(--dx, 0px)); }
+  96%, 100% { opacity: 0; transform: translateX(var(--dx, 0px)); }
+}
+
+/* Без движения круга нет: схема стоит в конечном виде. Из сменяющих
+   друг друга подсветок остаётся первая, едущие детали убраны. */
+@media (prefers-reduced-motion: reduce) {
+  .vz-art *,
+  .vz-note {
+    animation: none !important;
+  }
+  .vz-turn ~ .vz-turn,
+  .vz-go,
+  .vz-sweep,
+  .vz-days {
+    display: none;
+  }
 }
 
 @keyframes ct-run {

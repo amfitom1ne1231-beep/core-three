@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import gsap from 'gsap';
 import Material from '../Material';
@@ -37,9 +37,10 @@ export type IncludeItem = { title: string; text: string; viz?: string; vizNote?:
  *
  * В кадре стояли фактура и гигантский номер части: нажимаешь «Быстрая
  * загрузка» — видишь текстуру и «02». Красиво, но о пункте ни слова.
- * Теперь в кадре мини-схема самого пункта (`./viz`): первый экран
- * и догружаемое, корзина, чек, маршрут доставки, календарь. Фактура
- * осталась тихим фоном, номер — только в рельсе над схемой.
+ * Теперь в кадре схема самого пункта (`./viz`), и она живёт, пока пункт
+ * открыт: главное событие идёт по кругу. Фактура осталась тихим фоном,
+ * номер — только в рельсе над схемой, а название пункта из кадра ушло:
+ * оно уже подсвечено в перечне рядом, и схеме досталось всё поле.
  */
 export default function Includes({
   items,
@@ -202,7 +203,8 @@ export default function Includes({
             aria-hidden
             data-cursor="ring"
             data-reveal="clip"
-            className="relative order-first min-h-[clamp(200px,28vh,420px)] overflow-hidden border border-line bg-elev lg:order-none lg:min-h-[clamp(300px,44vh,460px)]"
+            className="relative order-first min-h-[clamp(240px,34vh,420px)] overflow-hidden border border-line bg-elev lg:order-none lg:min-h-[clamp(300px,44vh,460px)]"
+            style={{ '--vz-play': inView ? 'running' : 'paused' } as CSSProperties}
           >
             <Material preset={material} opacity={Viz ? 0.36 : 0.72} />
             {/* вуаль под подписи: фактура остаётся видна по краям */}
@@ -236,7 +238,7 @@ export default function Includes({
               <span key={c} className={`pointer-events-none absolute h-3 w-3 border-line-strong ${c}`} />
             ))}
 
-            <div className="relative flex h-full min-h-[inherit] flex-col justify-between gap-8 p-[clamp(20px,2.6vw,44px)]">
+            <div className="relative flex h-full min-h-[inherit] flex-col justify-between gap-[clamp(16px,2.4vh,28px)] p-[clamp(20px,2.4vw,40px)]">
               <div className="flex items-center justify-between gap-4">
                 <span className="rail-label">
                   <b>{nn}</b> / {String(items.length).padStart(2, '0')}
@@ -245,19 +247,19 @@ export default function Includes({
               </div>
 
               {/* схема пункта: перемонтирование по ключу запускает её заново */}
-              {Viz && (
-                <div key={`v-${active}`} className="relative min-h-[220px] flex-1">
+              {Viz ? (
+                <div key={`v-${active}`} className="relative min-h-[180px] flex-1">
                   <Viz note={items[active].vizNote} />
                 </div>
+              ) : (
+                <span
+                  key={`t-${active}`}
+                  className="block max-w-[18ch] text-[clamp(15px,1.5vw,21px)] font-medium leading-snug"
+                  style={{ animation: 'ct-rise .45s cubic-bezier(0.22,1,0.36,1) both' }}
+                >
+                  {items[active].title}
+                </span>
               )}
-
-              <span
-                key={`t-${active}`}
-                className="block max-w-[18ch] text-[clamp(15px,1.5vw,21px)] font-medium leading-snug"
-                style={{ animation: 'ct-rise .45s cubic-bezier(0.22,1,0.36,1) both' }}
-              >
-                {items[active].title}
-              </span>
             </div>
           </div>
         </div>

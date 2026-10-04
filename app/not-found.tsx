@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import Cta from '@/components/Cta';
 import Footer from '@/components/Footer';
 import Material from '@/components/Material';
-import Neighbors from '@/components/service/Neighbors';
 import { SITE } from '@/content/site';
 
 export const metadata: Metadata = {
@@ -55,9 +54,8 @@ export default function NotFound() {
           </div>
         </section>
 
-        {/* Страница ошибки, с которой некуда идти, — вторая ошибка подряд.
-            Те же полосы направлений, что стоят внизу внутренних страниц. */}
-        <Neighbors current="" label="Разделы сайта" />
+        {/* Страница ошибки, с которой некуда идти, — вторая ошибка подряд:
+            разделы сайта стоят сразу под ней, в подвале. */}
       </main>
       <Footer cta={false} />
     </>

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import Atlas from '@/components/Atlas';
+import Assembly from '@/components/Assembly';
 import Cta from '@/components/Cta';
 import Footer from '@/components/Footer';
 import HeroMark from '@/components/HeroMark';
@@ -117,7 +117,7 @@ export default function Home() {
 
         <Manifesto />
         <Journey />
-        <Atlas />
+        <Assembly />
       </main>
       <Footer />
       <ScrollScenes />

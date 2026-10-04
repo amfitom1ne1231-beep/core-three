@@ -1,36 +1,32 @@
 import Link from 'next/link';
 import Mark from './Mark';
-import FinaleStage from './footer/FinaleStage';
-import NextPage from './footer/NextPage';
+import DirectionLinks from './footer/DirectionLinks';
+import Finale from './footer/Finale';
 import { OPERATOR } from '@/content/legal';
 import { SITE } from '@/content/site';
 
 /**
- * Футер — последняя сцена, а не подвал.
+ * Конец страницы: финал в одну фразу и подвал.
  *
- * Было: заголовок, абзац, форма на стекле и колонки ссылок — страница
- * заканчивалась, как заканчивается документ. Стало: финал того же класса,
- * что первый экран (чернила, знак в объёме, большая кнопка и первый шаг
- * брифа), и «Дальше» — следующая страница, а не тупик.
+ * Было три концовки подряд — «соседние направления», финал во весь экран
+ * (чернила, знак в объёме, круглая кнопка, чипы брифа) и «Дальше», —
+ * и заказчик назвал низ перегруженным. Стало одно: фраза, кнопка и сразу
+ * подвал. Бегущая строка и гигантское имя сняты ещё раньше.
  *
- * Бегущая строка направлений и гигантское имя внизу были и сняты по
- * замечанию: перебор, финал и так держит сцену.
- *
- * На /contact финала нет: заявка там уже на экране, и подвал начинается
- * сразу с «Дальше».
+ * На /contact и в документах финала нет: там заявка уже на экране
+ * или звать некуда.
  */
 export default function Footer({ cta = true }: { cta?: boolean }) {
   const { footer } = SITE;
+  const [directions, ...rest] = footer.columns;
 
   return (
-    <footer data-chapter={cta ? 'finale' : undefined} className="relative z-10 w-full overflow-hidden text-fg">
-      {cta && <FinaleStage />}
+    <footer data-chapter={cta ? 'finale' : undefined} className="relative z-10 w-full text-fg">
+      <div className="border-t border-line" style={{ background: 'linear-gradient(180deg, rgb(var(--bg-rgb) / 0.72), var(--bg) 60%)' }}>
+        {cta && <Finale />}
 
-      <div className="relative" style={{ background: 'linear-gradient(180deg, rgb(var(--bg-rgb) / 0.6), var(--bg) 40%)' }}>
-        <div className="border-t border-line px-4 sm:px-8 lg:px-[72px]">
-          <NextPage />
-
-          <div className="grid grid-cols-2 gap-x-6 gap-y-10 border-t border-line pb-12 pt-10 lg:grid-cols-4">
+        <div className="px-4 sm:px-8 lg:px-[72px]">
+          <div className={`grid grid-cols-2 gap-x-6 gap-y-10 pb-12 pt-10 lg:grid-cols-4 ${cta ? 'border-t border-line' : ''}`}>
             <div className="col-span-2 lg:col-span-1">
               <Link href="/" className="-my-2 flex items-center gap-2.5 py-2 text-fg transition-colors duration-300 hover:text-accent">
                 <Mark className="h-8 w-8" />
@@ -42,7 +38,9 @@ export default function Footer({ cta = true }: { cta?: boolean }) {
               </p>
             </div>
 
-            {footer.columns.map((col) => (
+            <DirectionLinks label={directions.label} links={directions.links} />
+
+            {rest.map((col) => (
               <nav key={col.label} aria-label={col.label}>
                 <span className="rail-label">{col.label}</span>
                 <ul className="m-0 mt-4 flex list-none flex-col gap-0.5 p-0 sm:gap-2.5">

@@ -3,7 +3,6 @@ import Cores from '@/components/about/Cores';
 import Footer from '@/components/Footer';
 import RevealText from '@/components/RevealText';
 import ScrollScenes from '@/components/ScrollScenes';
-import Neighbors from '@/components/service/Neighbors';
 import { ABOUT } from '@/content/about';
 import { pageMeta } from '@/lib/meta';
 
@@ -143,8 +142,6 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* ---------- переход к направлениям ---------- */}
-        <Neighbors current="" label="Чем занимаемся" />
       </main>
       <Footer />
       <ScrollScenes />

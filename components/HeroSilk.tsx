@@ -46,6 +46,12 @@ const CHAPTERS: Record<string, Chapter> = {
     veil: 1
   },
   atlas: { exposure: 0.72, warp: 1.14, sheen: 0.7, glint: 0.28, core1: 0.95, core2: 0.45, core3: 0.6, vignette: 1.2, veil: 0.44 },
+  /**
+   * «Одна сборка»: блок снят на своей плите, и края кадра растворяются
+   * в странице. Под ним, как и под схемой, фон плоский — иначе вокруг
+   * предмета было бы видно пятно плиты поверх разводов материала.
+   */
+  assembly: { exposure: 0.72, warp: 1.14, sheen: 0.7, glint: 0.28, core1: 0.95, core2: 0.45, core3: 0.6, vignette: 1.2, veil: 1 },
   concepts: { exposure: 0.82, sheen: 0.85, glint: 0.4, core1: 0.45, core2: 0.6, core3: 1.05, veil: 0.36 },
   finale: {
     exposure: 1.12,

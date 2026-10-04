@@ -7,7 +7,6 @@ import { DIRECTION_MATERIAL } from './Material';
 import LiveLanding from './live/LiveLanding';
 import { LIVE_BY_KEY } from './live/map';
 import Includes from './service/Includes';
-import Neighbors from './service/Neighbors';
 import Passport from './service/Passport';
 import Process from './service/Process';
 import Stage from './service/Stage';
@@ -151,8 +150,6 @@ export default function ServicePage({ page, children }: { page: Page; children?:
           </div>
         </section>
 
-        {/* ---------- переход к соседям ---------- */}
-        <Neighbors current={`/${page.slug}`} />
       </main>
 
       {/* сцены на скролле: первый экран уходит вглубь, кадры раскрываются

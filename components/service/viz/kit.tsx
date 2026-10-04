@@ -1,74 +1,101 @@
-import type { CSSProperties, ReactNode } from 'react';
+import type { CSSProperties, ReactNode, SVGProps } from 'react';
 
 /**
  * Общие детали мини-схем.
  *
- * Схемы рисуются тем же языком, что и остальной прибор: тонкий штрих,
- * моноширинная подпись в девять пунктов, один акцент. Ни одной цифры,
- * которую мы не можем подтвердить: схема показывает устройство, а не
- * выдуманные показатели — на сайте про честность метрики из воздуха
- * выглядели бы ровно тем, чем являются.
+ * Схема — один рисунок в общей сетке 400×210: он целиком вписывается
+ * в кадр любой ширины, а не висит в верхней трети, как прежние блоки
+ * на процентах. Цвета — сайта: рамки и подложки в акценте, текст-
+ * заполнитель в цвете текста, и одна «горячая» часть — та, про которую
+ * пункт.
  *
- * Движение — ключевыми кадрами CSS, без таймеров и без GSAP: схема
- * живёт, только пока её пункт открыт, а перемонтирование по `key`
- * в `Includes` запускает её заново. При `prefers-reduced-motion`
- * глобальное правило обнуляет длительности, и сцена просто стоит
- * в конечном виде.
+ * Движение двух видов, оба ключевыми кадрами CSS (app/globals.css,
+ * блок «мини-схемы»), без таймеров и без GSAP:
+ *
+ * - вход: устройство схемы рисуется один раз, когда пункт открыли
+ *   (`vz-in`, `vz-fade`, `vz-gy` с задержкой из `at()`);
+ * - круг: главное событие пункта повторяется, пока он открыт, —
+ *   заявка летит в таблицу, посылка едет к двери, фильтр перебирает
+ *   карточки (`vz-s1…5`, `vz-turn`, `vz-go` и другие).
+ *
+ * Ни одной цифры, которую мы не можем подтвердить: схема показывает
+ * устройство, а не выдуманные показатели. При `prefers-reduced-motion`
+ * круг снят, и сцена стоит в конечном виде.
  */
 
-/** Появление детали: сдвиг и проявление, с задержкой по порядку. */
-export const rise = (delay: number): CSSProperties => ({
-  animation: `ct-rise .5s cubic-bezier(0.22,1,0.36,1) ${delay}ms both`
-});
+export type VizProps = { note?: string };
 
-/** Проявление без сдвига — для заливок и штрихов. */
-export const fade = (delay: number, dur = 0.5): CSSProperties => ({
-  animation: `ct-veil ${dur}s ease ${delay}ms both`
-});
+/** Задержка входа детали и, если нужно, его длительность. */
+export const at = (ms: number, t?: number) =>
+  ({ '--d': `${ms}ms`, ...(t ? { '--t': `${t}s` } : null) }) as CSSProperties;
 
-/** Рост полосы: ширина идёт от нуля к своей доле. */
-export const grow = (delay: number, dur = 0.9): CSSProperties => ({
-  animation: `ct-grow ${dur}s cubic-bezier(0.22,1,0.36,1) ${delay}ms both`
-});
+/** Очередь в круге: каким по счёту шагом подсвечивается деталь. */
+export const turn = (i: number) => ({ '--i': i }) as CSSProperties;
 
-/** Рамка-подложка одной детали схемы. */
-export function Box({
-  children,
-  className = '',
-  style
-}: {
-  children?: ReactNode;
-  className?: string;
-  style?: CSSProperties;
-}) {
+/** Путь, который проходит движущаяся деталь. */
+export const move = (dx: number, dy = 0) => ({ '--dx': `${dx}px`, '--dy': `${dy}px` }) as CSSProperties;
+
+/** Поле схемы и подпись под ним. */
+export function Scene({ children, note }: { children: ReactNode; note?: string }) {
   return (
-    <div className={`border border-line-strong bg-bg/55 backdrop-blur-[2px] ${className}`} style={style}>
-      {children}
+    <div className="vz">
+      <svg className="vz-art" viewBox="0 0 400 210" fill="none" preserveAspectRatio="xMidYMid meet" aria-hidden>
+        {children}
+      </svg>
+      {note && <span className="vz-note">{note}</span>}
     </div>
   );
 }
 
+/** Рамка-подложка: окно, карточка, пузырь. */
+export function Panel({ className = '', ...rest }: SVGProps<SVGRectElement>) {
+  return <rect className={`vz-panel ${className}`} {...rest} />;
+}
+
 /** Строка-заполнитель вместо выдуманного текста. */
-export function Bar({ w = '100%', h = 5, tone = 0.24, style }: { w?: string | number; h?: number; tone?: number; style?: CSSProperties }) {
-  return (
-    <span
-      className="block rounded-[1px]"
-      style={{ width: w, height: h, background: `rgb(var(--fg-rgb) / ${tone})`, ...style }}
-      aria-hidden
-    />
-  );
+export function Txt({
+  x,
+  y,
+  w,
+  h = 4,
+  tone = 'bar',
+  className = '',
+  style
+}: {
+  x: number;
+  y: number;
+  w: number;
+  h?: number;
+  /** bar — обычная строка, hi — заголовок, on — подсвеченная, hot — акцентом, ink — поверх акцента */
+  tone?: 'bar' | 'hi' | 'on' | 'hot' | 'ink';
+  className?: string;
+  style?: CSSProperties;
+}) {
+  const fill = { bar: 'vz-bar', hi: 'vz-bar-hi', on: 'vz-bar-on', hot: 'vz-hot', ink: 'vz-ink' }[tone];
+  return <rect x={x} y={y} width={w} height={h} rx={1} className={`${fill} ${className}`} style={style} />;
 }
 
-/** Моноширинная подпись схемы. */
-export function Tag({ children, className = '', style }: { children: ReactNode; className?: string; style?: CSSProperties }) {
+/** Моноширинная подпись внутри схемы. */
+export function Label({
+  x,
+  y,
+  children,
+  hot,
+  anchor,
+  className = '',
+  style
+}: {
+  x: number;
+  y: number;
+  children: ReactNode;
+  hot?: boolean;
+  anchor?: 'middle' | 'end';
+  className?: string;
+  style?: CSSProperties;
+}) {
   return (
-    <span className={`font-mono text-[9px] uppercase tracking-rail text-faint ${className}`} style={style}>
+    <text x={x} y={y} textAnchor={anchor} className={`vz-tag ${hot ? 'vz-tag-hot' : ''} ${className}`} style={style}>
       {children}
-    </span>
+    </text>
   );
-}
-
-/** Общее поле схемы: одна сетка координат на все сцены. */
-export function Scene({ children }: { children: ReactNode }) {
-  return <div className="relative h-full w-full select-none">{children}</div>;
 }

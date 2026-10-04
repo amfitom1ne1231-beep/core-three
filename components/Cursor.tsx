@@ -13,8 +13,8 @@ type Mode = 'gone' | 'dot' | 'hover' | 'ring' | 'ring-hover' | 'field' | 'drag';
  * дал бы кислотные разводы на синем, поэтому там (data-cursor="ring")
  * остаётся тонкое кольцо без смешения — след курсора уже рисует сам шейдер.
  *
- * Над сценой атласа (data-cursor="drag") кольцо раздувается и подписывает
- * жест: «Листать».
+ * Над блоком направлений (data-cursor="drag") кольцо раздувается и подписывает
+ * жест: «Крутить».
  *
  * Над полями ввода собственный курсор прячется: нужна обычная каретка.
  * Включается только для мыши и без prefers-reduced-motion.
@@ -135,7 +135,7 @@ export default function Cursor() {
   return (
     <>
       <div ref={ring} className="cursor-ring" data-mode="gone" aria-hidden>
-        <span>Листать</span>
+        <span>Крутить</span>
       </div>
       <div ref={dot} className="cursor-dot" data-mode="gone" aria-hidden />
     </>
