@@ -11,6 +11,9 @@ import type { Lead } from './lead';
  * которого пишем) и TELEGRAM_CHAT_ID (куда: личка, группа или канал,
  * где бот состоит). Пока их нет — молча выключено.
  *
+ * TELEGRAM_THREAD_ID — тема, если в группе включены темы. Без неё
+ * сообщение уходит в общую ветку, и заявки тонут среди болтовни.
+ *
  * Сообщение — простой текст, без parse_mode: в имени или задаче может
  * оказаться что угодно, и разметка Telegram сломалась бы на первой
  * звёздочке или подчёркивании.
@@ -47,13 +50,19 @@ export async function notifyLead(lead: Lead, status: 'new' | 'spam' = 'new'): Pr
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chat = process.env.TELEGRAM_CHAT_ID;
   if (!token || !chat) return 'off';
+  const thread = Number(process.env.TELEGRAM_THREAD_ID) || undefined;
 
   try {
     const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       // предел сообщения Telegram — 4096 знаков, задача бывает до 4000
-      body: JSON.stringify({ chat_id: chat, text: leadMessage(lead, status).slice(0, 4096), disable_web_page_preview: true }),
+      body: JSON.stringify({
+        chat_id: chat,
+        message_thread_id: thread,
+        text: leadMessage(lead, status).slice(0, 4096),
+        disable_web_page_preview: true
+      }),
       cache: 'no-store',
       signal: AbortSignal.timeout(6000)
     });

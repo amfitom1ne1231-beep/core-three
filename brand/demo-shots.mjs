@@ -12,7 +12,7 @@
  *   node brand/demo-shots.mjs [http://localhost:3000]
  *
  * Пересъёмка — после любой правки первого экрана демо. Демо — все папки
- * в app/concepts, где есть page.tsx; результат — public/demos/<демо>.webp
+ * в app/(demo)/concepts, где есть page.tsx; результат — public/demos/<демо>.webp
  * (1920×1200) и <демо>-960.webp.
  */
 
@@ -27,8 +27,8 @@ const out = path.join(root, 'public/demos');
 fs.mkdirSync(out, { recursive: true });
 
 const slugs = fs
-  .readdirSync(path.join(root, 'app/concepts'), { withFileTypes: true })
-  .filter((d) => d.isDirectory() && fs.existsSync(path.join(root, 'app/concepts', d.name, 'page.tsx')))
+  .readdirSync(path.join(root, 'app/(demo)/concepts'), { withFileTypes: true })
+  .filter((d) => d.isDirectory() && fs.existsSync(path.join(root, 'app/(demo)/concepts', d.name, 'page.tsx')))
   .map((d) => d.name);
 
 const browser = await chromium.launch({ channel: 'chrome' });

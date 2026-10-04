@@ -1,23 +1,14 @@
 import type { Metadata, Viewport } from 'next';
-import { Onest, JetBrains_Mono } from 'next/font/google';
-import CookieConsent from '@/components/CookieConsent';
-import SiteChrome from '@/components/SiteChrome';
+import { JetBrains_Mono } from 'next/font/google';
 import SmoothScroll from '@/components/SmoothScroll';
 import { SITE } from '@/content/site';
 import { SEEN_BOOT } from '@/lib/boot';
 import { THEME_BOOT } from '@/lib/theme';
 import './globals.css';
 
-// Onest переменный — так он и был записан в брифе. Без `weight` next/font
-// берёт один файл на подмножество вместо четырёх статических начертаний:
-// четырнадцать woff2 на странице превращаются в шесть, и прелоадер,
-// который ждёт document.fonts.ready, снимается раньше.
-const onest = Onest({
-  subsets: ['latin', 'cyrillic'],
-  variable: '--font-onest',
-  display: 'swap'
-});
-
+// Шрифт сайта (Onest) — в components/siteFont.ts, его берёт только оболочка
+// страниц сайта. Моноширинный остаётся здесь: на нём держится и наша
+// полоса над демо концептов.
 const mono = JetBrains_Mono({
   subsets: ['latin', 'cyrillic'],
   variable: '--font-mono',
@@ -66,7 +57,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     // data-theme и data-seen выставляют загрузочные скрипты до первой
     // отрисовки; suppressHydrationWarning — потому что разметка сервера
     // про тему и про уже виденный прелоадер не знает и знать не может
-    <html lang="ru" suppressHydrationWarning className={`${onest.variable} ${mono.variable}`}>
+    <html lang="ru" suppressHydrationWarning className={mono.variable}>
       <head>
         {/*
           Тема применяется до первого кадра. Без этого страница успевает
@@ -80,14 +71,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <noscript dangerouslySetInnerHTML={{ __html: '<style>[data-preloader]{display:none!important}</style>' }} />
       </head>
       <body>
-        <a className="skip-link" href="#content">
-          К содержанию
-        </a>
         <SmoothScroll />
-        {/* шапка, пульт, курсор и зерно — только вне демо концептов */}
-        <SiteChrome />
+        {/* шапка, пульт, курсор и шрифт сайта — в оболочке группы (site);
+            у демо концептов своя группа и своё всё */}
         {children}
-        <CookieConsent />
       </body>
     </html>
   );

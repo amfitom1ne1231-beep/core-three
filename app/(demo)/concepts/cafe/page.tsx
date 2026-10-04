@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import CafeDemo from '@/components/demo/cafe/CafeDemo';
 import { demoMetadata } from '@/content/concepts/meta';
 
-/** Свой роут у каждого демо — см. причину в `app/concepts/status/page.tsx`. */
+/** Свой роут у каждого демо — см. причину в `app/(demo)/concepts/status/page.tsx`. */
 export const metadata: Metadata = demoMetadata('cafe');
 
 export default function Page() {

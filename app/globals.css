@@ -206,7 +206,10 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--fg);
-  font-family: var(--font-onest), system-ui, sans-serif;
+  /* переменная шрифта сайта задана оболочкой (site), не здесь: без запасного
+     значения в демо вся строка стала бы недействительной и откатилась бы
+     к антикве браузера */
+  font-family: var(--font-onest, system-ui), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;

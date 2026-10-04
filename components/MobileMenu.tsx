@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Cta from './Cta';
+import { onest, SITE_FONT } from './siteFont';
 import { contactHref } from '@/lib/lead';
 import { lockScroll } from '@/lib/scroll';
 import { DEMOS } from '@/content/concepts';
@@ -128,10 +129,11 @@ export default function MobileMenu({ onOpenChange }: { onOpenChange?: (open: boo
        */
       className={
         open
-          ? 'fixed inset-0 z-[95] flex flex-col overflow-y-auto bg-bg px-4 pb-10 pt-24 md:hidden'
+          ? `${onest.variable} fixed inset-0 z-[95] flex flex-col overflow-y-auto bg-bg px-4 pb-10 pt-24 md:hidden`
           : 'hidden'
       }
-      style={{ animation: 'ct-veil .2s ease both' }}
+      // портал в body лежит мимо оболочки сайта — шрифт задаём сами
+      style={{ animation: 'ct-veil .2s ease both', fontFamily: SITE_FONT }}
     >
       {/* Полоса под шапкой. Панель прокручивается целиком, и без неё
           ссылки проезжали прямо под знаком и крестиком — буквы читались
