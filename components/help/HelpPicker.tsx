@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import Cta from '../Cta';
+import { ADVICE_KEY } from './CallMe';
 import Jump from './Jump';
 import Picker from './Picker';
 import { formatEstimate, NEEDS } from '@/content/brief';
@@ -31,7 +32,14 @@ export default function HelpPicker() {
   const result = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (advice) result.current?.focus({ preventScroll: true });
+    if (!advice) return;
+    result.current?.focus({ preventScroll: true });
+    // совет уйдёт в заявку «Мы напишем сами», если до неё дойдёт
+    try {
+      sessionStorage.setItem(ADVICE_KEY, needLabel(advice.main) + (advice.second ? ` + ${needLabel(advice.second)}` : ''));
+    } catch {
+      // приватный режим: заявка уйдёт без совета
+    }
   }, [advice]);
 
   if (!advice) return <Picker key={round} onAdvice={setAdvice} />;
@@ -94,7 +102,7 @@ export default function HelpPicker() {
             Пройти заново
           </button>
           <Jump to="write" className={actionLink}>
-            Не то? Напишите нам
+            Не то? Мы напишем сами
           </Jump>
         </div>
       </div>

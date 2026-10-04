@@ -78,6 +78,8 @@ test('источник: метка главнее сайта, сайт глав�
   assert.equal(sourceOf({ source: 'site', meta: { landing: '/' } }).id, 'direct');
   assert.equal(sourceOf({ source: 'site', meta: null }).id, 'unknown');
   assert.equal(sourceOf({ source: 'mail', meta: null }).label, 'Почта');
+  // «Мы напишем сами» — своя строка, даже если человек пришёл по метке
+  assert.equal(sourceOf({ source: 'help', meta: { utm_source: 'telegram' } }).id, 'help');
 });
 
 test('метрики недели: воронка по когорте, ответ в рабочих минутах, источники', async () => {

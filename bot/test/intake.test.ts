@@ -78,3 +78,24 @@ test('ловушка сработала — заявка сохраняется 
   assert.equal((await getLead(t.db, id))?.spam, true);
   await t.close();
 });
+
+test('«Мы напишем сами» из «Помощи»: свой канал и пометка в карточке', async () => {
+  const t = await testBot();
+  await setGroup(t.db, { chatId: GROUP.id, threadId: null, title: null });
+  const app = createApp({ db: t.db, config: t.config, studio: t.studio });
+
+  const form = siteForm({ contact: '+7 900 111-22-33', task: 'Нужна помощь: просит написать по номеру в мессенджер.', kind: 'general', page: '/help', help: true });
+  const res = await post(app, { lead: form, meta: { landing: '/help' } });
+  assert.equal(res.status, 201);
+  const lead = await getLead(t.db, ((await res.json()) as { id: number }).id);
+  assert.equal(lead?.source, 'help');
+  assert.equal(lead?.page, '/help');
+  const card = t.calls.find((c) => c.method === 'sendMessage' && c.payload.chat_id === GROUP.id);
+  assert.match(String(card?.payload.text), /из «Помощи»/);
+  assert.match(String(card?.payload.text), /Нужна помощь<\/b> — написать по номеру/);
+
+  // по нику написать в WhatsApp нельзя — сервис такую форму не примет
+  const tg = await post(app, { lead: { ...form, contact: '@anna_writes' } });
+  assert.equal(tg.status, 422);
+  await t.close();
+});

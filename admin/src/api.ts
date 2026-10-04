@@ -8,7 +8,7 @@ import { authHeader, haptic } from './tg';
  */
 
 export type Stage = 'new' | 'contacted' | 'call' | 'proposal' | 'contract' | 'lost';
-export type Source = 'site' | 'mail' | 'manual';
+export type Source = 'site' | 'mail' | 'manual' | 'help';
 
 export type Lead = {
   id: number;

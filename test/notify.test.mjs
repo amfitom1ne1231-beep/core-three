@@ -61,3 +61,8 @@ test('тема группы: номер уходит в message_thread_id, бе�
   assert.equal(sent[0].chat_id, '-1001');
   assert.ok(!('message_thread_id' in sent[1]));
 });
+
+test('«Мы напишем сами» запасным путём: сразу видно, что писать, а не звонить', () => {
+  const text = leadMessage({ ...lead, contact: '+7 900 111-22-33', help: true, kind: 'general', page: '/help' }, 'new');
+  assert.match(text, /^Нужна помощь: .*не звонить/);
+});

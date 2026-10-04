@@ -46,7 +46,9 @@ export function leadMessage(lead: Lead, status: 'new' | 'spam', meta?: SourceMet
   const head =
     status === 'spam'
       ? 'Заявка с сайта — сработала ловушка для ботов. Проверьте: ловушка ошибается на тех, кто вставил текст из буфера.'
-      : 'Новая заявка с сайта';
+      : lead.help
+        ? 'Нужна помощь: просит написать по номеру в Telegram, Max или WhatsApp — не звонить'
+        : 'Новая заявка с сайта';
   return [
     head,
     '',

@@ -43,4 +43,4 @@ export const KIND_LABEL: Record<string, string> = {
   concepts: 'Концепты'
 };
 
-export const SOURCE_LABEL = { site: 'с сайта', mail: 'с почты', manual: 'вручную' } as const;
+export const SOURCE_LABEL = { site: 'с сайта', mail: 'с почты', manual: 'вручную', help: 'из «Помощи»' } as const;

@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import Link from 'next/link';
-import Cta from '@/components/Cta';
 import Footer from '@/components/Footer';
+import CallMe from '@/components/help/CallMe';
 import Glossary from '@/components/help/Glossary';
 import HelpPicker from '@/components/help/HelpPicker';
 import Jump from '@/components/help/Jump';
@@ -373,7 +373,7 @@ export default function HelpPage() {
 
         {/* ---------- 06 словарь ---------- */}
         <Part id="words" label={words.label} title={words.title} accent={words.titleAccent} lead={words.lead}>
-          <Glossary labels={{ search: words.search, placeholder: words.placeholder, empty: words.empty, write: HELP.stuck.link }} />
+          <Glossary labels={{ search: words.search, placeholder: words.placeholder, empty: words.empty, ask: words.ask }} />
         </Part>
 
         {/* ---------- не разобрались ---------- */}
@@ -385,13 +385,20 @@ export default function HelpPage() {
           className="relative z-10 w-full border-t border-line px-4 pb-[clamp(44px,8vh,92px)] pt-[clamp(64px,11vh,130px)] outline-none sm:px-8 lg:px-[72px]"
         >
           <span className="rail-label">{write.label}</span>
-          <div className="mt-6 grid gap-[clamp(24px,4vh,44px)] lg:grid-cols-[1fr_auto] lg:items-end">
+          {/* Форма — главное здесь (HELP.md, «Свяжитесь со мной»). Написать
+              самому и бриф — запасные пути под ней: на телефоне «или» не
+              должно стоять раньше главного */}
+          <div className="mt-6 grid gap-[clamp(32px,5vh,56px)] lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.85fr)] lg:items-end lg:gap-[clamp(40px,5vw,96px)]">
             <div>
               <h2 className="display m-0 text-[clamp(36px,5.6vw,96px)] leading-[0.96]">
                 {write.title} <span className="title-accent">{write.titleAccent}</span>
               </h2>
               <p className="m-0 mt-6 max-w-[46ch] text-[clamp(14px,1.15vw,17px)] leading-relaxed text-dim">{write.lead}</p>
-              <p className="m-0 mt-6 flex flex-wrap items-center gap-x-6 gap-y-3 text-[14px]">
+            </div>
+            <CallMe />
+            <div className="lg:col-span-2">
+              <span className="rail-label block">{write.direct}</span>
+              <p className="m-0 mt-3 flex flex-wrap items-center gap-x-6 gap-y-3 text-[14px]">
                 <a href={`https://t.me/${SITE.telegram}`} target="_blank" rel="noreferrer noopener" className={`inline-flex items-center gap-2 ${textLink}`}>
                   <MessengerMark kind="telegram" />
                   Telegram {SITE.telegramLabel}
@@ -404,10 +411,12 @@ export default function HelpPage() {
                   {SITE.email}
                 </a>
               </p>
+              <div className="mt-5">
+                <Link href="/contact" className={actionLink}>
+                  {write.brief} <Arrow />
+                </Link>
+              </div>
             </div>
-            <Cta href="/contact" className="justify-self-start">
-              {write.form}
-            </Cta>
           </div>
         </section>
       </main>

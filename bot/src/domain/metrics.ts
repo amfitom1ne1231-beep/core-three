@@ -83,6 +83,8 @@ function reached(lead: Lead, events: { type: string; data: Record<string, unknow
 export function sourceOf(lead: Pick<Lead, 'source' | 'meta'>): { id: string; label: string } {
   if (lead.source === 'mail') return { id: 'mail', label: 'Почта' };
   if (lead.source === 'manual') return { id: 'manual', label: 'Вручную' };
+  // отдельной строкой, а не по меткам: видно, сколько заявок дала сама «Помощь»
+  if (lead.source === 'help') return { id: 'help', label: '«Помощь»: напишем сами' };
   const utm = lead.meta?.utm_source?.trim().toLowerCase();
   if (utm) return { id: `utm:${utm}`, label: utm };
   if (lead.meta?.ref) return { id: `ref:${lead.meta.ref}`, label: lead.meta.ref };

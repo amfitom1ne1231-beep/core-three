@@ -46,7 +46,12 @@ export const settings = pgTable('settings', {
 export const STAGES = ['new', 'contacted', 'call', 'proposal', 'contract', 'lost'] as const;
 export type Stage = (typeof STAGES)[number];
 
-export const SOURCES = ['site', 'mail', 'manual'] as const;
+/**
+ * Откуда заявка. `help` — форма «Мы напишем сами» в «Помощи» сайта:
+ * человек не разобрался и ждёт сообщения в мессенджер по номеру.
+ * Колонка текстовая — новый канал миграции не требует.
+ */
+export const SOURCES = ['site', 'mail', 'manual', 'help'] as const;
 export type Source = (typeof SOURCES)[number];
 
 export const leads = pgTable(

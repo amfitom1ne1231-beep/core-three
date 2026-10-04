@@ -18,6 +18,12 @@ export type Lead = {
   task: string;
   kind: LeadKind;
   page: string;
+  /**
+   * Форма «Мы напишем сами» из «Помощи»: человек не разобрался и просит
+   * написать ему по номеру в Telegram, Max или WhatsApp. Сервис бота
+   * заводит такую заявку отдельным каналом и помечает в карточке.
+   */
+  help?: true;
 };
 
 export const LIMITS = {
@@ -62,9 +68,13 @@ export function contactHref(pathname: string): string {
  */
 function looksLikeContact(v: string): boolean {
   const email = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
-  const phone = (v.match(/\d/g) ?? []).length >= 7 && /^[\d\s()+\-.]+$/.test(v);
   const tg = /^(@|(https?:\/\/)?t\.me\/)?[a-zA-Z][a-zA-Z0-9_]{4,31}$/.test(v);
-  return email || phone || tg;
+  return email || looksLikePhone(v) || tg;
+}
+
+/** Номер: хотя бы семь цифр и ничего, кроме цифр, пробелов, скобок, плюса, дефиса и точки. */
+export function looksLikePhone(v: string): boolean {
+  return (v.match(/\d/g) ?? []).length >= 7 && /^[\d\s()+\-.]+$/.test(v);
 }
 
 const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
@@ -79,14 +89,17 @@ export function checkLead(raw: unknown): LeadCheck {
   const name = str(src.name);
   const contact = str(src.contact);
   const task = str(src.task);
+  const help = src.help === true;
   const errors: Partial<Record<LeadField, string>> = {};
 
   if (!name) errors.name = 'Как к вам обращаться?';
   else if (name.length > LIMITS.name) errors.name = 'Слишком длинно для имени';
 
-  if (!contact) errors.contact = 'Нужен контакт, иначе не сможем ответить';
+  if (!contact) errors.contact = help ? 'Нужен телефон: по нему напишем в мессенджер' : 'Нужен контакт, иначе не сможем ответить';
   else if (contact.length > LIMITS.contact || !looksLikeContact(contact))
     errors.contact = 'Телефон, Telegram или почта — в одном из этих видов';
+  // «Мы напишем сами» обещает мессенджер по номеру — без номера обещание не выполнить
+  else if (help && !looksLikePhone(contact)) errors.contact = 'Нужен телефон: по нему напишем в мессенджер';
 
   if (task.length < 3) errors.task = 'Пара слов о задаче';
   else if (task.length > LIMITS.task) errors.task = `Не больше ${LIMITS.task} знаков — детали обсудим на созвоне`;
@@ -103,5 +116,5 @@ export function checkLead(raw: unknown): LeadCheck {
   const page = str(src.page).slice(0, LIMITS.page) || '/';
   const kind = isKind(src.kind) ? src.kind : 'general';
 
-  return { ok: true, bot, lead: { name, contact, task, kind, page } };
+  return { ok: true, bot, lead: { name, contact, task, kind, page, ...(help ? { help: true as const } : {}) } };
 }

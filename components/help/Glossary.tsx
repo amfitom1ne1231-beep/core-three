@@ -4,7 +4,7 @@ import { useId, useState } from 'react';
 import Jump from './Jump';
 import { findWords, GLOSSARY } from '@/content/glossary';
 
-export type GlossaryLabels = { search: string; placeholder: string; empty: string; write: string };
+export type GlossaryLabels = { search: string; placeholder: string; empty: string; ask: string };
 
 /**
  * Словарь списком с поиском.
@@ -58,7 +58,7 @@ export default function Glossary({ labels }: { labels: GlossaryLabels }) {
         <p className="m-0 mt-8 max-w-[52ch] border-t border-line pt-6 text-[15px] leading-relaxed text-dim">
           {labels.empty}{' '}
           <Jump to="write" className="text-fg underline decoration-line-strong underline-offset-4 transition-colors duration-300 hover:text-accent">
-            {labels.write}
+            {labels.ask}
           </Jump>
         </p>
       )}

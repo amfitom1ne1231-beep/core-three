@@ -120,3 +120,20 @@ test('подложенный не-объект не роняет проверк�
     assert.equal(r.ok, false);
   }
 });
+
+test('«Мы напишем сами»: только телефон — по нему пишут в мессенджер', () => {
+  const help = { ...ok(), help: true, page: '/help', kind: 'general' };
+  const tg = checkLead({ ...help, contact: '@lev_writes' });
+  assert.equal(tg.ok, false);
+  assert.match(tg.errors.contact, /телефон/i);
+  assert.equal(checkLead({ ...help, contact: 'lev@example.ru' }).ok, false);
+
+  const r = checkLead({ ...help, contact: '+7 (900) 111-22-33' });
+  assert.equal(r.ok, true);
+  assert.equal(r.lead.help, true);
+});
+
+test('обычная заявка пометки «помощь» не несёт, даже если её подложили строкой', () => {
+  assert.equal('help' in checkLead(ok()).lead, false);
+  assert.equal('help' in checkLead({ ...ok(), help: 'yes' }).lead, false);
+});

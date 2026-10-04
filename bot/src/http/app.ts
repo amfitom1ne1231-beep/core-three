@@ -55,9 +55,10 @@ export function createApp({ db, config, studio, now }: { db: Db; config: Config;
     const check = checkLead(parsed.data.lead);
     if (!check.ok) return c.json({ error: 'invalid lead', fields: check.errors }, 422);
 
+    const { help, ...form } = check.lead;
     const lead = await createLead(db, {
-      source: 'site',
-      ...check.lead,
+      source: help ? 'help' : 'site',
+      ...form,
       meta: parsed.data.meta ?? null,
       spam: check.bot
     });

@@ -46,6 +46,8 @@ export function cardText(v: LeadView, now: Date, tz: string) {
     `<b>#${lead.id} · ${esc(KIND_LABEL[lead.kind] ?? lead.kind)}</b> · ${SOURCE_LABEL[lead.source]} · ${shortTime(lead.createdAt, now, tz)}`
   );
   lines.push(`<b>${esc(lead.name)}</b> · ${contactHtml(lead.contact)}`);
+  // «Мы напишем сами»: звонок был бы ровно тем, чего человек не просил
+  if (lead.source === 'help') lines.push('<b>Нужна помощь</b> — написать по номеру в Telegram, Max или WhatsApp, не звонить');
   if (lead.spam) lines.push('', '<i>Сработала ловушка для ботов. Проверьте: она ошибается на тех, кто вставил текст из буфера.</i>');
 
   const task = lead.task.length > TASK_MAX ? `${lead.task.slice(0, TASK_MAX)}…` : lead.task;
