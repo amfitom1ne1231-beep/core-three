@@ -91,8 +91,8 @@ export function createBot({ db, config, now = () => new Date(), botInfo }: Deps)
   async function replyToCard(lead: Lead, html: string, keyboard?: InlineKeyboard) {
     const group = await getGroup(db);
     const chatId = lead.cardChatId ?? group?.chatId;
-    if (!chatId) return;
-    await bot.api.sendMessage(chatId, html, {
+    if (!chatId) return null;
+    return bot.api.sendMessage(chatId, html, {
       parse_mode: 'HTML',
       reply_markup: keyboard,
       message_thread_id: lead.cardChatId ? undefined : (group?.threadId ?? undefined),
@@ -105,11 +105,12 @@ export function createBot({ db, config, now = () => new Date(), botInfo }: Deps)
   async function remind(lead: Lead) {
     const people = await team(db);
     const who = people.map(mention).join(', ');
-    await replyToCard(
+    const msg = await replyToCard(
       lead,
       `Заявка #${lead.id} ждёт уже час — никто не взял. ${who}`,
       new InlineKeyboard().text('Беру', cb(lead.id, 'take'))
     );
+    log(`#${lead.id} напоминание — ${msg?.is_topic_message ? `тема ${msg.message_thread_id}` : 'общая лента'}`);
   }
 
   /** К вечеру без ответа клиенту — список владельцам. */
@@ -123,6 +124,7 @@ export function createBot({ db, config, now = () => new Date(), botInfo }: Deps)
       [`<b>К вечеру клиентам не ответили</b> — ${list.length}:`, ...lines, '', owners.map(mention).join(', ')].join('\n'),
       { parse_mode: 'HTML', message_thread_id: group.threadId ?? undefined, link_preview_options: { is_disabled: true } }
     );
+    log(`вечерняя тревога: ${list.length}`);
   }
 
   /* ---------- кто пишет ---------- */
