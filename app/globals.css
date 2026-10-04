@@ -2316,3 +2316,29 @@ html[data-theme-wave]::view-transition-new(root) {
   }
 }
 
+
+/* Подбор «Нужна помощь?» внутри брифа — той же стеклянной карточкой,
+   что пункты над ним, чтобы читался как раскрывшийся пункт, а не чужой блок */
+.brief-picker,
+.brief-advice {
+  margin: 14px 0 0;
+  padding: 16px 18px 18px;
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  background: rgb(var(--bg-rgb) / 0.45);
+  backdrop-filter: blur(10px);
+  animation: brief-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.brief-advice {
+  border-color: var(--accent);
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--fg-dim);
+  outline: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .brief-picker,
+  .brief-advice {
+    animation: none;
+  }
+}

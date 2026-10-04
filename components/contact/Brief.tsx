@@ -3,9 +3,11 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import Link from 'next/link';
 import MarkVideo, { type MarkVideoHandle } from '../MarkVideo';
+import Picker from '../help/Picker';
 import { LIVE_H, LIVE_W } from '../live/kit';
 import { LIVE_BY_KEY } from '../live/map';
 import { DEADLINES, EXTRAS, NEEDS, STAGES, estimate, formatEstimate, stagesFor } from '@/content/brief';
+import { needLabel, type Advice } from '@/content/picker';
 import { checkLead, kindFromLocation, LEAD_KINDS, LIMITS, type LeadField, type LeadKind } from '@/lib/lead';
 import { readSource } from '@/lib/source';
 import { SITE } from '@/content/site';
@@ -41,6 +43,8 @@ export default function Brief({ intro }: { intro?: ReactNode }) {
   const [status, setStatus] = useState<Status>('idle');
   const [errors, setErrors] = useState<Errors>({});
   const [typeParam, setTypeParam] = useState<LeadKind | null>(null);
+  /** Совет подбора «Нужна помощь?» — остаётся подписью под первым вопросом. */
+  const [advice, setAdvice] = useState<Advice | null>(null);
 
   const started = useRef(0);
   const mark = useRef<MarkVideoHandle>(null);
@@ -48,7 +52,9 @@ export default function Brief({ intro }: { intro?: ReactNode }) {
   const doneRef = useRef<HTMLHeadingElement>(null);
 
   /**
-   * Пункт из финала страницы и тип раздела — из адреса.
+   * Пункты, этап и подключения из адреса — из финала страницы, со
+   * страниц направлений и из подбора в «Помощи» (`/contact?need=bot,site
+   * &stage=idea&extras=…`), — и тип раздела.
    *
    * Номера брифа больше нет. Он собирался из даты и часа, у двоих в один
    * час выходил одинаковым и в заявку не уходил — то есть был выдуман,
@@ -57,12 +63,17 @@ export default function Brief({ intro }: { intro?: ReactNode }) {
   useEffect(() => {
     started.current = Date.now();
     const q = new URLSearchParams(location.search);
-    const need = q.get('need');
-    if (need && NEEDS.some((n) => n.id === need)) setNeeds([need]);
+    const list = (key: string) => (q.get(key) ?? '').split(',').filter(Boolean);
+    const fromLink = list('need').filter((id) => NEEDS.some((n) => n.id === id));
+    if (fromLink.length) setNeeds(fromLink);
+    const stageParam = q.get('stage');
+    if (stageParam && STAGES.some((s) => s.id === stageParam)) setStage(stageParam);
+    const extrasParam = list('extras').filter((x) => (EXTRAS as readonly string[]).includes(x));
+    if (extrasParam.length) setExtras(extrasParam);
     const type = q.get('type');
     if (type && (LEAD_KINDS as readonly string[]).includes(type)) {
       setTypeParam(type as LeadKind);
-      if (!need) {
+      if (!fromLink.length) {
         const byKind = NEEDS.find((n) => n.kind === type);
         if (byKind) setNeeds([byKind.id]);
       }
@@ -116,6 +127,22 @@ export default function Brief({ intro }: { intro?: ReactNode }) {
 
   const toggle = (list: string[], set: (v: string[]) => void, id: string) =>
     set(list.includes(id) ? list.filter((x) => x !== id) : [...list, id]);
+
+  /**
+   * Подбор закончен: «Нужна помощь?» уступает место тому, что он
+   * посоветовал, этап и подключения отмечаются сами. Выбранное руками
+   * рядом с «Нужна помощь?» остаётся.
+   */
+  const takeAdvice = (a: Advice) => {
+    const advised: string[] = a.second ? [a.main, a.second] : [a.main];
+    setNeeds((prev) => [...prev.filter((id) => id !== 'unsure' && !advised.includes(id)), ...advised]);
+    if (a.stage) setStage(a.stage);
+    setExtras((prev) => [...prev, ...a.extras.filter((x) => !prev.includes(x))]);
+    setAdvice(a);
+    clear('need');
+    // фокус — на подпись с советом: кнопок подбора больше нет
+    requestAnimationFrame(() => document.getElementById('brief-advice')?.focus({ preventScroll: true }));
+  };
 
   const clear = (field: keyof Errors) => {
     if (errors[field]) setErrors(({ [field]: _gone, ...rest }) => rest);
@@ -222,6 +249,8 @@ export default function Brief({ intro }: { intro?: ReactNode }) {
                       onClick={() => {
                         toggle(needs, setNeeds, n.id);
                         clear('need');
+                        // заново открытый подбор — заново и совет
+                        if (n.id === 'unsure' && !on) setAdvice(null);
                       }}
                       className="brief-card"
                     >
@@ -240,6 +269,22 @@ export default function Brief({ intro }: { intro?: ReactNode }) {
                 })}
               </div>
               {err('need')}
+
+              {/* «Нужна помощь?» — подбор прямо здесь; итог сам отметит пункты */}
+              {needs.includes('unsure') && <Picker compact onAdvice={takeAdvice} />}
+              {advice && !needs.includes('unsure') && (
+                <p id="brief-advice" tabIndex={-1} className="brief-advice" aria-live="polite">
+                  <span className="rail-label">Подобрали</span>
+                  <span className="mt-1.5 block text-[15px] font-medium text-fg">
+                    {needLabel(advice.main)}
+                    {advice.second && ` + ${needLabel(advice.second)}`}
+                  </span>
+                  <span className="mt-1.5 block">
+                    {advice.why} {advice.secondWhy}
+                  </span>
+                  <span className="mt-1.5 block text-faint">Этап и что подключить отмечены ниже — поправьте, если не так.</span>
+                </p>
+              )}
             </fieldset>
 
             {/* 02 — этап */}

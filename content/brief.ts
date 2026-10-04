@@ -38,7 +38,9 @@ export const NEEDS: Need[] = [
   { id: 'bot', n: '03', label: 'Бот', scope: 'Запись, оплата, выгрузка в таблицу и CRM', kind: 'bots', weeks: [1, 4], live: 'bot' },
   { id: 'app', n: '04', label: 'Мини-приложение в Telegram', scope: 'Меню, корзина, бонусы внутри мессенджера', kind: 'bots', weeks: [3, 6], live: 'webapp' },
   { id: 'ops', n: '05', label: 'Мониторинг и поддержка', scope: 'Проверки, бэкапы, дежурство, отчёты', kind: 'monitoring', weeks: [0, 0], days: [2, 3], live: 'ops' },
-  { id: 'unsure', n: '06', label: 'Пока не знаю', scope: 'Разберём задачу и предложим решение', kind: 'general', weeks: [0, 0] }
+  // «Пока не знаю» стал «Нужна помощь?» (HELP.md): пункт раскрывает подбор
+  // из четырёх вопросов, и тот сам отмечает, что запускаем
+  { id: 'unsure', n: '06', label: 'Нужна помощь?', scope: 'Четыре вопроса — подскажем, что подойдёт', kind: 'general', weeks: [0, 0] }
 ];
 
 export type Stage = { id: string; label: string; note: string; only?: readonly string[] };

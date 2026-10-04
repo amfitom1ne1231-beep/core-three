@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Cta from '@/components/Cta';
 import Footer from '@/components/Footer';
 import Glossary from '@/components/help/Glossary';
+import HelpPicker from '@/components/help/HelpPicker';
 import Jump from '@/components/help/Jump';
 import MessengerMark from '@/components/MessengerMark';
 import RevealText from '@/components/RevealText';
@@ -143,7 +144,12 @@ export default function HelpPage() {
 
         {/* ---------- 01 не знаю, с чего начать ---------- */}
         <Part id="start" label={start.label} title={start.title} accent={start.titleAccent} lead={start.lead}>
-          <ul className="m-0 list-none p-0">
+          <HelpPicker />
+
+          <div className="mt-[clamp(48px,8vh,96px)]">
+            <Sub>{start.situationsTitle}</Sub>
+          </div>
+          <ul className="m-0 mt-5 list-none p-0">
             {start.situations.map((s) => {
               const demo = demoBySlug(s.demo);
               return (
@@ -179,7 +185,7 @@ export default function HelpPage() {
               <div>
                 <p className="m-0 max-w-[52ch] text-[14.5px] leading-relaxed text-dim">{start.other.text}</p>
                 <div className="mt-4">
-                  <Link href={`/contact?need=${start.other.need}`} className={actionLink}>
+                  <Link href="/contact" className={actionLink}>
                     {start.other.link} <Arrow />
                   </Link>
                 </div>
@@ -399,7 +405,7 @@ export default function HelpPage() {
                 </a>
               </p>
             </div>
-            <Cta href="/contact?need=unsure" className="justify-self-start">
+            <Cta href="/contact" className="justify-self-start">
               {write.form}
             </Cta>
           </div>

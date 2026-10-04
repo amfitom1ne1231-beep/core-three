@@ -11,5 +11,5 @@
     "rootDir": ".",
     "paths": { "@/*": ["./*"] }
   },
-  "files": ["lib/lead.ts", "lib/notify.ts", "lib/intake.ts", "lib/source.ts", "lib/barber.ts", "content/brief.ts", "content/glossary.ts", "content/concepts/barber.ts"]
+  "files": ["lib/lead.ts", "lib/notify.ts", "lib/intake.ts", "lib/source.ts", "lib/barber.ts", "content/brief.ts", "content/glossary.ts", "content/picker.ts", "content/concepts/barber.ts"]
 }
