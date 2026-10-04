@@ -216,7 +216,7 @@ export default function MobileMenu({ onOpenChange }: { onOpenChange?: (open: boo
           {SITE.hero.primary.label}
         </Cta>
 
-        {/* свет включается лампой в шапке — она видна и над раскрытым меню */}
+        {/* свет включается кнопкой в шапке — она видна и над раскрытым меню */}
         <div className="mt-6 flex flex-col gap-2 border-t border-line pt-5">
           <a href={`mailto:${SITE.email}`} className="text-[14px] text-dim">
             {SITE.email}

@@ -1650,94 +1650,95 @@ html.has-cursor :is(input:not([type='checkbox']):not([type='radio']):not([type='
 }
 
 /* ============================================================
-   Выключатель света (components/ThemeToggle.tsx): лампа на шнурке.
-   Погашена в тёмной теме, горит в светлой.
+   Кнопка света (components/ThemeToggle.tsx): круглая, с переливами.
+   Сфера показывает другую тему — жемчужина света на тёмной странице,
+   тёмное стекло на светлой.
    ============================================================ */
-.lamp {
+.orb {
+  --orb: 38px;
   position: relative;
   display: grid;
   place-items: center;
+  /* область нажатия — 44px, сама сфера меньше */
   width: 44px;
   height: 44px;
-  margin: -8px 0;
-  color: var(--fg);
+  margin: -6px 0;
+  border-radius: 50%;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
-/* шнурок тянут вниз — страница при этом листаться не должна */
-.lamp-corded {
-  touch-action: none;
-}
-.lamp-hang {
+.orb-ball {
   position: relative;
   display: block;
-  transform: translateY(var(--pull, 0px));
-  will-change: transform;
+  width: var(--orb);
+  height: var(--orb);
+  overflow: hidden;
+  border-radius: 50%;
+  /* свет от жемчужины на тёмной странице */
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.22), 0 0 22px rgb(150 196 255 / 0.38);
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.5s ease;
 }
-/* уходит за верхний край экрана: сколько ни тяни, обрыва не видно */
-.lamp-cord {
+:root[data-theme='light'] .orb-ball {
+  box-shadow: 0 0 0 1px rgb(11 44 86 / 0.25), 0 8px 18px -8px rgb(11 44 86 / 0.55);
+}
+/* ролик чуть больше круга: по самой кромке кадра идёт фон сцены */
+.orb-film {
   position: absolute;
-  left: 50%;
-  bottom: calc(100% - 1px);
-  width: 1px;
-  height: 200px;
-  margin-left: -0.5px;
-  background: rgb(var(--fg-rgb) / 0.42);
-  transition: background-color 0.3s;
+  left: -4%;
+  top: -4%;
+  width: 108%;
+  height: 108%;
+  max-width: none;
+  object-fit: cover;
+  pointer-events: none;
 }
-.lamp-bulb {
-  display: block;
-  width: 18px;
-  height: 26px;
-  overflow: visible;
-  transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.5s;
+/* виден один: на тёмной странице — светлая сфера, на светлой — тёмная */
+.orb-film[data-orb='dark'],
+:root[data-theme='light'] .orb-film[data-orb='light'] {
+  opacity: 0;
 }
-.lamp-bulb path {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.1;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  vector-effect: non-scaling-stroke;
-  transition: fill 0.5s, stroke 0.4s, opacity 0.4s;
-}
-.lamp-cap {
-  opacity: 0.7;
-}
-.lamp-glass {
-  opacity: 0.8;
-}
-.lamp-wire {
-  opacity: 0.45;
-}
-.lamp:hover .lamp-bulb,
-.lamp:focus-visible .lamp-bulb {
-  transform: scale(1.12);
-}
-.lamp:hover .lamp-cord {
-  background: rgb(var(--fg-rgb) / 0.7);
-}
-.lamp:hover .lamp-glass,
-.lamp:hover .lamp-wire {
+:root[data-theme='light'] .orb-film[data-orb='dark'] {
   opacity: 1;
 }
-.lamp:focus-visible {
+.orb:hover .orb-ball,
+.orb:focus-visible .orb-ball {
+  transform: scale(1.1);
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.4), 0 0 30px rgb(150 196 255 / 0.6);
+}
+:root[data-theme='light'] .orb:hover .orb-ball,
+:root[data-theme='light'] .orb:focus-visible .orb-ball {
+  box-shadow: 0 0 0 1px rgb(11 44 86 / 0.4), 0 10px 24px -8px rgb(11 44 86 / 0.7);
+}
+.orb:active .orb-ball {
+  transform: scale(0.9);
+  transition-duration: 0.12s;
+}
+.orb:focus-visible {
   outline: 1px solid var(--fg);
   outline-offset: 2px;
-  border-radius: 12px;
 }
-/* горит */
-:root[data-theme='light'] .lamp-glass {
-  fill: color-mix(in srgb, var(--accent) 22%, #fff);
-  stroke: var(--accent);
-  opacity: 1;
+/* что кнопка сделает — словами, но только под курсором и в фокусе */
+.orb-hint {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--fg-dim);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -4px);
+  transition: opacity 0.3s ease, transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
-:root[data-theme='light'] .lamp-wire {
-  stroke: var(--accent);
-  opacity: 1;
-}
-:root[data-theme='light'] .lamp-bulb {
-  filter: drop-shadow(0 0 7px rgb(var(--accent-rgb) / 0.45));
+@media (hover: hover) {
+  .orb:hover .orb-hint,
+  .orb:focus-visible .orb-hint {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
 }
 
 /* ============================================================
