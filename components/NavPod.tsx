@@ -92,6 +92,7 @@ const ROUTES: { href: string; label: string; n: string; live: ComponentType<Live
 const EXTRA = [
   { href: '/concepts', label: 'Концепты' },
   { href: '/about', label: 'О нас' },
+  { href: '/help', label: 'Помощь' },
   { href: '/privacy', label: 'Политика' }
 ];
 

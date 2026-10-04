@@ -16,6 +16,7 @@ const routes: Array<{ path: string; priority: number }> = [
   // в карте сайта не появится
   ...DEMOS.map((d) => ({ path: `/concepts/${d.slug}`, priority: 0.6 })),
   { path: '/about', priority: 0.6 },
+  { path: '/help', priority: 0.6 },
   { path: '/privacy', priority: 0.2 },
   { path: '/consent', priority: 0.1 }
 ];

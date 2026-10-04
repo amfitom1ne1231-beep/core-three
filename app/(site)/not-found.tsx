@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import Cta from '@/components/Cta';
 import Footer from '@/components/Footer';
 import Material from '@/components/Material';
@@ -45,7 +46,11 @@ export default function NotFound() {
             </h1>
             <p className="m-0 mt-8 max-w-[44ch] text-[clamp(14px,1.15vw,17px)] leading-relaxed text-dim">
               Раздел может быть ещё в сборке — сайт растёт вместе со студией. Или ссылка устарела. Главная и заявка
-              на месте.
+              на месте, а что где лежит — в{' '}
+              <Link href="/help#map" className="text-fg underline decoration-line-strong underline-offset-4 transition-colors duration-300 hover:text-accent">
+                помощи
+              </Link>
+              .
             </p>
             <div className="mt-10 flex flex-wrap gap-3.5">
               <Cta href="/">

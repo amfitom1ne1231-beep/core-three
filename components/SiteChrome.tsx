@@ -9,7 +9,7 @@ import Preloader from './Preloader';
 import { SITE } from '@/content/site';
 
 /** Страницы, под которыми лежит материал. У документов и у 404 фон плоский. */
-const MATERIAL = new Set(['/', '/contact', '/about', '/concepts', ...SITE.pages.map((p) => p.href)]);
+const MATERIAL = new Set(['/', '/contact', '/about', '/concepts', '/help', ...SITE.pages.map((p) => p.href)]);
 
 /**
  * Наша хрома: материал, прелоадер, шапка, пульт, курсор, зерно.

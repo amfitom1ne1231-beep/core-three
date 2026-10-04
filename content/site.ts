@@ -239,6 +239,7 @@ export const SITE = {
         links: [
           { label: 'Концепты', href: '/concepts' },
           { label: 'О нас', href: '/about' },
+          { label: 'Помощь', href: '/help' },
           { label: 'Политика', href: '/privacy' }
         ]
       }
@@ -288,7 +289,8 @@ export const SITE = {
   nav: [
     { label: 'Услуги', href: '/sites' },
     { label: 'Концепты', href: '/concepts' },
-    { label: 'О нас', href: '/about' }
+    { label: 'О нас', href: '/about' },
+    { label: 'Помощь', href: '/help' }
   ],
 
   /**
