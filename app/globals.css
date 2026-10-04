@@ -1309,28 +1309,97 @@ body {
   transition: opacity 0.45s ease;
 }
 
-/* подсказка под блоком: уходит с первым поворотом рукой */
-.asm-hint {
-  position: absolute;
-  bottom: 7%;
-  left: 50%;
-  display: flex;
-  gap: 12px;
-  transform: translateX(-50%);
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  color: var(--fg-faint);
-  pointer-events: none;
-  transition: opacity 0.5s ease;
+/* Управление блоком — одна полоска: точки граней и пауза. Активную точку
+   накрывает плашка, она ездит между точками (transform), а её заливка —
+   обратный отсчёт до следующей грани. */
+.asm-pill {
+  /* шаг точек: под мышь — плотно, под палец — шире, чтобы попадать */
+  --asm-dot: 28px;
+  display: inline-flex;
+  align-items: center;
+  height: 44px;
+  padding: 0 4px 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: rgb(var(--bg-rgb) / 0.62);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
-.asm-hint[data-gone] {
+.asm-dots {
+  position: relative;
+  display: flex;
+}
+.asm-dot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--asm-dot);
+  height: 44px;
+}
+@media (pointer: coarse) {
+  .asm-pill {
+    --asm-dot: 40px;
+  }
+}
+.asm-dot__mark {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--fg-faint);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.asm-dot:hover .asm-dot__mark {
+  transform: scale(1.5);
+}
+.asm-dot[aria-current] .asm-dot__mark {
   opacity: 0;
 }
-
-/* рельс под блоком: заполнение активного деления и есть обратный отсчёт */
+.asm-dot:focus-visible {
+  outline: 1px solid var(--fg);
+  outline-offset: -8px;
+  border-radius: 14px;
+}
+.asm-dot__name {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg-elev);
+  font-size: 12px;
+  line-height: 1.2;
+  white-space: nowrap;
+  color: var(--fg);
+  opacity: 0;
+  transform: translate(-50%, 4px);
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.asm-dot:hover .asm-dot__name,
+.asm-dot:focus-visible .asm-dot__name {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+.asm-bar {
+  position: absolute;
+  top: 50%;
+  left: calc((var(--asm-dot) - 22px) / 2);
+  width: 22px;
+  height: 6px;
+  margin-top: -3px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--line-strong);
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+.asm-fill {
+  position: absolute;
+  inset: 0;
+  background: var(--accent);
+}
 .asm-timer {
   position: absolute;
   inset: 0;
@@ -1341,6 +1410,30 @@ body {
 @keyframes asm-timer {
   from { transform: scaleX(0); }
   to { transform: scaleX(1); }
+}
+.asm-play {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin-left: 6px;
+  border-radius: 50%;
+  color: var(--fg);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+.asm-play:hover {
+  background: var(--line);
+  color: var(--accent);
+}
+.asm-play:focus-visible {
+  outline: 1px solid var(--fg);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .asm-bar {
+    transition: none;
+  }
 }
 
 /* ============================================================

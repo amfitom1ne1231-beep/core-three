@@ -21,6 +21,14 @@ const WAIT_MS = 900;
 const CUT_MS = 450;
 /** Дальше трёх граней не копим: в другую сторону ближе. */
 const REACH = 3;
+/** Ролик поворота: 0,9 с, 60 к/с (brand/blender/assembly.py). */
+const TURN_S = 0.9;
+const FPS = 60;
+const FRAMES = TURN_S * FPS;
+/** Докуда блок доходит, покачиваясь: первые 0,17 с поворота — градусов пять. */
+const ROCK_S = 0.17;
+/** Как часто блок покачивается, пока стоит без автоповорота. */
+const ROCK_EVERY_MS = 12000;
 
 const mod = (v: number) => ((v % N) + N) % N;
 const pad = (i: number) => String(i + 1).padStart(2, '0');
@@ -47,6 +55,16 @@ const clip = (from: number, to: number) => `${FACES[from]}-${FACES[to]}`;
  * Сам блок вращается, пока его не тронули: первое же действие человека
  * снимает автоповорот. Края кадра растворены в странице — предмет стоит
  * на ней, а не в рамке.
+ *
+ * Доводка «в духе презентации» (выбор заказчика — без пересъёмки):
+ * — блок не замирает: войдя в кадр, он один раз покачивается к соседней
+ *   грани и обратно — так видно, что его можно повернуть, без подписи;
+ *   стоя без автоповорота, покачивается изредка. Это те же ролики
+ *   поворота: начало прямого и конец обратного — кадры у них общие;
+ * — блок чуть уходит за курсором;
+ * — на грань — одна крупная фраза, а не пять мелких строк;
+ * — управление — одна полоска: точки граней, под активной идёт отсчёт,
+ *   рядом пауза.
  */
 export default function Assembly() {
   const root = useRef<HTMLElement>(null);
@@ -181,6 +199,84 @@ export default function Assembly() {
     });
   }, []);
 
+  /**
+   * Покачивание: блок трогается к соседней грани, замедляется и возвращается.
+   * Туда — начало ролика поворота, обратно — конец обратного ролика: он снят
+   * из тех же кадров задом наперёд, поэтому встаёт на тот же кадр без шва.
+   * Скорость ролика ведём сами — иначе блок не качается, а упирается.
+   */
+  const rockOff = useRef<() => void>(() => {});
+  const rock = useCallback(() => {
+    if (busy.current || reduced.current || goal.current !== pos.current) return;
+    const a = mod(pos.current);
+    const b = mod(pos.current + 1);
+    const out = videos.current.get(clip(a, b));
+    const back = videos.current.get(clip(b, a));
+    // оба ролика должны быть разобраны: качание без возврата хуже, чем никакого
+    if (!out || !back || out.readyState < 3 || back.readyState < 3) return;
+
+    busy.current = true;
+    let raf = 0;
+    let over = false;
+    const finish = () => {
+      if (over) return;
+      over = true;
+      cancelAnimationFrame(raf);
+      clearTimeout(guard);
+      out.pause();
+      back.pause();
+      out.playbackRate = 1;
+      back.playbackRate = 1;
+      setTurning(null);
+      busy.current = false;
+      // пока блок качался, его могли повернуть — поворот ждал своей очереди
+      run();
+    };
+    const guard = window.setTimeout(finish, 2600);
+    rockOff.current = finish;
+
+    const home = () => {
+      const k = Math.min(FRAMES - 1, Math.round(out.currentTime * FPS));
+      const from = (FRAMES - 1 - k + 0.5) / FPS;
+      const onSeeked = () => {
+        if (over) return;
+        setTurning(clip(b, a));
+        back.playbackRate = 0.3;
+        back.addEventListener('ended', finish, { once: true });
+        back.play().catch(finish);
+        const ramp = () => {
+          if (over) return;
+          // от вершины блок разгоняется плавно, к покою его сажает сам ролик
+          back.playbackRate = Math.min(1, 0.3 + ((back.currentTime - from) / (TURN_S - from)) * 1.4);
+          raf = requestAnimationFrame(ramp);
+        };
+        raf = requestAnimationFrame(ramp);
+      };
+      back.addEventListener('seeked', onSeeked, { once: true });
+      back.currentTime = from;
+    };
+    const lean = () => {
+      if (over) return;
+      if (out.currentTime >= ROCK_S) {
+        out.pause();
+        home();
+        return;
+      }
+      out.playbackRate = Math.max(0.25, 1 - (out.currentTime / ROCK_S) * 0.8);
+      raf = requestAnimationFrame(lean);
+    };
+    out.currentTime = 0;
+    out.playbackRate = 1;
+    out
+      .play()
+      .then(() => {
+        if (over) return;
+        setTurning(clip(a, b));
+        raf = requestAnimationFrame(lean);
+      })
+      .catch(finish);
+  }, [run]);
+
   const say = (i: number) => {
     const s = SITE.services[i];
     setAnnounce(`Направление ${pad(i)} из ${pad(N - 1)}: ${s.title} ${s.titleAccent}`);
@@ -261,6 +357,28 @@ export default function Assembly() {
       );
     copyTl.current = tl;
   }, [index]);
+
+  /* ---------------- покачивание: когда ---------------- */
+
+  // Приглашение: блок вошёл в кадр и его ещё не трогали — качнулся один раз
+  const invited = useRef(false);
+  useEffect(() => {
+    if (!inView || !near || touched || invited.current) return;
+    const t = window.setTimeout(() => {
+      invited.current = true;
+      rock();
+    }, 1400);
+    return () => clearTimeout(t);
+  }, [inView, near, touched, rock]);
+
+  // В покое, без автоповорота, — изредка: предмет стоит, но не мёртвый
+  useEffect(() => {
+    if (auto || !inView) return;
+    const t = window.setInterval(rock, ROCK_EVERY_MS);
+    return () => clearInterval(t);
+  }, [auto, inView, rock]);
+
+  useEffect(() => () => rockOff.current(), []);
 
   /* ---------------- жесты и наблюдатели ---------------- */
 
@@ -346,6 +464,30 @@ export default function Assembly() {
     // вход в секцию: тот же короткий жест, что у схемы и подвала
     const ctx = gsap.context(() => {
       const mm = gsap.matchMedia();
+      // блок чуть уходит за курсором — на пару пикселей, только мышью
+      mm.add('(prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine)', () => {
+        const view = st.querySelector('.asm-view');
+        if (!view) return;
+        const x = gsap.quickTo(view, 'x', { duration: 0.9, ease: 'power3.out' });
+        const y = gsap.quickTo(view, 'y', { duration: 0.9, ease: 'power3.out' });
+        const follow = (e: PointerEvent) => {
+          const r = st.getBoundingClientRect();
+          const nx = (e.clientX - (r.left + r.width / 2)) / innerWidth;
+          const ny = (e.clientY - (r.top + r.height / 2)) / innerHeight;
+          x(Math.max(-1, Math.min(1, nx * 2)) * 12);
+          y(Math.max(-1, Math.min(1, ny * 2)) * 7);
+        };
+        const rest = () => {
+          x(0);
+          y(0);
+        };
+        sec.addEventListener('pointermove', follow);
+        sec.addEventListener('pointerleave', rest);
+        return () => {
+          sec.removeEventListener('pointermove', follow);
+          sec.removeEventListener('pointerleave', rest);
+        };
+      });
       mm.add('(prefers-reduced-motion: no-preference)', () => {
         gsap.from(sh.querySelectorAll('[data-enter]'), {
           y: 14,
@@ -389,11 +531,11 @@ export default function Assembly() {
    */
   const pageName = (href: string) => SITE.pages.find((p) => p.href === href)?.label ?? SITE.atlas.more;
 
-  /** Ролики поворотов от граней, что наготове: к соседке справа и к соседке слева. */
-  const clips = [...new Set(hubs.flatMap((f) => [clip(f, mod(f + 1)), clip(f, mod(f - 1))]))];
-
-  const btn =
-    'flex h-11 w-11 items-center justify-center rounded-full border border-line text-fg transition-colors duration-300 hover:border-accent hover:text-accent focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-fg';
+  /**
+   * Ролики поворотов от граней, что наготове: к соседке справа и к соседке
+   * слева. И обратный от соседки справа — им блок возвращается, покачнувшись.
+   */
+  const clips = [...new Set(hubs.flatMap((f) => [clip(f, mod(f + 1)), clip(f, mod(f - 1)), clip(mod(f + 1), f)]))];
 
   return (
     <section
@@ -422,7 +564,7 @@ export default function Assembly() {
         onKeyDown={onKey}
         className="grid items-center gap-x-[clamp(24px,4vw,72px)] px-4 pb-[clamp(56px,10vh,120px)] sm:px-8 lg:grid-cols-[minmax(300px,0.82fr)_minmax(0,1.18fr)] lg:px-[72px]"
       >
-        {/* ---------- текст передней грани ---------- */}
+        {/* ---------- текст передней грани: номер и одна крупная фраза ---------- */}
         <div className="order-3 flex flex-col lg:order-1">
           <div data-enter className="flex items-end gap-4">
             <span className="relative block h-[1em] overflow-hidden text-[clamp(56px,7.2vw,116px)] font-light leading-none tracking-[-0.04em]">
@@ -444,7 +586,7 @@ export default function Assembly() {
             <span className="mb-2 font-mono text-[11px] tracking-rail text-faint">/ {pad(N - 1)}</span>
           </div>
 
-          <div data-enter className="mt-6 grid">
+          <div data-enter className="mt-5 grid">
             {SITE.services.map((s, i) => (
               <div
                 key={s.n}
@@ -464,29 +606,18 @@ export default function Assembly() {
                     {groupLabel(s.group)}
                   </span>
                 </div>
-                <div className="mt-3 overflow-hidden pb-1">
-                  <h3 data-ln className="display m-0 text-[clamp(30px,3.3vw,52px)]">
+                {/* название направления — главное на грани: крупно, остальное ему уступает */}
+                <div className="mt-3 overflow-hidden pb-2">
+                  <h3 data-ln className="display m-0 text-[clamp(36px,4.5vw,72px)] leading-[1.02]">
                     {s.title} <span className="title-accent">{s.titleAccent}</span>
                   </h3>
                 </div>
-                <div className="mt-3 overflow-hidden">
-                  <p data-ln className="m-0 max-w-[40ch] text-[clamp(13.5px,1.1vw,16px)] leading-relaxed text-dim">
+                <div className="mt-4 overflow-hidden">
+                  <p data-ln className="m-0 max-w-[36ch] text-[clamp(15px,1.25vw,18px)] leading-relaxed text-dim">
                     {s.summary}
                   </p>
                 </div>
-                <div className="mt-5 overflow-hidden">
-                  <ul data-ln className="m-0 flex list-none flex-wrap gap-1.5 p-0">
-                    {s.stack.map((tech) => (
-                      <li
-                        key={tech}
-                        className="border border-line px-2.5 py-1.5 font-mono text-[9px] uppercase tracking-rail text-faint"
-                      >
-                        {tech}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="-m-1 mt-6 overflow-hidden p-1">
+                <div className="-m-1 mt-7 overflow-hidden p-1">
                   <div data-ln>
                     <Link
                       data-magnetic
@@ -501,42 +632,13 @@ export default function Assembly() {
               </div>
             ))}
           </div>
-
-          <div data-enter className="mt-9 flex items-center gap-2.5">
-            <button type="button" className={btn} onClick={() => turnBy(-1, true)} aria-label="Предыдущее направление">
-              <span aria-hidden>←</span>
-            </button>
-            <button type="button" className={btn} onClick={() => turnBy(1, true)} aria-label="Следующее направление">
-              <span aria-hidden>→</span>
-            </button>
-            <button
-              type="button"
-              className={`${btn} ml-1`}
-              onClick={() => {
-                setTouched(true);
-                setAuto((v) => !v);
-              }}
-              aria-label={auto ? 'Остановить вращение' : 'Вращать блок'}
-            >
-              {auto ? (
-                <svg viewBox="0 0 12 12" className="h-3 w-3" aria-hidden>
-                  <rect x="2" y="1.5" width="2.6" height="9" fill="currentColor" />
-                  <rect x="7.4" y="1.5" width="2.6" height="9" fill="currentColor" />
-                </svg>
-              ) : (
-                <svg viewBox="0 0 12 12" className="h-3 w-3" aria-hidden>
-                  <path d="M3 1.5v9l7.5-4.5z" fill="currentColor" />
-                </svg>
-              )}
-            </button>
-          </div>
         </div>
 
         {/* ---------- сам блок ---------- */}
         {/* верх и низ кадра пусты — блок стоит в середине; отступы подтягивают соседей к самому предмету */}
         <div className="order-1 -mb-[4%] -mt-[10%] lg:order-2 lg:mb-0 lg:-mt-[5vh]">
           <div ref={stage} data-cursor="drag" data-lenis-prevent-horizontal aria-hidden className="asm-stage">
-            {/* маска — на кадре, а не на сцене: подсказка под блоком должна остаться резкой */}
+            {/* маска — на кадре: за курсором уходит кадр вместе с ней, сцена стоит */}
             <div className="asm-view" data-cut={cut ? '' : undefined}>
               {theme &&
                 FACES.map((f, i) => (
@@ -572,27 +674,17 @@ export default function Assembly() {
                   />
                 ))}
             </div>
-            <span className="asm-hint" data-gone={touched ? '' : undefined}>
-              <span aria-hidden>←</span> блок можно повернуть <span aria-hidden>→</span>
-            </span>
           </div>
         </div>
 
-        {/* ---------- рельс: шесть граней по именам, он же таймер.
-            На телефоне стоит сразу под блоком, как вкладки ---------- */}
-        <div data-enter className="order-2 mb-8 flex gap-1.5 lg:order-3 lg:col-span-2 lg:-mt-4 lg:mb-0 lg:gap-3">
-          {SITE.services.map((s, i) => (
-            <button
-              key={s.n}
-              type="button"
-              onClick={() => turnTo(i)}
-              aria-label={`Направление ${s.n}: ${s.title} ${s.titleAccent}`}
-              aria-current={i === index ? 'true' : undefined}
-              /* py-3 на телефоне: палец требует 44 по короткой стороне */
-              className="group flex min-w-0 flex-1 flex-col gap-2.5 py-3 text-left focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-fg lg:py-1.5"
-            >
-              <span className="relative block h-px w-full bg-line">
-                {i === index && (auto ? (
+        {/* ---------- управление — одна полоска под блоком: шесть точек,
+            под активной идёт отсчёт до следующей грани, рядом пауза ---------- */}
+        <div data-enter className="order-2 mb-9 flex justify-center lg:order-3 lg:col-start-2 lg:-mt-10 lg:mb-0">
+          <div className="asm-pill">
+            <div className="asm-dots">
+              {/* шаг точек задаёт CSS (--asm-dot): под палец он шире, чем под мышь */}
+              <span className="asm-bar" style={{ transform: `translateX(calc(${index} * var(--asm-dot)))` }} aria-hidden>
+                {auto ? (
                   !moving && (
                     <span
                       className="asm-timer"
@@ -601,27 +693,47 @@ export default function Assembly() {
                     />
                   )
                 ) : (
-                  <span className="absolute inset-0 bg-accent" />
-                ))}
+                  <span className="asm-fill" />
+                )}
               </span>
-              <span className="flex items-baseline gap-2.5">
-                <span
-                  className={`font-mono text-[9px] tracking-rail transition-colors duration-300 ${
-                    i === index ? 'text-accent' : 'text-faint group-hover:text-dim'
-                  }`}
+              {SITE.services.map((s, i) => (
+                <button
+                  key={s.n}
+                  type="button"
+                  className="asm-dot"
+                  onClick={() => turnTo(i)}
+                  aria-label={`Направление ${s.n}: ${s.title} ${s.titleAccent}`}
+                  aria-current={i === index ? 'true' : undefined}
                 >
-                  {s.n}
-                </span>
-                <span
-                  className={`hidden truncate text-[12.5px] leading-tight transition-colors duration-300 lg:block ${
-                    i === index ? 'text-fg' : 'text-faint group-hover:text-dim'
-                  }`}
-                >
-                  {s.title} {s.titleAccent}
-                </span>
-              </span>
+                  <span className="asm-dot__mark" />
+                  {/* имя направления всплывает над точкой: полоска остаётся короткой, а куда ведёт точка — видно */}
+                  <span className="asm-dot__name" aria-hidden>
+                    {s.title} {s.titleAccent}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              className="asm-play"
+              onClick={() => {
+                setTouched(true);
+                setAuto((v) => !v);
+              }}
+              aria-label={auto ? 'Остановить вращение' : 'Вращать блок'}
+            >
+              {auto ? (
+                <svg viewBox="0 0 12 12" className="h-3 w-3" aria-hidden>
+                  <rect x="2" y="1.5" width="2.6" height="9" fill="currentColor" />
+                  <rect x="7.4" y="1.5" width="2.6" height="9" fill="currentColor" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 12 12" className="h-3 w-3" aria-hidden>
+                  <path d="M3 1.5v9l7.5-4.5z" fill="currentColor" />
+                </svg>
+              )}
             </button>
-          ))}
+          </div>
         </div>
       </div>
 
