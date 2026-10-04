@@ -56,7 +56,15 @@ export function createApp({ db, config, studio }: { db: Db; config: Config; stud
       spam: check.bot
     });
     // карточка в группу — не повод отвечать сайту ошибкой: заявка уже в базе
-    if (studio) await studio.publishLead(lead.id).catch((e) => console.error('[intake] карточка', e));
+    const card = studio
+      ? await studio.publishLead(lead.id).catch((e) => {
+          console.error('[intake] карточка', e);
+          return false;
+        })
+      : false;
+    if (config.NODE_ENV !== 'test') {
+      console.info(`[intake] заявка #${lead.id}: ${card ? 'карточка в группе' : 'только в базе'}${check.bot ? ', ловушка' : ''}`);
+    }
     return c.json({ id: lead.id }, 201);
   });
 

@@ -46,6 +46,8 @@ export type StudioBot = ReturnType<typeof createBot>;
 export function createBot({ db, config, now = () => new Date(), botInfo }: Deps) {
   const bot = new Bot<Ctx>(config.BOT_TOKEN ?? 'offline', botInfo ? { botInfo } : undefined);
   const tz = config.work.tz;
+  /** Что происходит в группе — в лог: при первом прогоне это единственное окно. Без имён. */
+  const log = config.NODE_ENV === 'test' ? () => {} : (line: string) => console.info(`[bot] ${line}`);
 
   /* ---------- карточки ---------- */
 
@@ -204,6 +206,7 @@ export function createBot({ db, config, now = () => new Date(), botInfo }: Deps)
     if (!ctx.member) return;
     const threadId = ctx.msg.is_topic_message ? (ctx.msg.message_thread_id ?? null) : null;
     await setGroup(db, { chatId: ctx.chat.id, threadId, title: 'title' in ctx.chat ? (ctx.chat.title ?? null) : null });
+    log(`/bind: ${threadId ? `тема ${threadId}` : 'группа без темы'}`);
     return ctx.reply(threadId ? 'Готово: заявки будут приходить в эту тему.' : 'Готово: заявки будут приходить в эту группу.');
   });
 
@@ -213,6 +216,7 @@ export function createBot({ db, config, now = () => new Date(), botInfo }: Deps)
     if (!ctx.member) return ctx.answerCallbackQuery({ text: 'Кнопки — только для команды.', show_alert: true });
     const me = ctx.member;
     const at = now();
+    log(`#${p.id} ${p.act}${p.arg ? ` ${p.arg}` : ''} — участник ${me.id}`);
 
     switch (p.act) {
       case 'take': {
@@ -271,6 +275,7 @@ export function createBot({ db, config, now = () => new Date(), botInfo }: Deps)
       .where(and(eq(prompts.chatId, ctx.chat.id), eq(prompts.messageId, reply.message_id)));
     if (!prompt?.leadId) return next();
     await addNote(db, prompt.leadId, ctx.member.id, ctx.msg.text, now());
+    log(`#${prompt.leadId} заметка — участник ${ctx.member.id}`);
     await db.delete(prompts).where(eq(prompts.id, prompt.id));
     await refreshCard(prompt.leadId);
     // чистим за собой, если у бота есть право удалять; нет — не страшно
