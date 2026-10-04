@@ -152,8 +152,15 @@ RAY_IDLE, RAY_HOT = (0.5, 12.0) if DARK else (0.8, 7.0)
 PLATE = bsdf('plate', '#06080c' if DARK else '#e7ebf0', 0.16 if DARK else 0.12, spec=0.7 if DARK else 0.5)
 BLUE = bsdf('blue', '#163d73', 0.28, metallic=0.85, coat=0.6)
 SILVER = bsdf('silver', '#c4cad1', 0.18, metallic=1.0, aniso=0.6)
-FROST = bsdf('frost', '#e9f1fb', 0.32, transmission=1.0, ior=1.45, spec=0.5)
+# Стекло граней в светлой теме дымчатое: матовое прозрачное собирало свет
+# яркой сцены со всех сторон и засвечивало экран под собой до серого —
+# тёмная плата под ним выходила серой, и значок с ней сливался.
+FROST = bsdf('frost', '#e9f1fb' if DARK else arg('--glass', '#4f5a6a'), 0.32, transmission=1.0, ior=1.45, spec=0.5)
 BOARD = bsdf('board', '#0b0f15' if DARK else '#dfe5ec', 0.5, metallic=0.2)
+# Плата под значком грани. В светлой теме была та же светлая, что крышка, —
+# светящийся значок сливался с ней. Теперь грань — тёмный экран в светлом
+# корпусе, значок читается так же, как в тёмной. Крышка осталась светлой.
+PANEL = BOARD if DARK else bsdf('panel', arg('--panel', '#0b0f15'), 0.45, metallic=0.2)
 GLYPHS = {f: emission(f'glyph_{f}', ACCENT, GLYPH_IDLE) for f in FACES}
 FRAMES_MAT = {f: emission(f'frame_{f}', ACCENT, 0.0) for f in FACES}
 RAYS = {f: emission(f'ray_{f}', ACCENT, RAY_IDLE) for f in FACES}
@@ -278,7 +285,7 @@ for i, f in enumerate(FACES):
     # грань i встаёт лицом к камере, когда ротор повёрнут на −60°·i
     turn = math.radians(60 * i)
     y = -A
-    add(box(f'board_{f}', (-PW, y - 0.012, PZ0), (PW, y + 0.01, PZ1), BOARD), turn)
+    add(box(f'board_{f}', (-PW, y - 0.012, PZ0), (PW, y + 0.01, PZ1), PANEL), turn)
     g = glyph(f, GLYPHS[f])
     # плоский значок встаёт вертикально: его «верх» — вверх, лицо — наружу
     g.data.transform(Matrix.Translation((0, y - 0.016, (PZ0 + PZ1) / 2)) @ Matrix.Rotation(math.radians(90), 4, 'X'))
