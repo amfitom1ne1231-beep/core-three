@@ -6,26 +6,36 @@
  * двое: рантайм материала (у шейдера своя палитра, CSS туда не достаёт)
  * и цвет строки браузера.
  *
- * Выбор запоминается в localStorage. Пока человек не выбрал сам, тема
- * идёт за системной настройкой: навязывать светлую тому, у кого всё
- * тёмное, — невежливо.
+ * По умолчанию — светлая, какая бы ни стояла в системе: так решил заказчик
+ * (04.10.2026). Раньше сайт шёл за системной настройкой, и у большинства
+ * открывался тёмным. Выбор, сделанный кнопкой света, запоминается
+ * в localStorage и с этого момента главнее умолчания.
  */
 
 export type Theme = 'dark' | 'light';
 
-const KEY = 'ct-theme';
+export const DEFAULT_THEME: Theme = 'light';
 
 /**
- * Одна строка, которую страница выполняет до первой отрисовки. Если тема
- * выбрана вручную, строка браузера перекрашивается под неё, когда теги
- * разметки уже на месте: иначе у тёмной темы на светлой системе строка
- * оставалась светлой до первого переключения.
+ * Ключ сменён вместе с умолчанием: прежние выборы делались, когда сайт
+ * шёл за системой, и на новое умолчание их переносить незачем.
  */
-export const THEME_BOOT = `(function(){try{var s=localStorage.getItem('${KEY}');var m=window.matchMedia('(prefers-color-scheme: light)').matches;var t=(s==='light'||s==='dark')?s:(m?'light':'dark');document.documentElement.dataset.theme=t;if(s===t){document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('meta[name="theme-color"]').forEach(function(e){e.setAttribute('content',t==='light'?'#f4f5f7':'#050608')})})}}catch(e){}})()`;
+const KEY = 'ct-theme-2';
+
+/**
+ * Одна строка, которую страница выполняет до первой отрисовки. Разметка
+ * сервера уже светлая (`data-theme` на `<html>`, светлая строка браузера);
+ * строке остаётся одно — вернуть тёмную тому, кто выбрал её сам.
+ *
+ * Цвет строки браузера — своим тегом в начале `<head>`: браузер берёт
+ * первый по порядку. Править тег, который отрисовал сервер, нельзя —
+ * React при оживлении страницы не узнаёт его и ставит рядом второй.
+ */
+export const THEME_BOOT = `(function(){try{if(localStorage.getItem('${KEY}')==='dark'){var d=document;d.documentElement.dataset.theme='dark';var m=d.createElement('meta');m.name='theme-color';m.content='#050608';d.head.insertBefore(m,d.head.firstChild)}}catch(e){}})()`;
 
 export function readTheme(): Theme {
-  if (typeof document === 'undefined') return 'dark';
-  return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+  if (typeof document === 'undefined') return DEFAULT_THEME;
+  return document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
 }
 
 /** `instant` — тема меняется под волной: свои плавные переходы слушателям не нужны. */
@@ -46,10 +56,7 @@ export function setTheme(next: Theme, instant = false) {
   } catch {
     /* приватный режим: выбор проживёт до перезагрузки */
   }
-  // Строка браузера — по той же теме. Тегов два, по одному на системную
-  // настройку, и браузер берёт тот, чей media совпал. Правили раньше
-  // только первый (тёмный): у кого система светлая, выбор тёмной темы
-  // строку не перекрашивал.
+  // строка браузера — по той же теме
   document.querySelectorAll('meta[name="theme-color"]').forEach((m) => {
     m.setAttribute('content', next === 'light' ? '#f4f5f7' : '#050608');
   });

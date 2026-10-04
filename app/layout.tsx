@@ -3,7 +3,7 @@ import { JetBrains_Mono } from 'next/font/google';
 import SmoothScroll from '@/components/SmoothScroll';
 import { SITE } from '@/content/site';
 import { SEEN_BOOT } from '@/lib/boot';
-import { THEME_BOOT } from '@/lib/theme';
+import { DEFAULT_THEME, THEME_BOOT } from '@/lib/theme';
 import './globals.css';
 
 // Шрифт сайта (Onest) — в components/siteFont.ts, его берёт только оболочка
@@ -43,26 +43,25 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  // Обе темы объявлены: браузер красит строку по системной настройке ещё
-  // до выполнения скриптов, а дальше цвет ведёт сам переключатель.
-  themeColor: [
-    { media: '(prefers-color-scheme: dark)', color: '#050608' },
-    { media: '(prefers-color-scheme: light)', color: '#f4f5f7' }
-  ],
-  colorScheme: 'dark light'
+  // Сайт по умолчанию светлый при любой системной настройке — и строка
+  // браузера светлая с первого кадра. Тёмную возвращает загрузочный скрипт
+  // тому, кто выбрал её сам; дальше цвет ведёт переключатель.
+  themeColor: '#f4f5f7',
+  colorScheme: 'light dark'
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    // data-theme и data-seen выставляют загрузочные скрипты до первой
-    // отрисовки; suppressHydrationWarning — потому что разметка сервера
-    // про тему и про уже виденный прелоадер не знает и знать не может
-    <html lang="ru" suppressHydrationWarning className={mono.variable}>
+    // Сервер отдаёт страницу в теме по умолчанию — светлой: она верна
+    // и без скриптов. Выбранную тёмную и data-seen выставляют загрузочные
+    // скрипты до первой отрисовки; suppressHydrationWarning — потому что
+    // про выбор человека и про уже виденный прелоадер сервер не знает
+    <html lang="ru" data-theme={DEFAULT_THEME} suppressHydrationWarning className={mono.variable}>
       <head>
         {/*
           Тема применяется до первого кадра. Без этого страница успевает
-          мигнуть тёмной у того, кто выбрал светлую, — и наоборот: скрипт
-          в <head> выполняется раньше, чем браузер что-либо рисует.
+          мигнуть светлой у того, кто выбрал тёмную: скрипт в <head>
+          выполняется раньше, чем браузер что-либо рисует.
         */}
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT }} />
         <script dangerouslySetInnerHTML={{ __html: SEEN_BOOT }} />
