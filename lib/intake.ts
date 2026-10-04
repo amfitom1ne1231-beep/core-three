@@ -1,4 +1,5 @@
 import { SIGNATURE_HEADER, TIMESTAMP_HEADER, sign } from './intake-sign.ts';
+import { errorLine } from './redact.ts';
 
 /**
  * Заявка уходит в сервис бота — он хранит заявки в своей базе в РФ
@@ -42,7 +43,7 @@ export async function forwardLead(form: unknown, meta?: Record<string, string>):
     console.error('[lead] сервис бота', res.status, await res.text());
     return 'failed';
   } catch (err) {
-    console.error('[lead] сервис бота недоступен', err);
+    console.error('[lead] сервис бота недоступен', errorLine(err));
     return 'failed';
   }
 }

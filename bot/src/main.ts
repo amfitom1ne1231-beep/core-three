@@ -6,11 +6,21 @@ import { createApp } from './http/app';
 import { startScheduler } from './jobs/scheduler';
 import { sheetsTick } from './sheets/sync';
 import { createBot, type StudioBot } from './tg/bot';
+import { errorLine } from '../../lib/redact';
 
 /**
  * Сервис бота: база, бот, HTTP и расписание в одном процессе.
  * Порядок запуска: база с миграциями → бот → HTTP → расписание.
  */
+
+// Необработанная ошибка не должна попасть в лог целиком: Node печатает её
+// со всеми вложенными, а в сетевой ошибке Telegram — адрес с токеном бота.
+// Отклонённое обещание сервис переживает — заявки важнее; исключение — нет.
+process.on('unhandledRejection', (e) => console.error('[main] необработанная ошибка:', errorLine(e)));
+process.on('uncaughtException', (e) => {
+  console.error('[main] необработанная ошибка:', errorLine(e));
+  process.exit(1);
+});
 
 const config = loadConfig();
 const { db, close, kind } = await openDb({ url: config.DATABASE_URL, dataDir: config.BOT_DATA_DIR });
@@ -69,7 +79,8 @@ if (studio) {
   let delay = 5_000;
   const attempt = () =>
     void connectTelegram(studio).catch((e) => {
-      console.error(`[bot] Telegram недоступен, повтор через ${delay / 1000} с:`, e instanceof Error ? e.message : e);
+      // причина бывает и не в связи: например, webhook на адрес, которого ещё нет
+      console.error(`[bot] подключение к Telegram не удалось, повтор через ${delay / 1000} с:`, errorLine(e));
       reconnect = setTimeout(attempt, delay);
       delay = Math.min(delay * 2, 5 * 60_000);
     });
@@ -94,7 +105,13 @@ async function shutdown(signal: string) {
   stopScheduler();
   if (sheets) clearInterval(sheets);
   clearTimeout(reconnect);
-  if (studio && config.BOT_MODE === 'polling') await studio.bot.stop();
+  // При остановке grammY делает последний запрос к Telegram. Не прошёл —
+  // не повод падать: раньше эта ошибка уходила в лог целиком, с токеном.
+  if (studio && config.BOT_MODE === 'polling') {
+    await Promise.race([studio.bot.stop(), new Promise((resolve) => setTimeout(resolve, 3000))]).catch((e) =>
+      console.error('[bot] остановка:', errorLine(e))
+    );
+  }
   server.close();
   await close();
   process.exit(0);

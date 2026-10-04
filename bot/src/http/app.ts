@@ -12,6 +12,7 @@ import { createLead } from '../domain/leads';
 import type { StudioBot } from '../tg/bot';
 import { SIGNATURE_HEADER, TIMESTAMP_HEADER, verify } from '../../../lib/intake-sign';
 import { createApi } from './api';
+import { errorLine } from '../../../lib/redact';
 
 /**
  * HTTP сервиса: приём заявок с сайта, webhook Telegram, мини-приложение
@@ -86,7 +87,7 @@ export function createApp({
     // а карточку догонит расписание (publishPending).
     const publishing = studio
       ? studio.publishLead(lead.id).catch((e) => {
-          console.error('[intake] карточка', e instanceof Error ? e.message : e);
+          console.error('[intake] карточка', errorLine(e));
           return false;
         })
       : Promise.resolve(false);

@@ -29,19 +29,22 @@ if [ -z "${CADDYFILE:-}" ]; then
 fi
 
 echo "Сборка под $PLATFORM…"
-# Сборка сайта скачивает шрифты с Google Fonts и изредка получает оттуда
-# негодный ответ («An error occurred in next/font») — вторая попытка проходит.
-build_site() {
-  docker buildx build --platform "$PLATFORM" --load -t corethree-site:latest \
-    --build-arg NEXT_PUBLIC_SITE_URL=https://corethree.ru \
-    --build-arg NEXT_PUBLIC_YM_ID="${NEXT_PUBLIC_YM_ID:-}" .
+# Сборка под процессор сервера идёт в эмуляции и изредка падает сама по себе:
+# сайт — на загрузке шрифтов с Google Fonts («An error occurred in next/font»),
+# бот — на установке зависимостей. Повтор проходит.
+build() {
+  local n
+  for n in 1 2 3; do
+    docker buildx build --platform "$PLATFORM" --load "$@" && return 0
+    echo "Сборка не удалась (попытка $n из 3)…"
+  done
+  echo 'Не собралось с трёх попыток.'
+  return 1
 }
-for n in 1 2 3; do
-  build_site && break
-  [ "$n" = 3 ] && { echo 'Сайт не собрался с трёх попыток.'; exit 1; }
-  echo "Сборка сайта не удалась (попытка $n из 3), повтор…"
-done
-docker buildx build --platform "$PLATFORM" --load -t corethree-bot:latest -f bot/Dockerfile .
+build -t corethree-site:latest \
+  --build-arg NEXT_PUBLIC_SITE_URL=https://corethree.ru \
+  --build-arg NEXT_PUBLIC_YM_ID="${NEXT_PUBLIC_YM_ID:-}" .
+build -t corethree-bot:latest -f bot/Dockerfile .
 
 echo 'Файлы запуска…'
 rsync -az -e "ssh -i $KEY" docker-compose.yml "$SERVER:$DIR/"
@@ -53,7 +56,16 @@ echo 'Образы на сервер…'
 docker save corethree-site:latest corethree-bot:latest | gzip | ssh -i "$KEY" "$SERVER" 'gunzip | docker load'
 
 echo 'Перезапуск…'
+# Без домена webhook невозможен (Telegram некуда стучаться) — бот опрашивает
+# Telegram сам. Строку BOT_MODE в .env скрипт ставит и снимает только свою:
+# о ней помнит файл .no-domain; заданную руками не трогает.
+if [ "$CADDYFILE" = deploy/Caddyfile.ip ]; then
+  MODE="grep -q '^BOT_MODE=' .env || { echo BOT_MODE=polling >> .env; touch .no-domain; }"
+else
+  MODE="if [ -f .no-domain ]; then sed -i '/^BOT_MODE=polling\$/d' .env; rm -f .no-domain; fi"
+fi
+
 # reload — чтобы работающий Caddy перечитал свой файл; у только что созданного это лишнее, не ошибка
-ssh -i "$KEY" "$SERVER" "cd $DIR && docker compose up -d --no-build --remove-orphans \
+ssh -i "$KEY" "$SERVER" "cd $DIR && $MODE && docker compose up -d --no-build --remove-orphans \
   && { docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile >/dev/null 2>&1 || true; } \
   && docker image prune -f >/dev/null && docker compose ps"

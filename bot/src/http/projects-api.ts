@@ -29,6 +29,7 @@ import { team } from '../domain/team';
 import { dayKey } from '../domain/worktime';
 import type { StudioBot } from '../tg/bot';
 import type { AppEnv } from './auth';
+import { errorLine } from '../../../lib/redact';
 
 /**
  * API проектов для мини-приложения. Любое изменение возвращает проект
@@ -210,7 +211,7 @@ export function mountProjects(
     try {
       await studio.sendFile(c.get('member').tgId, m);
     } catch (e) {
-      console.error('[app] файл', m.id, e);
+      console.error('[app] файл', m.id, errorLine(e));
       return c.json({ error: 'send failed' }, 502);
     }
     return c.json({ ok: true });

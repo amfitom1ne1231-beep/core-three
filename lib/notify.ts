@@ -1,5 +1,6 @@
 import type { Lead } from './lead';
 import type { SourceMeta } from './source';
+import { errorLine } from './redact.ts';
 
 /**
  * Запасной путь заявки — прямо в рабочий чат Telegram.
@@ -92,7 +93,7 @@ export async function notifyLead(lead: Lead, status: 'new' | 'spam' = 'new', met
     console.error('[lead] telegram', res.status, await res.text());
     return 'failed';
   } catch (err) {
-    console.error('[lead] telegram недоступен', err);
+    console.error('[lead] telegram недоступен', errorLine(err));
     return 'failed';
   }
 }

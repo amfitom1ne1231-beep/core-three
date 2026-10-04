@@ -6,6 +6,7 @@ import { isoWeek } from '../domain/metrics';
 import { alarmSlot, needsReminder, unansweredForAlarm, type Sla } from '../domain/sla';
 import { dayKey, localParts } from '../domain/worktime';
 import type { StudioBot } from '../tg/bot';
+import { errorLine } from '../../../lib/redact';
 
 /**
  * Расписание: раз в полминуты сервис смотрит, не пора ли кого-то
@@ -24,13 +25,13 @@ export async function claim(db: Db, key: string, at = new Date()) {
 
 export async function tick(db: Db, studio: StudioBot | null, sla: Sla, now = new Date()) {
   // заявки, пришедшие при недоступном Telegram: карточки догоняют, как только связь есть
-  if (studio) await studio.publishPending(now).catch((e) => console.error('[bot] карточки', e instanceof Error ? e.message : e));
+  if (studio) await studio.publishPending(now).catch((e) => console.error('[bot] карточки', errorLine(e)));
 
   // напоминание «никто не взял»: одно на заявку
   for (const lead of await untakenLeads(db)) {
     if (!needsReminder(lead, now, sla)) continue;
     await markReminded(db, lead.id, now);
-    if (studio) await studio.remind(lead).catch((e) => console.error('[sla] напоминание', lead.id, e));
+    if (studio) await studio.remind(lead).catch((e) => console.error('[sla] напоминание', lead.id, errorLine(e)));
   }
 
   // вечерняя тревога: раз в рабочий день
@@ -43,7 +44,7 @@ export async function tick(db: Db, studio: StudioBot | null, sla: Sla, now = new
         list.map((l) => l.id),
         now
       );
-      if (studio && list.length) await studio.alarm(list).catch((e) => console.error('[sla] тревога', e));
+      if (studio && list.length) await studio.alarm(list).catch((e) => console.error('[sla] тревога', errorLine(e)));
     }
   }
 
@@ -54,12 +55,12 @@ export async function tick(db: Db, studio: StudioBot | null, sla: Sla, now = new
     const today = dayKey(now, sla.work.tz);
     if (await claim(db, `digest:${today}`, now)) {
       const m = await morning(db, now, sla.work);
-      if (studio) await studio.morningDigest(m, today).catch((e) => console.error('[digest] утро', e));
+      if (studio) await studio.morningDigest(m, today).catch((e) => console.error('[digest] утро', errorLine(e)));
     }
     // итоги прошлой недели — в первый рабочий день новой
     if (await claim(db, `week:${isoWeek(today)}`, now)) {
       const w = await weekly(db, now, sla.work, sla.takeMin);
-      if (studio) await studio.weeklyDigest(w).catch((e) => console.error('[digest] неделя', e));
+      if (studio) await studio.weeklyDigest(w).catch((e) => console.error('[digest] неделя', errorLine(e)));
     }
   }
 }
@@ -72,7 +73,7 @@ export function startScheduler(db: Db, studio: StudioBot | null, sla: Sla, every
     try {
       await tick(db, studio, sla);
     } catch (e) {
-      console.error('[scheduler]', e);
+      console.error('[scheduler]', errorLine(e));
     } finally {
       running = false;
     }

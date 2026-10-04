@@ -14,10 +14,19 @@
 #
 # Как выкладывать — deploy/README.md.
 
+# Логи контейнеров — не больше 30 МБ на каждый: по умолчанию Docker их
+# не ограничивает, а диск на сервере небольшой.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: '3'
+
 services:
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
+    logging: *logging
     ports:
       - '80:80'
       - '443:443'
@@ -32,6 +41,7 @@ services:
 
   site:
     image: corethree-site:latest
+    logging: *logging
     build:
       context: .
       args:
@@ -47,6 +57,7 @@ services:
 
   bot:
     image: corethree-bot:latest
+    logging: *logging
     build:
       context: .
       dockerfile: bot/Dockerfile
@@ -65,6 +76,7 @@ services:
 
   db:
     image: postgres:17-alpine
+    logging: *logging
     restart: unless-stopped
     environment:
       POSTGRES_USER: corethree
@@ -83,6 +95,7 @@ services:
   # deploy/README.md, «Копии базы».
   backup:
     image: postgres:17-alpine
+    logging: *logging
     restart: unless-stopped
     environment:
       PGPASSWORD: ${POSTGRES_PASSWORD:?нужен POSTGRES_PASSWORD в .env}

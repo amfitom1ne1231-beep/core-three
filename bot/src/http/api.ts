@@ -22,6 +22,7 @@ import { team } from '../domain/team';
 import type { StudioBot } from '../tg/bot';
 import { appAuth, type AppEnv } from './auth';
 import { mountProjects } from './projects-api';
+import { errorLine } from '../../../lib/redact';
 
 /**
  * API мини-приложения. Делает то же, что кнопки под карточкой в группе,
@@ -68,7 +69,7 @@ export function createApi({
   const log = config.NODE_ENV === 'test' ? () => {} : (line: string) => console.info(`[app] ${line}`);
 
   /** Карточка в группе — следом за действием; не вышло — действие уже записано. */
-  const refresh = (id: number) => studio?.refreshCard(id).catch((e) => console.error('[app] карточка', id, e));
+  const refresh = (id: number) => studio?.refreshCard(id).catch((e) => console.error('[app] карточка', id, errorLine(e)));
 
   async function detail(id: number) {
     const v = await leadView(db, id);
@@ -129,7 +130,7 @@ export function createApi({
     const { name, contact, task, kind } = check.lead;
     const lead = await createLead(db, { source: 'manual', name, contact, task, kind }, now());
     if (body.data.take) await takeLead(db, lead.id, c.get('member').id, now());
-    if (studio) await studio.publishLead(lead.id).catch((e) => console.error('[app] карточка', lead.id, e));
+    if (studio) await studio.publishLead(lead.id).catch((e) => console.error('[app] карточка', lead.id, errorLine(e)));
     log(`#${lead.id} заведена вручную — участник ${c.get('member').id}`);
     return c.json(await detail(lead.id), 201);
   });

@@ -24,6 +24,7 @@ import { FUNNEL, KIND_LABEL, LOST_REASONS, STAGE_LABEL, type LostReason } from '
 import { acceptInvite, createInvite, ensureOwner, memberByTg, team } from '../domain/team';
 import { dayKey, shortTime } from '../domain/worktime';
 import { cardKeyboard, cardText, cb, esc, mention, parseCb, type Menu } from './card';
+import { errorLine } from '../../../lib/redact';
 
 /**
  * Бот студии. Работает в двух местах:
@@ -101,7 +102,7 @@ export function createBot({ db, config, now = () => new Date(), botInfo }: Deps)
   async function syncCards() {
     const has = Boolean(appBase);
     if ((await getSetting<boolean>(db, 'cards_open_button')) === has) return;
-    for (const lead of await openLeads(db)) await refreshCard(lead.id).catch((e) => console.error('[bot] карточка', lead.id, e));
+    for (const lead of await openLeads(db)) await refreshCard(lead.id).catch((e) => console.error('[bot] карточка', lead.id, errorLine(e)));
     await setSetting(db, 'cards_open_button', has);
   }
 
@@ -152,7 +153,7 @@ export function createBot({ db, config, now = () => new Date(), botInfo }: Deps)
         if (await publishLead(lead.id)) sent++;
       } catch (e) {
         // связи всё ещё нет — остальные ждут следующего захода, Telegram зря не дёргаем
-        log(`карточка #${lead.id} не ушла: ${e instanceof Error ? e.message : e}`);
+        log(`карточка #${lead.id} не ушла: ${errorLine(e)}`);
         break;
       }
     }
@@ -582,7 +583,7 @@ export function createBot({ db, config, now = () => new Date(), botInfo }: Deps)
     if (ctx.chat.type === 'private' && !ctx.member) await outsider(ctx);
   });
 
-  bot.catch((err) => console.error('[bot]', err.error));
+  bot.catch((err) => console.error('[bot]', errorLine(err.error)));
 
   return { bot, publishLead, publishPending, refreshCard, remind, alarm, morningDigest, weeklyDigest, sendFile, syncMenu, syncCards };
 }
