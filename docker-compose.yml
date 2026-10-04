@@ -1,0 +1,105 @@
+# Боевой запуск CoreThree на одном VPS (BOT.md, фаза 6):
+#
+#   corethree.ru      → сайт (Next.js)
+#   bot.corethree.ru  → сервис бота: webhook Telegram, мини-приложение, API
+#
+# Caddy сам получает и продлевает сертификаты. Postgres — с томом,
+# раз в сутки копия базы ложится в ./backups (хранится две недели).
+#
+# Секреты на сервере, в git их нет:
+#   .env              — POSTGRES_PASSWORD (и NEXT_PUBLIC_YM_ID, когда будет счётчик)
+#   deploy/site.env   — по образцу deploy/site.env.example
+#   deploy/bot.env    — по образцу deploy/bot.env.example
+#
+# Как выкладывать — deploy/README.md.
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - site
+      - bot
+
+  site:
+    image: corethree-site:latest
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_SITE_URL: https://corethree.ru
+        NEXT_PUBLIC_YM_ID: ${NEXT_PUBLIC_YM_ID:-}
+    restart: unless-stopped
+    env_file: deploy/site.env
+    environment:
+      # заявка — сервису по внутренней сети, без выхода наружу
+      BOT_INTAKE_URL: http://bot:8787/api/intake/lead
+      # перед сайтом Caddy: адрес посетителя для лимита заявок — от него
+      TRUST_PROXY: '1'
+
+  bot:
+    image: corethree-bot:latest
+    build:
+      context: .
+      dockerfile: bot/Dockerfile
+    restart: unless-stopped
+    env_file: deploy/bot.env
+    environment:
+      BOT_MODE: webhook
+      PUBLIC_URL: https://bot.corethree.ru
+      SITE_URL: https://corethree.ru
+      DATABASE_URL: postgres://corethree:${POSTGRES_PASSWORD:?нужен POSTGRES_PASSWORD в .env}@db:5432/corethree
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: corethree
+      POSTGRES_DB: corethree
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?нужен POSTGRES_PASSWORD в .env}
+    volumes:
+      - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U corethree -d corethree']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # Копия базы раз в сутки. Пока копии лежат на том же сервере: облачное
+  # хранилище в РФ для них — следующий шаг (HANDOFF.md). Восстановление —
+  # deploy/README.md, «Копии базы».
+  backup:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD:?нужен POSTGRES_PASSWORD в .env}
+    volumes:
+      - ./backups:/backups
+    depends_on:
+      db:
+        condition: service_healthy
+    entrypoint:
+      - sh
+      - -c
+      - |
+        while true; do
+          f=/backups/corethree-$$(date +%F).sql.gz
+          pg_dump -h db -U corethree corethree | gzip > "$$f.part" && mv "$$f.part" "$$f"
+          find /backups -name 'corethree-*.sql.gz' -mtime +14 -delete
+          sleep 86400
+        done
+
+volumes:
+  caddy_data:
+  caddy_config:
+  db:

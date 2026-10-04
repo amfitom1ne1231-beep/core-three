@@ -331,6 +331,10 @@ cd ../admin && npm ci
 
 ### Фаза 6 — запуск
 
+**Подготовлено 04.10.2026** (`docker-compose.yml`, `bot/Dockerfile`, `deploy/`):
+всё ниже, кроме облачного хранилища для копий, — порядок выкладки
+в `deploy/README.md`. Ждём VPS от заказчика.
+
 - `docker-compose.yml`: Caddy (HTTPS сам; `corethree.ru` → сайт,
   `bot.corethree.ru` → сервис: `/app`, `/tg/<секрет>`, `/api`), сайт
   (готовый `Dockerfile`), сервис (свой `Dockerfile`: node:22-alpine,

@@ -1,4 +1,5 @@
 node_modules
+**/node_modules
 .next
 .next-check
 .git
@@ -11,3 +12,12 @@ brand
 proto
 supabase
 BRIEF.md
+
+# служебное бота и мини-приложения: собирается в образе заново
+bot/.data
+bot/dist
+admin/dist
+# секреты и копии с сервера в образ не попадают
+.env
+deploy/*.env
+backups

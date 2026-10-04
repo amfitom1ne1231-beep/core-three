@@ -8,3 +8,8 @@ out/
 next-env.d.ts
 *.tsbuildinfo
 .netlify/
+
+# боевой запуск: секреты и копии базы живут только на сервере
+.env
+deploy/*.env
+backups/
