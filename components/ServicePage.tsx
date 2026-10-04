@@ -48,20 +48,20 @@ export default function ServicePage({ page, children }: { page: Page; children?:
           {/* номер направления как якорь сцены: тот же приём, что у гигантских
               чисел в карусели на главной — по нему видно, где ты в атласе */}
           <span
-            className="pointer-events-none absolute -left-[0.06em] bottom-[-0.18em] hidden font-mono text-[clamp(200px,26vw,420px)] leading-none tracking-[-0.05em] text-fg/[0.045] lg:block"
+            className="pointer-events-none absolute -left-[0.06em] bottom-[-0.18em] hidden font-mono text-[clamp(200px,26vw,420px)] leading-none tracking-[-0.05em] text-fg/[0.045] lg:block tp:hidden"
             aria-hidden
           >
             {page.n}
           </span>
 
-          <div className="relative grid items-center gap-[clamp(32px,6vh,64px)] px-4 pb-[clamp(56px,10vh,120px)] pt-[clamp(120px,19vh,200px)] sm:px-8 lg:min-h-[100svh] lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] lg:gap-[clamp(40px,5vw,88px)] lg:px-[72px]">
+          <div className="relative grid items-center gap-[clamp(32px,6vh,64px)] px-4 pb-[clamp(56px,10vh,120px)] pt-[clamp(120px,19vh,200px)] sm:px-8 lg:min-h-[100svh] lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] lg:gap-[clamp(40px,5vw,88px)] lg:px-[72px] tp:min-h-0 tp:grid-cols-1 tp:gap-11 tp:pt-[136px]">
             <div data-hero>
               {/* номер тот же, что в атласе: страница — продолжение карусели */}
               <span className="rail-label">
                 <b>{page.n}</b> / {page.group}
               </span>
               <h1
-                className="display m-0 mt-6 text-[clamp(32px,4.8vw,80px)]"
+                className="display m-0 mt-6 text-[clamp(32px,4.8vw,80px)] tp:mt-5 tp:text-[min(8vw,80px)]"
                 aria-label={`${page.title} ${page.titleAccent}`}
               >
                 <RevealText text={page.title} as="span" className="block" decorative />
@@ -73,7 +73,7 @@ export default function ServicePage({ page, children }: { page: Page; children?:
                   decorative
                 />
               </h1>
-              <p className="m-0 mt-8 max-w-[46ch] text-[clamp(14px,1.15vw,17px)] leading-relaxed text-dim">
+              <p className="m-0 mt-8 max-w-[46ch] text-[clamp(14px,1.15vw,17px)] leading-relaxed text-dim tp:max-w-[50ch] tp:text-[17px]">
                 {page.lead}
               </p>
               <div className="mt-9 flex flex-wrap gap-3.5">
@@ -83,7 +83,7 @@ export default function ServicePage({ page, children }: { page: Page; children?:
                 </Cta>
               </div>
 
-              <div className="scroll-cue mt-[clamp(28px,5vh,56px)] hidden lg:block" aria-hidden />
+              <div className="scroll-cue mt-[clamp(28px,5vh,56px)] hidden lg:block tp:hidden" aria-hidden />
             </div>
 
             {/* кадр направления: живая вставка во всю правую половину */}

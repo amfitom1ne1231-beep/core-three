@@ -1,4 +1,5 @@
 import type { Config } from 'tailwindcss';
+import plugin from 'tailwindcss/plugin';
 
 // Цвета живут в CSS-переменных: одна вёрстка обслуживает тёмную и светлую темы.
 export default {
@@ -34,5 +35,16 @@ export default {
       }
     }
   },
-  plugins: []
+  plugins: [
+    // Планшет в портрете — от iPad mini до iPad Pro 12.9. Сюда попадала
+    // телефонная раскладка (заголовок на 39 px, полэкрана пусто), а на 1024 —
+    // десктопная в две колонки с пустотой сверху и снизу. Экраном в `screens`
+    // его не завести: с нестандартным экраном Tailwind перестаёт собирать
+    // `max-sm:`, а на нём держится схема на телефоне. Вариант плагина
+    // в CSS стоит раньше `lg:`, поэтому `:root` — чтобы `tp:` перебивал
+    // и `lg:`, и классы вроде `section-y`, объявленные после утилит.
+    plugin(({ addVariant }) => {
+      addVariant('tp', '@media (min-width: 700px) and (max-width: 1100px) and (orientation: portrait) { :root & }');
+    })
+  ]
 } satisfies Config;

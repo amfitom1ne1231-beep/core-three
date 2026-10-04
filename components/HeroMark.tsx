@@ -185,8 +185,10 @@ export default function HeroMark() {
       ref={wrap}
       data-hero-mark
       aria-hidden
-      // центр по вертикали через top, а не translate: трансформы здесь ведёт GSAP
-      className="pointer-events-none absolute bottom-[-9svh] right-[-12vw] z-0 w-[84vw] max-w-[460px] sm:right-[-4vw] lg:bottom-auto lg:right-[clamp(24px,6vw,120px)] lg:top-[calc(50%-min(32vh,20vw))] lg:w-[min(64vh,40vw)] lg:max-w-none"
+      // центр по вертикали через top, а не translate: трансформы здесь ведёт GSAP.
+      // На планшете в портрете знак стоит целиком под текстом и занимает
+      // остаток экрана: 620 — высота шапки и текста над ним
+      className="pointer-events-none absolute bottom-[-9svh] right-[-12vw] z-0 w-[84vw] max-w-[460px] sm:right-[-4vw] lg:bottom-auto lg:right-[clamp(24px,6vw,120px)] lg:top-[calc(50%-min(32vh,20vw))] lg:w-[min(64vh,40vw)] lg:max-w-none tp:bottom-[4svh] tp:right-[7vw] tp:top-auto tp:w-[clamp(300px,calc(100svh-620px),540px)] tp:max-w-none"
     >
       <div
         ref={scene}

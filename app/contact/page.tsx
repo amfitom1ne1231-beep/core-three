@@ -26,11 +26,11 @@ export default function ContactPage() {
   const intro = (
     <div data-hero className="mb-[clamp(40px,7vh,72px)]">
       <span className="rail-label">{contact.label}</span>
-      <h1 className="display m-0 mt-6 text-[clamp(40px,6vw,104px)]" aria-label={`${contact.title} ${contact.titleAccent}`}>
+      <h1 className="display m-0 mt-6 text-[clamp(40px,6vw,104px)] tp:text-[min(8vw,64px)]" aria-label={`${contact.title} ${contact.titleAccent}`}>
         <RevealText text={contact.title} as="span" className="block" decorative />
         <RevealText text={contact.titleAccent} as="span" className="block font-bold tracking-[-0.035em]" delay={0.12} decorative />
       </h1>
-      <p className="m-0 mt-7 max-w-[52ch] text-[clamp(14px,1.15vw,17px)] leading-relaxed text-dim">{contact.lead}</p>
+      <p className="m-0 mt-7 max-w-[52ch] text-[clamp(14px,1.15vw,17px)] leading-relaxed text-dim tp:text-[17px]">{contact.lead}</p>
 
       {/* три факта, которые спрашивают раньше, чем пишут */}
       <ul className="m-0 mt-8 flex list-none flex-wrap gap-x-[clamp(16px,3vw,40px)] gap-y-3 p-0">
@@ -63,7 +63,7 @@ export default function ContactPage() {
       <main id="content" className="relative z-10 w-full">
         <section
           data-chapter="contact"
-          className="relative px-4 pb-[clamp(56px,10vh,120px)] pt-[clamp(112px,16vh,176px)] sm:px-8 lg:px-[72px]"
+          className="relative px-4 pb-[clamp(56px,10vh,120px)] pt-[clamp(112px,16vh,176px)] sm:px-8 lg:px-[72px] tp:pt-[136px]"
           aria-label="Заявка"
         >
           <Brief intro={intro} />

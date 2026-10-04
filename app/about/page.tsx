@@ -23,11 +23,11 @@ export default function AboutPage() {
       <main id="content" className="relative z-10 w-full">
         {/* ---------- первый экран ---------- */}
         <section data-chapter="hero" className="relative overflow-hidden" aria-label="Начало">
-          <div data-hero className="px-4 pb-[clamp(40px,7vh,88px)] pt-[clamp(120px,19vh,200px)] sm:px-8 lg:px-[72px]">
+          <div data-hero className="px-4 pb-[clamp(40px,7vh,88px)] pt-[clamp(120px,19vh,200px)] sm:px-8 lg:px-[72px] tp:pb-10 tp:pt-[136px]">
             <span className="rail-label">{ABOUT.label}</span>
-            <div className="mt-6 grid items-end gap-[clamp(28px,5vh,56px)] lg:grid-cols-[1.6fr_1fr] lg:gap-[clamp(40px,5vw,96px)]">
+            <div className="mt-6 grid items-end gap-[clamp(28px,5vh,56px)] lg:grid-cols-[1.6fr_1fr] lg:gap-[clamp(40px,5vw,96px)] tp:grid-cols-1">
               <h1
-                className="display m-0 text-[clamp(32px,5vw,86px)]"
+                className="display m-0 text-[clamp(32px,5vw,86px)] tp:text-[min(8vw,80px)]"
                 aria-label={`${ABOUT.title} ${ABOUT.titleAccent}`}
               >
                 <RevealText text={ABOUT.title} as="span" className="block" decorative />
@@ -39,14 +39,14 @@ export default function AboutPage() {
                   decorative
                 />
               </h1>
-              <p className="m-0 max-w-[44ch] text-[clamp(14px,1.15vw,17px)] leading-relaxed text-dim">{ABOUT.lead}</p>
+              <p className="m-0 max-w-[44ch] text-[clamp(14px,1.15vw,17px)] leading-relaxed text-dim tp:max-w-[50ch] tp:text-[17px]">{ABOUT.lead}</p>
             </div>
           </div>
 
           {/* короткие цифры: четыре ответа, за которыми обычно пишут */}
-          <dl className="m-0 grid grid-cols-2 gap-px border-y border-line bg-line lg:grid-cols-4">
+          <dl className="m-0 grid grid-cols-2 gap-px border-y border-line bg-line lg:grid-cols-4 tp:grid-cols-4">
             {ABOUT.numbers.items.map((it) => (
-              <div key={it.text} className="bg-bg px-4 py-[clamp(20px,3.4vh,40px)] sm:px-8 lg:px-[72px]">
+              <div key={it.text} className="bg-bg px-4 py-[clamp(20px,3.4vh,40px)] sm:px-8 lg:px-[72px] tp:px-6">
                 <dt className="display m-0 text-[clamp(30px,3.6vw,56px)] leading-none">{it.value}</dt>
                 <dd className="m-0 mt-3 text-[13px] leading-snug text-dim">{it.text}</dd>
               </div>

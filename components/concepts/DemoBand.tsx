@@ -6,7 +6,6 @@ import type { DemoMeta } from '@/content/concepts';
 
 export type BandItem = {
   slug: string;
-  kind: string;
   title: string;
   niche: string;
   points: readonly string[];
@@ -57,7 +56,7 @@ export default function DemoBand({
           data-reveal="clip"
           className="group relative aspect-[16/10] overflow-hidden rounded-[10px] border border-line bg-elev"
         >
-          <DemoView slug={item.slug} kind={item.kind} title={meta.title} className="h-full w-full" />
+          <DemoView slug={item.slug} title={meta.title} className="h-full w-full" />
 
           <Link
             href={`/concepts/${item.slug}`}

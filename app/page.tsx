@@ -62,11 +62,12 @@ export default function Home() {
           {/* текст — отдельный слой: на скролле он уходит вглубь, а знак разлетается */}
           <div
             data-hero
-            // на телефоне текст наверху, знак поднимается снизу; на десктопе они рядом
-            className="relative z-10 flex h-full flex-col justify-start px-4 pt-[clamp(150px,23vh,210px)] sm:px-8 lg:justify-center lg:px-[72px] lg:pt-0"
+            // на телефоне текст наверху, знак поднимается снизу; на десктопе они рядом;
+            // на планшете в портрете текст наверху, знак целиком под ним
+            className="relative z-10 flex h-full flex-col justify-start px-4 pt-[clamp(150px,23vh,210px)] sm:px-8 lg:justify-center lg:px-[72px] lg:pt-0 tp:justify-start tp:pt-[150px]"
           >
             {/* рельс трёх ядер — имена с дескриптора логотипа */}
-            <div className="absolute left-4 right-4 top-[clamp(88px,14vh,150px)] flex flex-wrap gap-x-[clamp(12px,3vw,40px)] gap-y-2 sm:left-8 sm:right-8 lg:left-[72px] lg:right-[72px]">
+            <div className="absolute left-4 right-4 top-[clamp(88px,14vh,150px)] flex flex-wrap gap-x-[clamp(12px,3vw,40px)] gap-y-2 sm:left-8 sm:right-8 lg:left-[72px] lg:right-[72px] tp:top-[104px]">
               {SITE.cores.map((core) => (
                 <span key={core.n} className="rail-label">
                   <b>{core.n}</b> / {core.name}
@@ -76,7 +77,7 @@ export default function Home() {
 
             {/* заголовок озвучивается целиком, посимвольная разбивка скрыта от читалок */}
             <h1
-              className="display m-0 text-[clamp(56px,9.4vw,160px)]"
+              className="display m-0 text-[clamp(56px,9.4vw,160px)] tp:text-[min(11.5vw,112px)]"
               aria-label={`${SITE.hero.title} ${SITE.hero.titleStrong}`}
             >
               <RevealText text={SITE.hero.title} as="span" className="block" decorative />
@@ -92,7 +93,7 @@ export default function Home() {
             <RevealText
               text={SITE.hero.lead}
               as="p"
-              className="mt-[clamp(20px,3.4vh,40px)] max-w-[38ch] text-[clamp(15px,1.3vw,19px)] leading-[1.6] text-dim"
+              className="mt-[clamp(20px,3.4vh,40px)] max-w-[38ch] text-[clamp(15px,1.3vw,19px)] leading-[1.6] text-dim tp:max-w-[50ch] tp:text-[17px]"
               delay={0.3}
               spread={0.7}
             />

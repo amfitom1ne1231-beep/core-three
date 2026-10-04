@@ -37,11 +37,11 @@ export default function ConceptsPage() {
       <main id="content" className="relative z-10 w-full">
         {/* ---------- первый экран ---------- */}
         <section data-chapter="hero" className="relative overflow-hidden" aria-label="Начало">
-          <div data-hero className="px-4 pb-[clamp(48px,9vh,110px)] pt-[clamp(120px,19vh,200px)] sm:px-8 lg:px-[72px]">
+          <div data-hero className="px-4 pb-[clamp(48px,9vh,110px)] pt-[clamp(120px,19vh,200px)] sm:px-8 lg:px-[72px] tp:pb-10 tp:pt-[136px]">
             <span className="rail-label">{PAGE.label}</span>
-            <div className="mt-6 grid items-end gap-[clamp(28px,5vh,56px)] lg:grid-cols-[1.6fr_1fr] lg:gap-[clamp(40px,5vw,96px)]">
+            <div className="mt-6 grid items-end gap-[clamp(28px,5vh,56px)] lg:grid-cols-[1.6fr_1fr] lg:gap-[clamp(40px,5vw,96px)] tp:grid-cols-1">
               <h1
-                className="display m-0 text-[clamp(32px,5vw,86px)]"
+                className="display m-0 text-[clamp(32px,5vw,86px)] tp:text-[min(8vw,80px)]"
                 aria-label={`${PAGE.title} ${PAGE.titleAccent}`}
               >
                 <RevealText text={PAGE.title} as="span" className="block" decorative />
@@ -53,11 +53,11 @@ export default function ConceptsPage() {
                   decorative
                 />
               </h1>
-              <p className="m-0 max-w-[44ch] text-[clamp(14px,1.15vw,17px)] leading-relaxed text-dim">{PAGE.lead}</p>
+              <p className="m-0 max-w-[44ch] text-[clamp(14px,1.15vw,17px)] leading-relaxed text-dim tp:max-w-[50ch] tp:text-[17px]">{PAGE.lead}</p>
             </div>
 
             {/* указатель ниш: что вообще лежит ниже */}
-            <ul className="m-0 mt-[clamp(32px,6vh,72px)] flex list-none flex-wrap gap-x-[clamp(16px,3vw,44px)] gap-y-3 border-t border-line p-0 pt-6">
+            <ul className="m-0 mt-[clamp(32px,6vh,72px)] tp:mt-10 flex list-none flex-wrap gap-x-[clamp(16px,3vw,44px)] gap-y-3 border-t border-line p-0 pt-6">
               {items.map((c) => (
                 <li key={c.slug} className="rail-label">
                   {c.niche}
@@ -70,7 +70,8 @@ export default function ConceptsPage() {
         {/* ---------- собранные демо ---------- */}
         {ready.length > 0 && (
           <section data-chapter="concepts" className="relative border-t border-line" aria-label="Собранные демо">
-            <div data-recede className="flex flex-col gap-[clamp(56px,11vh,140px)] px-4 section-y sm:px-8 lg:px-[72px]">
+            {/* на планшете первое демо встаёт на первый экран — отступ над ним короче */}
+            <div data-recede className="flex flex-col gap-[clamp(56px,11vh,140px)] px-4 section-y sm:px-8 lg:px-[72px] tp:pt-12">
               {ready.map((c, i) => {
                 const meta = demoBySlug(c.slug);
                 if (!meta) return null;
