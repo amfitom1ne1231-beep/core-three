@@ -58,8 +58,8 @@ export const CORE_PHASE = [0, 2.09, 4.18] as const;
 export type SilkHandle = {
   destroy: () => void;
   setParams: (patch: Partial<SilkParams>) => void;
-  /** 0 — тёмный матовый, 1 — молочный (волна 2). Переход плавный. */
-  setTheme: (mode: 0 | 1) => void;
+  /** 0 — тёмный матовый, 1 — молочный. Переход плавный; `instant` — сразу. */
+  setTheme: (mode: 0 | 1, instant?: boolean) => void;
   /**
    * Не рисовать: материал целиком закрыт завесой главы. Последний кадр
    * остаётся на канвасе, под непрозрачной завесой его всё равно не видно.
@@ -435,8 +435,9 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
         silk = build(`#define OCT ${P.octaves | 0}\n${SILK_FRAG}`);
       }
     },
-    setTheme(next) {
+    setTheme(next, instant = false) {
       modeTarget = next;
+      if (instant) mode = next;
       dirty = true;
     },
     setPaused(next) {

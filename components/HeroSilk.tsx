@@ -161,7 +161,7 @@ export default function HeroSilk({ params }: { params?: Partial<SilkParams> }) {
      * `setTheme` двигает `uMode` к цели, а не переключает его. Рождается
      * материал сразу в текущей теме (см. `mode` выше).
      */
-    const offTheme = onThemeChange((t) => silk.setTheme(t === 'light' ? 1 : 0));
+    const offTheme = onThemeChange((t, instant) => silk.setTheme(t === 'light' ? 1 : 0, instant));
 
     return () => {
       reblend.current = null;

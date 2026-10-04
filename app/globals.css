@@ -331,7 +331,7 @@ body {
   gap: 10px;
   padding-left: 16px;
   padding-right: 5px;
-  font-size: 10px;
+  font-size: 11px;
 }
 .cta-primary {
   background: var(--fg);
@@ -1411,8 +1411,8 @@ html.has-cursor :is(input:not([type='checkbox']):not([type='radio']):not([type='
 }
 
 .cursor-dot {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   background: #fff;
   mix-blend-mode: difference;
 }
@@ -1427,6 +1427,11 @@ html.has-cursor :is(input:not([type='checkbox']):not([type='radio']):not([type='
   border: 1px solid rgb(var(--fg-rgb) / 0.5);
   opacity: 0;
   --s: 0.4;
+}
+/* на молочном материале волосяное полупрозрачное кольцо терялось */
+:root[data-theme='light'] .cursor-ring {
+  border-width: 1.5px;
+  border-color: rgb(var(--fg-rgb) / 0.75);
 }
 .cursor-ring.is-down { --p: 0.82; }
 
@@ -1642,6 +1647,150 @@ html.has-cursor :is(input:not([type='checkbox']):not([type='radio']):not([type='
 @media (prefers-reduced-motion: reduce) {
   .link-pulse,
   .link-trail { animation: none; stroke-dashoffset: 700; }
+}
+
+/* ============================================================
+   Выключатель света (components/ThemeToggle.tsx): лампа на шнурке.
+   Погашена в тёмной теме, горит в светлой.
+   ============================================================ */
+.lamp {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: -8px 0;
+  color: var(--fg);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+/* шнурок тянут вниз — страница при этом листаться не должна */
+.lamp-corded {
+  touch-action: none;
+}
+.lamp-hang {
+  position: relative;
+  display: block;
+  transform: translateY(var(--pull, 0px));
+  will-change: transform;
+}
+/* уходит за верхний край экрана: сколько ни тяни, обрыва не видно */
+.lamp-cord {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% - 1px);
+  width: 1px;
+  height: 200px;
+  margin-left: -0.5px;
+  background: rgb(var(--fg-rgb) / 0.42);
+  transition: background-color 0.3s;
+}
+.lamp-bulb {
+  display: block;
+  width: 18px;
+  height: 26px;
+  overflow: visible;
+  transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.5s;
+}
+.lamp-bulb path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  transition: fill 0.5s, stroke 0.4s, opacity 0.4s;
+}
+.lamp-cap {
+  opacity: 0.7;
+}
+.lamp-glass {
+  opacity: 0.8;
+}
+.lamp-wire {
+  opacity: 0.45;
+}
+.lamp:hover .lamp-bulb,
+.lamp:focus-visible .lamp-bulb {
+  transform: scale(1.12);
+}
+.lamp:hover .lamp-cord {
+  background: rgb(var(--fg-rgb) / 0.7);
+}
+.lamp:hover .lamp-glass,
+.lamp:hover .lamp-wire {
+  opacity: 1;
+}
+.lamp:focus-visible {
+  outline: 1px solid var(--fg);
+  outline-offset: 2px;
+  border-radius: 12px;
+}
+/* горит */
+:root[data-theme='light'] .lamp-glass {
+  fill: color-mix(in srgb, var(--accent) 22%, #fff);
+  stroke: var(--accent);
+  opacity: 1;
+}
+:root[data-theme='light'] .lamp-wire {
+  stroke: var(--accent);
+  opacity: 1;
+}
+:root[data-theme='light'] .lamp-bulb {
+  filter: drop-shadow(0 0 7px rgb(var(--accent-rgb) / 0.45));
+}
+
+/* ============================================================
+   Смена темы волной (lib/theme.ts → switchTheme).
+   Страница в новой теме проявляется кругом от переключателя:
+   кромка мягкая, по фронту идёт полоса света.
+   ============================================================ */
+@property --wave {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+/* обычный кроссфейд снимков здесь не нужен: старая тема лежит снизу
+   целиком, новая проявляется маской */
+html[data-theme-wave]::view-transition-old(root),
+html[data-theme-wave]::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+html[data-theme-wave]::view-transition-new(root) {
+  -webkit-mask-image: radial-gradient(
+    circle at var(--wave-x) var(--wave-y),
+    #000 calc(var(--wave) - var(--wave-edge)),
+    transparent var(--wave)
+  );
+  mask-image: radial-gradient(
+    circle at var(--wave-x) var(--wave-y),
+    #000 calc(var(--wave) - var(--wave-edge)),
+    transparent var(--wave)
+  );
+}
+/* полоса света на фронте волны: свой слой поверх обоих снимков */
+.theme-rim {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  pointer-events: none;
+  view-transition-name: theme-rim;
+  background: radial-gradient(
+    circle at var(--wave-x) var(--wave-y),
+    transparent calc(var(--wave) - var(--wave-edge) * 1.5),
+    rgb(170 205 255 / 0.16) calc(var(--wave) - var(--wave-edge) * 0.75),
+    rgb(255 255 255 / 0.34) calc(var(--wave) - var(--wave-edge) * 0.42),
+    rgb(170 205 255 / 0.1) calc(var(--wave) - var(--wave-edge) * 0.12),
+    transparent var(--wave)
+  );
+}
+::view-transition-old(theme-rim) {
+  display: none;
+}
+::view-transition-new(theme-rim),
+::view-transition-group(theme-rim) {
+  animation: none;
 }
 
 /* ============================================================

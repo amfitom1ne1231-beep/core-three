@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
-import { onThemeChange, readTheme, type Theme } from '@/lib/theme';
+import { onThemeChange, onThemePrepare, readTheme, type Theme } from '@/lib/theme';
 import darkShots from '@/public/scheme/dark/shots.json';
 import lightShots from '@/public/scheme/light/shots.json';
 
@@ -233,6 +233,23 @@ export default function OrderScheme({
     setTheme(readTheme());
     return onThemeChange(setTheme);
   }, []);
+
+  // Смена темы идёт волной по снимку страницы: кадр станции в новой теме
+  // должен быть скачан и разобран до неё, иначе под фронтом окажется пустота
+  useEffect(() => {
+    if (!ready) return;
+    return onThemePrepare((to) =>
+      Promise.all(
+        (['', '-a', '-b', '-c'] as const)
+          .filter((k) => k !== '-a' || MAPS[to].shots[cur].a)
+          .map((k) => {
+            const img = new Image();
+            img.src = `${ROOT}/${to}/${cur}${k}.webp`;
+            return img.decode().catch(() => {});
+          })
+      )
+    );
+  }, [ready, cur]);
 
   // Ролики следующего шага меняются не сразу: прошлый ещё растворяется
   // над кадром. Вместе с ними под сцену встаёт и следующий кадр — к началу

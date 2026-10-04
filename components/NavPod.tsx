@@ -680,7 +680,7 @@ export default function NavPod() {
           {/* тема — состояние просмотра, поэтому стоит рядом с действиями,
               а не прячется в шапке, до которой отсюда ещё надо доехать */}
           <div className="mt-1 flex items-center justify-between gap-3 border-t border-line px-3 pb-1 pt-2.5">
-            <span className="rail-label">Тема</span>
+            <span className="rail-label">Свет</span>
             <ThemeToggle />
           </div>
         </div>

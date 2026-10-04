@@ -113,10 +113,12 @@ export default function Header() {
         className="pointer-events-auto -my-2 flex items-center gap-2.5 py-2 text-fg transition-colors duration-300 hover:text-accent"
       >
         {/* сюда садится знак прелоадера на всех страницах, кроме главной */}
-        <span data-header-mark className="block h-7 w-7">
+        {/* с планшета знак и имя крупнее: в шапке они терялись, особенно
+            на светлом материале; на телефоне место занято переключателем темы */}
+        <span data-header-mark className="block h-7 w-7 md:h-9 md:w-9">
           <Mark className="h-full w-full" />
         </span>
-        <span data-header-word className="font-mono text-[11px] uppercase tracking-rail">
+        <span data-header-word className="font-mono text-[11px] uppercase tracking-rail md:text-[13px]">
           {SITE.name}
         </span>
       </Link>
@@ -132,8 +134,9 @@ export default function Header() {
               key={item.href}
               href={item.href}
               aria-current={here ? 'page' : undefined}
-              className={`relative -my-2 py-2 font-mono text-[10px] uppercase tracking-rail transition-colors duration-300 hover:text-fg ${
-                here ? 'text-fg' : 'text-dim'
+              // 10px и приглушённый цвет на подвижном материале сливались с фоном
+              className={`relative -my-2 py-2 font-mono text-[12px] uppercase tracking-rail transition-colors duration-300 hover:text-fg ${
+                here ? 'text-fg' : 'text-fg/80'
               }`}
             >
               {item.label}
@@ -147,15 +150,14 @@ export default function Header() {
         })}
       </nav>
 
-      {/* Тема живёт рядом с навигацией: это настройка просмотра,
-          а не действие, поэтому шрифт и вес те же, что у пунктов меню.
-          На телефоне она тоже в шапке: внизу раскрытого меню её не находили.
-          Уже 360px два слова не помещаются между знаком и меню — там
-          переключатель остаётся внутри меню. */}
-      <ThemeToggle className="max-[359px]:hidden" />
+      {/* Свет: лампа на шнурке висит от верхнего края рядом с навигацией.
+          На телефоне она тоже в шапке — внизу раскрытого меню переключатель
+          не находили. */}
+      <ThemeToggle cord />
 
-      {/* на узких экранах вместо кнопки — меню: CTA лежит внутри него */}
-      <Cta href={contactHref(pathname)} size="sm" tone="ghost" className="pointer-events-auto !hidden md:!inline-flex">
+      {/* Главное действие — сплошной кнопкой: контурная в углу терялась.
+          На узких экранах вместо кнопки — меню: CTA лежит внутри него */}
+      <Cta href={contactHref(pathname)} size="sm" className="pointer-events-auto !hidden md:!inline-flex">
         {SITE.hero.primary.label}
       </Cta>
 

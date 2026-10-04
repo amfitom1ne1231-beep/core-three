@@ -2,7 +2,6 @@
 
 export const SITE = {
   name: 'CoreThree',
-  legal: 'Самозанятые',
   email: 'corethree@mail.ru',
   // заглушка до волны 3, когда появится бот и рабочий аккаунт
   telegram: 'corethree',

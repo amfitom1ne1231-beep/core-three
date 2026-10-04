@@ -2,6 +2,7 @@ import Link from 'next/link';
 import Mark from './Mark';
 import FinaleStage from './footer/FinaleStage';
 import NextPage from './footer/NextPage';
+import { OPERATOR } from '@/content/legal';
 import { SITE } from '@/content/site';
 
 /**
@@ -75,10 +76,15 @@ export default function Footer({ cta = true }: { cta?: boolean }) {
                   </a>
                 </li>
               </ul>
-              {/* юридическая строка читается, а не угадывается: 9px в
-                  --fg-faint были на грани различимости */}
+              {/* Кто исполнитель и оператор данных — видно на каждой странице,
+                  а не только в политике. Строка читается, а не угадывается:
+                  9px в --fg-faint были на грани различимости */}
               <p className="mt-6 font-mono text-[10px] uppercase leading-relaxed tracking-rail text-faint">
-                {SITE.legal} · {new Date().getFullYear()}
+                © {new Date().getFullYear()} {SITE.name}
+                <br />
+                Самозанятый {OPERATOR.name}
+                <br />
+                ИНН {OPERATOR.inn}
               </p>
             </div>
           </div>
