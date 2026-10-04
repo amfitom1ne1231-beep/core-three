@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Cta from './Cta';
 import { onest, SITE_FONT } from './siteFont';
+import MessengerMark from '@/components/MessengerMark';
 import { contactHref } from '@/lib/lead';
 import { lockScroll } from '@/lib/scroll';
 import { DEMOS } from '@/content/concepts';
@@ -227,11 +228,13 @@ export default function MobileMenu({ onOpenChange }: { onOpenChange?: (open: boo
             href={`https://t.me/${SITE.telegram}`}
             target="_blank"
             rel="noreferrer noopener"
-            className="text-[14px] text-dim"
+            className="flex items-center gap-2.5 text-[14px] text-dim"
           >
-            {SITE.telegramLabel}
+            <MessengerMark kind="telegram" />
+            Telegram {SITE.telegramLabel}
           </a>
-          <a href={SITE.max} target="_blank" rel="noreferrer noopener" className="text-[14px] text-dim">
+          <a href={SITE.max} target="_blank" rel="noreferrer noopener" className="flex items-center gap-2.5 text-[14px] text-dim">
+            <MessengerMark kind="max" />
             {SITE.maxLabel}
           </a>
         </div>

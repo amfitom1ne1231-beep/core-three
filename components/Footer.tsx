@@ -4,6 +4,7 @@ import DirectionLinks from './footer/DirectionLinks';
 import Finale from './footer/Finale';
 import { OPERATOR } from '@/content/legal';
 import { SITE } from '@/content/site';
+import MessengerMark from '@/components/MessengerMark';
 
 /**
  * Конец страницы: финал в одну фразу и подвал.
@@ -68,9 +69,10 @@ export default function Footer({ cta = true }: { cta?: boolean }) {
                     href={`https://t.me/${SITE.telegram}`}
                     target="_blank"
                     rel="noreferrer noopener"
-                    className="block py-3.5 text-[13px] text-dim transition-colors duration-300 hover:text-fg sm:py-0"
+                    className="flex items-center gap-2 py-3.5 text-[13px] text-dim transition-colors duration-300 hover:text-fg sm:py-0"
                   >
-                    {SITE.telegramLabel}
+                    <MessengerMark kind="telegram" size={14} />
+                    Telegram {SITE.telegramLabel}
                   </a>
                 </li>
                 <li>
@@ -78,8 +80,9 @@ export default function Footer({ cta = true }: { cta?: boolean }) {
                     href={SITE.max}
                     target="_blank"
                     rel="noreferrer noopener"
-                    className="block py-3.5 text-[13px] text-dim transition-colors duration-300 hover:text-fg sm:py-0"
+                    className="flex items-center gap-2 py-3.5 text-[13px] text-dim transition-colors duration-300 hover:text-fg sm:py-0"
                   >
+                    <MessengerMark kind="max" size={14} />
                     {SITE.maxLabel}
                   </a>
                 </li>

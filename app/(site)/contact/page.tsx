@@ -5,6 +5,7 @@ import RevealText from '@/components/RevealText';
 import ScrollScenes from '@/components/ScrollScenes';
 import Process from '@/components/service/Process';
 import { SITE } from '@/content/site';
+import MessengerMark from '@/components/MessengerMark';
 import { pageMeta } from '@/lib/meta';
 
 export const metadata: Metadata = pageMeta({ title: 'Обсудить проект', description: SITE.contact.lead, path: '/contact' });
@@ -47,16 +48,18 @@ export default function ContactPage() {
           href={`https://t.me/${SITE.telegram}`}
           target="_blank"
           rel="noreferrer noopener"
-          className="text-fg underline decoration-line-strong underline-offset-4 transition-colors duration-300 hover:decoration-accent"
+          className="inline-flex items-center gap-2 text-fg underline decoration-line-strong underline-offset-4 transition-colors duration-300 hover:decoration-accent"
         >
+          <MessengerMark kind="telegram" />
           Telegram {SITE.telegramLabel}
         </a>
         <a
           href={SITE.max}
           target="_blank"
           rel="noreferrer noopener"
-          className="text-fg underline decoration-line-strong underline-offset-4 transition-colors duration-300 hover:decoration-accent"
+          className="inline-flex items-center gap-2 text-fg underline decoration-line-strong underline-offset-4 transition-colors duration-300 hover:decoration-accent"
         >
+          <MessengerMark kind="max" />
           {SITE.maxLabel}
         </a>
         <a href={`mailto:${SITE.email}`} className="text-dim underline decoration-line-strong underline-offset-4 transition-colors duration-300 hover:text-fg">
