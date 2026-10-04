@@ -1,3 +1,4 @@
+import { createHmac } from 'node:crypto';
 import type { Update, UserFromGetMe } from 'grammy/types';
 import { loadConfig, type Config } from '../src/config';
 import { openDb } from '../src/db/client';
@@ -16,12 +17,29 @@ export const GROUP = { id: -1001234567890, type: 'supergroup' as const, title: '
 export function testConfig(over: Record<string, string> = {}): Config {
   return loadConfig({
     NODE_ENV: 'test',
-    BOT_TOKEN: '123:test',
+    BOT_TOKEN: TOKEN,
     OWNER_TG_IDS: String(OWNER.id),
     INTAKE_SECRET: 'test-intake-secret-0123456789',
     SITE_URL: 'https://corethree.ru',
     ...over
   });
+}
+
+export const TOKEN = '123:test';
+
+/** initData так, как её подписывает Telegram, открывая мини-приложение. */
+export function initData(user: TgUserLike, opts: { token?: string; at?: Date } = {}) {
+  const fields: Record<string, string> = {
+    auth_date: String(Math.floor((opts.at ?? new Date()).getTime() / 1000)),
+    query_id: 'AAF-test',
+    user: JSON.stringify(user)
+  };
+  const check = Object.keys(fields)
+    .sort()
+    .map((k) => `${k}=${fields[k]}`)
+    .join('\n');
+  const key = createHmac('sha256', 'WebAppData').update(opts.token ?? TOKEN).digest();
+  return new URLSearchParams({ ...fields, hash: createHmac('sha256', key).update(check).digest('hex') }).toString();
 }
 
 const BOT_INFO: UserFromGetMe = {

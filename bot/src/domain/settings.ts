@@ -19,3 +19,16 @@ export async function setGroup(db: Db, group: Group) {
     .values({ key: 'group', value: group })
     .onConflictDoUpdate({ target: settings.key, set: { value: group, updatedAt: new Date() } });
 }
+
+/** Простая настройка по ключу — то, что сервис помнит между запусками. */
+export async function getSetting<T>(db: Db, key: string): Promise<T | null> {
+  const [row] = await db.select().from(settings).where(eq(settings.key, key));
+  return (row?.value as T | undefined) ?? null;
+}
+
+export async function setSetting(db: Db, key: string, value: unknown) {
+  await db
+    .insert(settings)
+    .values({ key, value })
+    .onConflictDoUpdate({ target: settings.key, set: { value, updatedAt: new Date() } });
+}

@@ -32,6 +32,28 @@
       "port": 8787
     },
     {
+      "name": "corethree-bot-tunnel",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "bot",
+        "run",
+        "dev:tunnel"
+      ],
+      "port": 8787
+    },
+    {
+      "name": "corethree-admin",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "admin",
+        "run",
+        "dev"
+      ],
+      "port": 5173
+    },
+    {
       "name": "proto",
       "runtimeExecutable": "python3",
       "runtimeArgs": [

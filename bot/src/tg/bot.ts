@@ -9,13 +9,14 @@ import {
   leadView,
   markLost,
   openLeads,
+  reopenLead,
   setCard,
   setStage,
   takeLead,
   type Lead,
   type Member
 } from '../domain/leads';
-import { getGroup, setGroup } from '../domain/settings';
+import { getGroup, getSetting, setGroup, setSetting } from '../domain/settings';
 import { FUNNEL, LOST_REASONS, STAGE_LABEL, type LostReason } from '../domain/stages';
 import { acceptInvite, createInvite, ensureOwner, memberByTg, team } from '../domain/team';
 import { shortTime } from '../domain/worktime';
@@ -49,12 +50,57 @@ export function createBot({ db, config, now = () => new Date(), botInfo }: Deps)
   /** Что происходит в группе — в лог: при первом прогоне это единственное окно. Без имён. */
   const log = config.NODE_ENV === 'test' ? () => {} : (line: string) => console.info(`[bot] ${line}`);
 
+  /* ---------- мини-приложение ---------- */
+
+  /** Адрес приложения; его нет, пока сервис не виден снаружи по HTTPS. */
+  const appBase = config.PUBLIC_URL ? `${config.PUBLIC_URL.replace(/\/+$/, '')}/app/` : null;
+
+  /**
+   * «Открыть» под карточкой в группе. Кнопка, которая открывает
+   * мини-приложение прямо из сообщения (web_app), работает только в личке,
+   * поэтому в группе это обычная ссылка: либо сразу в приложение — когда
+   * его адрес постоянный и вписан у @BotFather, — либо в личку бота,
+   * где он отвечает кнопкой на эту заявку.
+   */
+  function openLink(id: number) {
+    if (!appBase) return null;
+    const me = bot.botInfo.username;
+    return config.MINI_APP_LINK === 'direct' ? `https://t.me/${me}?startapp=lead_${id}` : `https://t.me/${me}?start=lead_${id}`;
+  }
+
+  /** Кнопка меню в личке у каждого из команды: открывает приложение. Нет адреса — обычный список команд. */
+  async function setMenu(tgId: number) {
+    await bot.api
+      .setChatMenuButton({
+        chat_id: tgId,
+        menu_button: appBase ? { type: 'web_app', text: 'Студия', web_app: { url: appBase } } : { type: 'commands' }
+      })
+      // человек ещё не открывал личку с ботом — кнопку поставим, когда напишет /start
+      .catch(() => {});
+  }
+
+  async function syncMenu() {
+    for (const m of await team(db)) await setMenu(m.tgId);
+  }
+
+  /**
+   * «Открыть» под карточкой есть, только пока у приложения есть адрес.
+   * Адрес появился или пропал — открытые карточки перерисовываются один
+   * раз; при обычном перезапуске Telegram зря не дёргаем.
+   */
+  async function syncCards() {
+    const has = Boolean(appBase);
+    if ((await getSetting<boolean>(db, 'cards_open_button')) === has) return;
+    for (const lead of await openLeads(db)) await refreshCard(lead.id).catch((e) => console.error('[bot] карточка', lead.id, e));
+    await setSetting(db, 'cards_open_button', has);
+  }
+
   /* ---------- карточки ---------- */
 
   async function render(id: number, menu: Menu = 'main') {
     const v = await leadView(db, id);
     if (!v) return null;
-    return { v, text: cardText(v, now(), tz), keyboard: cardKeyboard(v, menu) };
+    return { v, text: cardText(v, now(), tz), keyboard: cardKeyboard(v, menu, openLink(id)) };
   }
 
   /** Новая заявка — карточкой в рабочую группу. Без группы молчит: заявка уже в базе. */
@@ -166,7 +212,17 @@ export function createBot({ db, config, now = () => new Date(), botInfo }: Deps)
       }
     }
     if (!ctx.member) return outsider(ctx);
-    return ctx.reply(HELP, { parse_mode: 'HTML' });
+    await setMenu(ctx.from!.id);
+
+    // пришли по «Открыть» с карточки в группе — отвечаем кнопкой на эту заявку
+    const leadId = Number(payload.match(/^lead_(\d{1,9})$/)?.[1]);
+    if (leadId) {
+      const r = await render(leadId);
+      if (!r) return ctx.reply(`Заявки #${leadId} нет.`);
+      const kb = appBase ? new InlineKeyboard().webApp(`Открыть заявку #${leadId}`, `${appBase}leads/${leadId}`) : undefined;
+      return ctx.reply(r.text, { parse_mode: 'HTML', reply_markup: kb, link_preview_options: { is_disabled: true } });
+    }
+    return ctx.reply(appBase ? `${HELP}\n\nВсё то же и подробнее — в приложении: кнопка «Студия» слева от поля ввода.` : HELP, { parse_mode: 'HTML' });
   });
 
   bot.command('help', (ctx) => (ctx.member ? ctx.reply(HELP, { parse_mode: 'HTML' }) : outsider(ctx)));
@@ -234,8 +290,7 @@ export function createBot({ db, config, now = () => new Date(), botInfo }: Deps)
         return ctx.answerCallbackQuery({ text: STAGE_LABEL[stage] });
       }
       case 'reopen': {
-        const v = await leadView(db, p.id);
-        await setStage(db, p.id, me.id, v?.lead.firstReplyAt ? 'contacted' : 'new', at);
+        await reopenLead(db, p.id, me.id, at);
         await refreshCard(p.id);
         return ctx.answerCallbackQuery({ text: 'Снова в работе' });
       }
@@ -291,7 +346,7 @@ export function createBot({ db, config, now = () => new Date(), botInfo }: Deps)
 
   bot.catch((err) => console.error('[bot]', err.error));
 
-  return { bot, publishLead, refreshCard, remind, alarm };
+  return { bot, publishLead, refreshCard, remind, alarm, syncMenu, syncCards };
 }
 
 /** Ссылка на карточку в супергруппе: t.me/c/<id без -100>/<сообщение>. */

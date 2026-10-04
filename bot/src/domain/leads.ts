@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNull, notInArray } from 'drizzle-orm';
+import { and, asc, desc, eq, ilike, inArray, isNull, notInArray, or, type SQL } from 'drizzle-orm';
 import type { Db } from '../db/client';
 import { leadEvents, leads, members, type Source, type Stage } from '../db/schema';
 import { ANSWERED, CLOSED, LOST_REASONS, type LostReason } from './stages';
@@ -91,6 +91,16 @@ export async function setStage(db: Db, id: number, memberId: number, stage: Stag
   });
 }
 
+/**
+ * «Вернуть в работу»: закрытая заявка возвращается туда, где клиенту
+ * уже ответили, а если не отвечали вовсе — в «Новые».
+ */
+export async function reopenLead(db: Db, id: number, memberId: number, at = new Date()) {
+  const lead = await getLead(db, id);
+  if (!lead) return null;
+  return setStage(db, id, memberId, lead.firstReplyAt ? 'contacted' : 'new', at);
+}
+
 export async function markLost(db: Db, id: number, memberId: number, reason: LostReason, at = new Date()) {
   return db.transaction(async (tx) => {
     const [lead] = await tx.select().from(leads).where(eq(leads.id, id)).for('update');
@@ -145,6 +155,70 @@ export async function leadView(db: Db, id: number): Promise<LeadView | null> {
     owner,
     notes: rows.map((r) => ({ text: String((r.data as { text?: string } | null)?.text ?? ''), who: r.who, at: r.at }))
   };
+}
+
+export type LeadFilter = {
+  /** open — в работе, closed — договор или отказ, all — всё. */
+  scope?: 'open' | 'closed' | 'all';
+  stage?: Stage;
+  /** id члена команды или 'none' — ничьи. */
+  owner?: number | 'none';
+  /** Поиск по имени, контакту и тексту; «#12» или «12» — по номеру. */
+  q?: string;
+  limit?: number;
+};
+
+export type LeadRow = Lead & { ownerName: string | null };
+
+/**
+ * Список для мини-приложения. Открытые — от старых к новым (сначала то,
+ * что ждёт дольше), закрытые — от свежих. Заявки, на которых сработала
+ * ловушка, не прячутся: она ошибается на живых людях.
+ */
+export async function listLeads(db: Db, f: LeadFilter = {}): Promise<LeadRow[]> {
+  const scope = f.scope ?? 'open';
+  const where: (SQL | undefined)[] = [];
+  if (scope === 'open') where.push(notInArray(leads.stage, CLOSED));
+  if (scope === 'closed') where.push(inArray(leads.stage, CLOSED));
+  if (f.stage) where.push(eq(leads.stage, f.stage));
+  if (f.owner === 'none') where.push(isNull(leads.ownerId));
+  else if (f.owner) where.push(eq(leads.ownerId, f.owner));
+
+  const q = f.q?.trim();
+  if (q) {
+    const num = q.match(/^#?(\d{1,9})$/);
+    // % и _ в запросе — обычные символы, а не шаблон
+    const like = `%${q.replace(/[\\%_]/g, (ch) => `\\${ch}`)}%`;
+    where.push(or(num ? eq(leads.id, Number(num[1])) : undefined, ilike(leads.name, like), ilike(leads.contact, like), ilike(leads.task, like)));
+  }
+
+  const rows = await db
+    .select({ lead: leads, ownerName: members.name })
+    .from(leads)
+    .leftJoin(members, eq(members.id, leads.ownerId))
+    .where(and(...where))
+    .orderBy(scope === 'open' ? asc(leads.createdAt) : desc(leads.closedAt), desc(leads.id))
+    .limit(Math.min(f.limit ?? 300, 500));
+  return rows.map((r) => ({ ...r.lead, ownerName: r.ownerName }));
+}
+
+export type LeadEvent = {
+  id: number;
+  type: (typeof leadEvents.$inferSelect)['type'];
+  at: Date;
+  who: string | null;
+  data: Record<string, unknown> | null;
+};
+
+/** История заявки целиком, от первого события к последнему. */
+export async function leadHistory(db: Db, id: number): Promise<LeadEvent[]> {
+  const rows = await db
+    .select({ id: leadEvents.id, type: leadEvents.type, at: leadEvents.createdAt, who: members.name, data: leadEvents.data })
+    .from(leadEvents)
+    .leftJoin(members, eq(members.id, leadEvents.memberId))
+    .where(eq(leadEvents.leadId, id))
+    .orderBy(asc(leadEvents.createdAt), asc(leadEvents.id));
+  return rows;
 }
 
 /** Открытые заявки — от старых к новым: сначала то, что ждёт дольше. */

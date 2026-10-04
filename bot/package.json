@@ -6,6 +6,7 @@
   "description": "Рабочий бот студии: заявки, проекты, метрики, мониторинг. План — BOT.md в корне.",
   "scripts": {
     "dev": "tsx watch --env-file=.env.local src/main.ts",
+    "dev:tunnel": "node --env-file=.env.local scripts/tunnel.mjs",
     "build": "node build.mjs",
     "start": "node dist/main.js",
     "typecheck": "tsc --noEmit",

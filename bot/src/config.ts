@@ -25,7 +25,11 @@ const Env = z.object({
   BOT_TOKEN: z.string().optional(),
   /** polling — для разработки, webhook — на сервере за HTTPS. */
   BOT_MODE: z.enum(['polling', 'webhook']).default('polling'),
-  /** Публичный адрес сервиса, на него Telegram шлёт webhook. */
+  /**
+   * Публичный адрес сервиса по HTTPS: на него Telegram шлёт webhook,
+   * по нему же открывается мини-приложение (`<адрес>/app/`). Пусто —
+   * мини-приложения в Telegram нет, кнопки «Открыть» на карточках тоже.
+   */
   PUBLIC_URL: z.url().optional(),
   /** Секрет в адресе и заголовке webhook: чужой запрос его не знает. */
   WEBHOOK_SECRET: z.string().min(16).optional(),
@@ -53,6 +57,23 @@ const Env = z.object({
 
   /** Общий секрет с сайтом: им подписан каждый запрос с заявкой. */
   INTAKE_SECRET: z.string().min(16).optional(),
+
+  /** Собранное мини-приложение (admin/dist) — сервис отдаёт его по /app/. */
+  ADMIN_DIST: z.string().default('../admin/dist'),
+  /**
+   * Мини-приложение в браузере без Telegram: запросы с этой же машины
+   * идут от имени первого владельца. Только для разработки — в production
+   * и при заданном PUBLIC_URL (сервис виден снаружи) не действует.
+   */
+  APP_DEV: z.enum(['0', '1']).default('0'),
+  /**
+   * Куда ведёт «Открыть» на карточке в группе. chat — в личку бота, там
+   * кнопка мини-приложения: работает с любым адресом, в том числе с
+   * туннелем, который меняется при каждом запуске. direct — сразу
+   * в приложение (t.me/<бот>?startapp=…): нужен постоянный адрес,
+   * вписанный у @BotFather как Main Mini App.
+   */
+  MINI_APP_LINK: z.enum(['chat', 'direct']).default('chat'),
 
   /** Адрес сайта — для ответа посторонним в боте. */
   SITE_URL: z.url().default('https://corethree.ru'),

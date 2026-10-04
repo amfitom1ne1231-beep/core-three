@@ -1,0 +1,28 @@
+{
+  "name": "@corethree/admin",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Мини-приложение студии в Telegram: заявки, проекты. Отдаётся сервисом бота по /app/. План — BOT.md в корне.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=20.12"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.104.1",
+    "@tma.js/sdk-react": "^3.0.23",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.2"
+  }
+}

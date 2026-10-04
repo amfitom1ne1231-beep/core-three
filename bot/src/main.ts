@@ -23,6 +23,8 @@ if (config.GROUP_CHAT_ID && !(await getGroup(db))) {
 
 const studio = config.BOT_TOKEN ? createBot({ db, config }) : null;
 if (!studio) console.warn('[bot] BOT_TOKEN не задан — бот выключен, заявки только в базу');
+// имя бота нужно ссылкам на карточках раньше, чем придёт первое обновление
+if (studio) await studio.bot.init();
 
 const app = createApp({ db, config, studio });
 const server = serve({ fetch: app.fetch, port: config.PORT }, (info) => console.info(`[http] :${info.port}`));
@@ -42,6 +44,12 @@ if (studio) {
       onStart: (me) => console.info(`[bot] @${me.username}, polling`)
     });
   }
+}
+
+if (studio) {
+  await studio.syncMenu();
+  await studio.syncCards();
+  console.info(config.PUBLIC_URL ? `[app] ${config.PUBLIC_URL}/app/` : '[app] публичного адреса нет — мини-приложение только в браузере');
 }
 
 const stopScheduler = startScheduler(db, studio, {

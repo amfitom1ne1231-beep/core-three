@@ -1,4 +1,4 @@
-# Проверки на каждый пуш: сайт и сервис бота отдельно — у них свои зависимости.
+# Проверки на каждый пуш: сайт, сервис бота и мини-приложение отдельно — у них свои зависимости.
 name: Проверки
 
 on:
@@ -36,4 +36,21 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npm run typecheck
       - run: npm test
+      - run: npm run build
+
+  admin:
+    name: Мини-приложение
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: admin
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: admin/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck
       - run: npm run build

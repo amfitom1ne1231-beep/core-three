@@ -64,7 +64,11 @@ export function cardText(v: LeadView, now: Date, tz: string) {
   return lines.join('\n');
 }
 
-export function cardKeyboard(v: LeadView, menu: Menu = 'main') {
+/**
+ * `open` — ссылка «Открыть» на заявку в мини-приложении; её нет, пока
+ * у сервиса нет публичного адреса.
+ */
+export function cardKeyboard(v: LeadView, menu: Menu = 'main', open?: string | null) {
   const { lead } = v;
   const kb = new InlineKeyboard();
   const id = lead.id;
@@ -86,12 +90,13 @@ export function cardKeyboard(v: LeadView, menu: Menu = 'main') {
   }
 
   if (CLOSED.includes(lead.stage)) {
-    return kb.text('Вернуть в работу', cb(id, 'reopen')).text('Заметка', cb(id, 'note'));
+    kb.text('Вернуть в работу', cb(id, 'reopen')).text('Заметка', cb(id, 'note'));
+  } else {
+    if (!lead.ownerId) kb.text('Беру', cb(id, 'take'));
+    kb.text(nextStepLabel(lead.stage), cb(id, 'st', nextStage(lead.stage))).row();
+    kb.text('Этап…', cb(id, 'stages')).text('Заметка', cb(id, 'note')).text('Отказ', cb(id, 'lost'));
   }
-
-  if (!lead.ownerId) kb.text('Беру', cb(id, 'take'));
-  kb.text(nextStepLabel(lead.stage), cb(id, 'st', nextStage(lead.stage))).row();
-  kb.text('Этап…', cb(id, 'stages')).text('Заметка', cb(id, 'note')).text('Отказ', cb(id, 'lost'));
+  if (open) kb.row().url('Открыть', open);
   return kb;
 }
 
