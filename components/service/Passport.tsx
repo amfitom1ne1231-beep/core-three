@@ -1,4 +1,5 @@
 import type { ServicePage } from '@/content/services';
+import Words from '../Words';
 
 /**
  * Кому это и паспорт направления.
@@ -32,7 +33,9 @@ export default function Passport({ page }: { page: ServicePage }) {
                 <span className="font-mono text-[11px] tracking-rail text-faint">
                   {String(i + 1).padStart(2, '0')}
                 </span>
-                <span className="text-[clamp(15px,1.35vw,19px)] leading-[1.5] text-dim">{it}</span>
+                <span className="text-[clamp(15px,1.35vw,19px)] leading-[1.5] text-dim">
+                  <Words text={it} />
+                </span>
               </li>
             ))}
           </ul>
@@ -54,7 +57,9 @@ export default function Passport({ page }: { page: ServicePage }) {
             {page.terms.map((t) => (
               <div key={t.label} className="border-t border-line py-[clamp(14px,2vh,22px)] first:border-t-0 first:pt-0">
                 <dt className="rail-label">{t.label}</dt>
-                <dd className="m-0 mt-2.5 text-[clamp(15px,1.3vw,18px)] leading-[1.5] text-fg">{t.value}</dd>
+                <dd className="m-0 mt-2.5 text-[clamp(15px,1.3vw,18px)] leading-[1.5] text-fg">
+                  <Words text={t.value} />
+                </dd>
               </div>
             ))}
           </dl>

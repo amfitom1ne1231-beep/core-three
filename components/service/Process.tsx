@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import Words from '../Words';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -118,7 +119,9 @@ export default function Process({
                 <h3 className="m-0 mt-[clamp(14px,2vh,26px)] text-[clamp(17px,1.5vw,22px)] font-medium leading-snug">
                   {s.title}
                 </h3>
-                <p className="m-0 mt-3 max-w-[34ch] text-[14px] leading-relaxed text-dim">{s.text}</p>
+                <p className="m-0 mt-3 max-w-[34ch] text-[14px] leading-relaxed text-dim">
+                  <Words text={s.text} />
+                </p>
               </li>
             ))}
           </ol>

@@ -13,6 +13,7 @@ import { demoBySlug } from '@/content/concepts';
 import { HELP } from '@/content/help';
 import { SITE } from '@/content/site';
 import { pageMeta } from '@/lib/meta';
+import Words from '@/components/Words';
 
 export const metadata: Metadata = pageMeta({ title: HELP.meta.title, description: HELP.meta.description, path: '/help' });
 
@@ -66,7 +67,11 @@ function Part({
           <h2 className="display m-0 text-[clamp(26px,4.2vw,64px)]">
             {title} <span className="title-accent">{accent}</span>
           </h2>
-          {lead && <p className="m-0 max-w-[42ch] text-[clamp(13px,1.1vw,16px)] leading-relaxed text-dim">{lead}</p>}
+          {lead && (
+            <p className="m-0 max-w-[42ch] text-[clamp(13px,1.1vw,16px)] leading-relaxed text-dim">
+              <Words text={lead} />
+            </p>
+          )}
         </div>
 
         <div className="mt-[clamp(28px,5vh,64px)]">{children}</div>
@@ -269,7 +274,9 @@ export default function HelpPage() {
                     <span className="font-mono text-[11px] tracking-rail text-accent">{String(i + 1).padStart(2, '0')}</span>
                     <div>
                       <h4 className="m-0 text-[16px] font-medium leading-snug">{f.title}</h4>
-                      <p className="m-0 mt-1.5 max-w-[46ch] text-[14px] leading-relaxed text-dim">{f.text}</p>
+                      <p className="m-0 mt-1.5 max-w-[46ch] text-[14px] leading-relaxed text-dim">
+                        <Words text={f.text} />
+                      </p>
                     </div>
                   </li>
                 ))}
@@ -320,7 +327,9 @@ export default function HelpPage() {
               {after.prepare.items.map((it) => (
                 <li key={it.title} className="border-t border-line py-[clamp(14px,2.2vh,22px)]">
                   <h4 className="m-0 text-[15.5px] font-medium leading-snug">{it.title}</h4>
-                  <p className="m-0 mt-1.5 max-w-[42ch] text-[14px] leading-relaxed text-dim">{it.text}</p>
+                  <p className="m-0 mt-1.5 max-w-[42ch] text-[14px] leading-relaxed text-dim">
+                    <Words text={it.text} />
+                  </p>
                 </li>
               ))}
             </ul>
@@ -353,7 +362,9 @@ export default function HelpPage() {
                         </span>
                       </summary>
                       <p className="m-0 max-w-[58ch] pb-[clamp(16px,2.4vh,24px)] text-[14.5px] leading-relaxed text-dim">
-                        {f.a}
+                        {/* вопросы направлений уже объяснены на их страницах, а здесь
+                            те же слова встретились выше или есть в словаре ниже */}
+                        <Words text={f.a} plain={g.href !== null} />
                         {'more' in f && (
                           <>
                             {' '}

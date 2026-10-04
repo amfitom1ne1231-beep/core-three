@@ -5,6 +5,7 @@ import RevealText from '@/components/RevealText';
 import ScrollScenes from '@/components/ScrollScenes';
 import { ABOUT } from '@/content/about';
 import { pageMeta } from '@/lib/meta';
+import Words from '@/components/Words';
 
 export const metadata: Metadata = pageMeta({ title: ABOUT.meta.title, description: ABOUT.meta.description, path: '/about' });
 
@@ -84,7 +85,9 @@ export default function AboutPage() {
                     {String(i + 1).padStart(2, '0')}
                   </span>
                   <h3 className="relative m-0 text-[clamp(17px,1.5vw,22px)] font-medium leading-snug">{it.title}</h3>
-                  <p className="relative m-0 mt-4 max-w-[38ch] pb-[clamp(28px,3vw,48px)] text-[14.5px] leading-relaxed text-dim">{it.text}</p>
+                  <p className="relative m-0 mt-4 max-w-[38ch] pb-[clamp(28px,3vw,48px)] text-[14.5px] leading-relaxed text-dim">
+                    <Words text={it.text} />
+                  </p>
                 </li>
               ))}
             </ol>
@@ -110,7 +113,9 @@ export default function AboutPage() {
                   </span>
                   <div>
                     <h3 className="m-0 text-[clamp(16px,1.4vw,20px)] font-medium leading-snug">{p.title}</h3>
-                    <p className="m-0 mt-2.5 max-w-[46ch] text-[13.5px] leading-relaxed text-dim">{p.text}</p>
+                    <p className="m-0 mt-2.5 max-w-[46ch] text-[13.5px] leading-relaxed text-dim">
+                      <Words text={p.text} />
+                    </p>
                   </div>
                 </li>
               ))}
@@ -135,7 +140,9 @@ export default function AboutPage() {
                   className="flex gap-5 border-t border-line py-[clamp(18px,3vh,30px)] text-[clamp(15px,1.35vw,19px)] leading-[1.5] text-dim last:border-b"
                 >
                   <span className="mt-[0.7em] h-px w-5 shrink-0 bg-line-strong" aria-hidden />
-                  {it}
+                  <span>
+                    <Words text={it} />
+                  </span>
                 </li>
               ))}
             </ul>

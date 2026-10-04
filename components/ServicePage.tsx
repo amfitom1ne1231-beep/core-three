@@ -10,6 +10,7 @@ import Includes from './service/Includes';
 import Passport from './service/Passport';
 import Process from './service/Process';
 import Stage from './service/Stage';
+import Words from './Words';
 import type { ServicePage as Page } from '@/content/services';
 import { SITE } from '@/content/site';
 import Cta from './Cta';
@@ -74,7 +75,7 @@ export default function ServicePage({ page, children }: { page: Page; children?:
                 />
               </h1>
               <p className="m-0 mt-8 max-w-[46ch] text-[clamp(14px,1.15vw,17px)] leading-relaxed text-dim tp:max-w-[50ch] tp:text-[17px]">
-                {page.lead}
+                <Words text={page.lead} />
               </p>
               <div className="mt-9 flex flex-wrap gap-3.5">
                 <Cta href={`/contact?type=${page.kind}`}>Обсудить проект</Cta>
@@ -130,7 +131,7 @@ export default function ServicePage({ page, children }: { page: Page; children?:
                     </span>
                   </summary>
                   <p className="m-0 max-w-[58ch] pb-[clamp(18px,2.6vh,28px)] text-[14.5px] leading-relaxed text-dim">
-                    {f.a}
+                    <Words text={f.a} />
                   </p>
                 </details>
               ))}

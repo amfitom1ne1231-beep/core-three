@@ -7,6 +7,8 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import OrderScheme from '@/components/scheme/OrderScheme';
 import OrderScreens from '@/components/scheme/OrderScreens';
 import { SITE } from '@/content/site';
+import Words from './Words';
+import { plain } from '@/content/glossary';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -216,7 +218,7 @@ export default function Journey() {
             </span>
             <p className="display m-0 mt-3 text-[clamp(24px,2.7vw,40px)] leading-[1.04]">{active.headline}</p>
             {/* экран в кадре — картинка; читалке тот же шаг словами */}
-            <p className="sr-only">{active.client}</p>
+            <p className="sr-only">{plain(active.client)}</p>
           </div>
 
           <figure className="journey-screen m-0">
@@ -233,7 +235,9 @@ export default function Journey() {
         <div key={active.id} className="journey-detail grid gap-6 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] md:gap-[clamp(32px,6vw,96px)]">
           <div>
             <span className="rail-label">Вам</span>
-            <p className="m-0 mt-2.5 max-w-[52ch] text-[clamp(15px,1.25vw,18px)] leading-relaxed">{active.you}</p>
+            <p className="m-0 mt-2.5 max-w-[52ch] text-[clamp(15px,1.25vw,18px)] leading-relaxed">
+              <Words text={active.you} />
+            </p>
           </div>
           <div>
             <span className="rail-label">Собираем</span>

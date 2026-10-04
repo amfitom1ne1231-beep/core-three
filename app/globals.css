@@ -2342,3 +2342,58 @@ html[data-theme-wave]::view-transition-new(root) {
     animation: none;
   }
 }
+
+/* ============================================================
+   Словарь на месте (HELP.md, этап 4).
+
+   Слово из словаря в тексте — кнопка, которая выглядит словом: тот же
+   шрифт и цвет, тонкий пунктир цветом --line-strong. Пунктир, а не
+   сплошная линия: сплошной подчёркнуты ссылки, а это не переход.
+   ============================================================ */
+.term {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  text-align: inherit;
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-decoration-color: var(--line-strong);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.24em;
+  transition: text-decoration-color 0.3s, color 0.3s;
+}
+.term:hover,
+.term[aria-expanded='true'] {
+  text-decoration-color: var(--accent);
+}
+.term:focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+.term-card {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 120;
+  width: min(300px, calc(100vw - 16px));
+  padding: 14px 16px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  background: rgb(var(--bg-rgb) / 0.94);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 18px 50px -22px rgb(0 0 0 / 0.45);
+  text-align: left;
+  outline: none;
+  animation: ct-veil 0.2s ease both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .term-card {
+    animation: none;
+  }
+}

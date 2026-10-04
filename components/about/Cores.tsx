@@ -5,6 +5,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { MARK_ARMS } from '../mark-geometry';
 import { ABOUT } from '@/content/about';
+import Words from '../Words';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -119,7 +120,7 @@ export default function Cores() {
                   <h3 className="display m-0 text-[clamp(24px,3.4vw,52px)]">{c.name}</h3>
                 </div>
                 <p className="m-0 mt-5 max-w-[52ch] text-[clamp(14px,1.25vw,18px)] leading-relaxed text-dim">
-                  {c.text}
+                  <Words text={c.text} />
                 </p>
               </li>
             ))}

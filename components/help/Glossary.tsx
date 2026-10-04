@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import Jump from './Jump';
 import { findWords, GLOSSARY } from '@/content/glossary';
 
@@ -21,6 +21,17 @@ export default function Glossary({ labels }: { labels: GlossaryLabels }) {
   const [query, setQuery] = useState('');
   const found = findWords(query);
   const inputId = useId();
+  /**
+   * Слово, к которому пришли по «В словаре» из текста. `:target` тут не
+   * помогает: Next меняет адрес без настоящего перехода по якорю.
+   */
+  const [target, setTarget] = useState('');
+  useEffect(() => {
+    const read = () => setTarget(decodeURIComponent(location.hash.slice(1)));
+    read();
+    addEventListener('hashchange', read);
+    return () => removeEventListener('hashchange', read);
+  }, []);
 
   return (
     <div>
@@ -49,7 +60,13 @@ export default function Glossary({ labels }: { labels: GlossaryLabels }) {
         <dl className="m-0 mt-8 [column-gap:clamp(40px,5vw,96px)] lg:columns-2">
           {found.map((w) => (
             <div key={w.id} id={`word-${w.id}`} className="scroll-mt-28 break-inside-avoid border-t border-line py-[clamp(16px,2.4vh,24px)]">
-              <dt className="text-[clamp(16px,1.4vw,19px)] font-medium leading-snug">{w.term}</dt>
+              <dt
+                className={`text-[clamp(16px,1.4vw,19px)] font-medium leading-snug transition-colors duration-500 ${
+                  target === `word-${w.id}` ? 'text-accent' : ''
+                }`}
+              >
+                {w.term}
+              </dt>
               <dd className="m-0 mt-2 max-w-[52ch] text-[14.5px] leading-relaxed text-dim">{w.text}</dd>
             </div>
           ))}

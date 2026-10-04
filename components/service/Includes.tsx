@@ -5,6 +5,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import gsap from 'gsap';
 import Material from '../Material';
 import { VIZ } from './viz';
+import Words from '../Words';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -188,7 +189,7 @@ export default function Includes({
                         }}
                       >
                         <p className="m-0 max-w-[52ch] pb-[clamp(14px,2vh,22px)] pl-[calc(11px+1rem)] text-[14.5px] leading-relaxed text-dim">
-                          {item.text}
+                          <Words text={item.text} />
                         </p>
                       </div>
                     </div>

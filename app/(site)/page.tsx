@@ -8,6 +8,7 @@ import Manifesto from '@/components/Manifesto';
 import RevealText from '@/components/RevealText';
 import ScrollScenes from '@/components/ScrollScenes';
 import { SITE } from '@/content/site';
+import { plain } from '@/content/glossary';
 
 const url = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 
@@ -33,7 +34,7 @@ const jsonLd = {
     name: 'Направления',
     itemListElement: SITE.services.map((s) => ({
       '@type': 'Offer',
-      itemOffered: { '@type': 'Service', name: `${s.title} ${s.titleAccent}`, description: s.summary }
+      itemOffered: { '@type': 'Service', name: `${s.title} ${s.titleAccent}`, description: plain(s.summary) }
     }))
   }
 };

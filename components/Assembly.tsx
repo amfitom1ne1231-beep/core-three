@@ -6,6 +6,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { SITE } from '@/content/site';
 import { onThemeChange, onThemePrepare, readTheme, type Theme } from '@/lib/theme';
+import Words from './Words';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -614,7 +615,7 @@ export default function Assembly() {
                 </div>
                 <div className="mt-4 overflow-hidden">
                   <p data-ln className="m-0 max-w-[36ch] text-[clamp(15px,1.25vw,18px)] leading-relaxed text-dim">
-                    {s.summary}
+                    <Words text={s.summary} />
                   </p>
                 </div>
                 <div className="-m-1 mt-7 overflow-hidden p-1">
