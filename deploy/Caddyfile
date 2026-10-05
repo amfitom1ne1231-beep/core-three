@@ -16,6 +16,10 @@ corethree.ru {
 	encode zstd gzip
 	# браузер запоминает на год, что сюда — только по HTTPS
 	header Strict-Transport-Security "max-age=31536000"
+	# HTTP/3 здесь работал полчаса 05.10.2026, и браузеры тех, кто успел
+	# зайти, запомнили его на месяц. «clear» велит забыть: иначе каждое
+	# новое соединение сперва стучится в закрытую дверь.
+	header Alt-Svc "clear"
 	reverse_proxy site:3000 {
 		# Адрес посетителя для лимита заявок ставит Caddy. Без этой строки
 		# заголовок доходил до сайта таким, каким его прислал сам посетитель:
@@ -32,5 +36,6 @@ www.corethree.ru {
 bot.corethree.ru {
 	encode zstd gzip
 	header Strict-Transport-Security "max-age=31536000"
+	header Alt-Svc "clear"
 	reverse_proxy bot:8787
 }
