@@ -18,7 +18,8 @@
         "run",
         "start:check"
       ],
-      "port": 3100
+      "port": 3100,
+      "autoPort": true
     },
     {
       "name": "corethree-bot",

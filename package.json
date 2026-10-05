@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "build:check": "NEXT_DIST_DIR=.next-check next build",
-    "start:check": "NEXT_DIST_DIR=.next-check next start -p 3100",
+    "start:check": "NEXT_DIST_DIR=.next-check next start -p ${PORT:-3100}",
     "test": "tsc -p tsconfig.test.json && node --test test/*.test.mjs",
     "lint": "eslint ."
   },
