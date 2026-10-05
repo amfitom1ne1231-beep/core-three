@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { onThemeChange, onThemePrepare, readTheme, type Theme } from '@/lib/theme';
 import darkShots from '@/public/scheme/dark/shots.json';
 import lightShots from '@/public/scheme/light/shots.json';
@@ -127,6 +127,33 @@ export default function OrderScheme({
   const ids = theme ? Object.keys(MAPS[theme].shots) : [];
   const near = (s: string, by: number) => ids[(ids.indexOf(s) + by + ids.length) % ids.length];
 
+  /**
+   * Кадр станции можно показывать: его картинки загружены и разобраны,
+   * и браузер успел их нарисовать.
+   *
+   * На это опирается всё, что уходит со сцены, — ролик пролёта и прошлый
+   * кадр. Раньше они уходили по часам, и если новый кадр к этому моменту
+   * не был готов (на телефоне по сети — обычное дело, да и разбор большой
+   * картинки там не мгновенный), под ними оказывалась пустота: на сцене
+   * на секунду-другую оставался фон страницы. Теперь уходящее держится,
+   * пока под ним не встанет готовый кадр.
+   */
+  const shown = useCallback(async (s: string) => {
+    // кадр мог ещё не попасть в разметку: даём React его поставить
+    await new Promise((ok) => requestAnimationFrame(ok));
+    const imgs = Array.from(root.current?.querySelectorAll<HTMLImageElement>(`.os-shot[data-shot="${s}"] img`) ?? []);
+    await Promise.all(
+      imgs.map((img) =>
+        img.decode().catch(
+          // не разобралась (сеть, формат) — ждём хотя бы конца загрузки
+          () => img.complete || new Promise((ok) => ['load', 'error'].forEach((e) => img.addEventListener(e, ok, { once: true })))
+        )
+      )
+    );
+    // два кадра экрана: первый — раскладка, второй — уже с картинкой
+    await new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok)));
+  }, []);
+
   useEffect(() => {
     const { cur: from, next: to } = stage.current;
     if (id === (to ?? from)) return;
@@ -178,8 +205,11 @@ export default function OrderScheme({
       setCur(id);
       setNext(null);
       setFlown(way);
-      setFlying(null);
       tell();
+      // Ролик стоит на последнем кадре, пока под ним не готов кадр станции,
+      // и только потом растворяется. Если за это время начался другой
+      // пролёт, на сцене уже его ролик — его не трогаем.
+      shown(id).then(() => setFlying((now) => (now === clip ? null : now)));
     };
     const begin = () => {
       clearTimeout(timer);
@@ -220,14 +250,22 @@ export default function OrderScheme({
     v.addEventListener('ended', land, { once: true });
     timer = window.setTimeout(fail, FLY_WAIT_MS);
     v.play().catch(fail);
-  }, [id]);
+  }, [id, shown]);
 
   useEffect(() => () => abort.current?.(), []);
 
+  // Прошлый кадр лежит под новым, пока тот проявляется, — и пока тот
+  // не готов: новый кадр, который ещё грузится, прозрачен, и без прошлого
+  // под ним была бы пустота
   useEffect(() => {
-    const t = window.setTimeout(() => setPrev(null), CROSS_MS);
-    return () => clearTimeout(t);
-  }, [cur]);
+    let off = false;
+    Promise.all([new Promise((ok) => window.setTimeout(ok, CROSS_MS)), shown(cur)]).then(() => {
+      if (!off) setPrev(null);
+    });
+    return () => {
+      off = true;
+    };
+  }, [cur, shown]);
 
   useEffect(() => {
     setTheme(readTheme());
@@ -290,6 +328,7 @@ export default function OrderScheme({
                   if (el && !on) el.querySelectorAll('img').forEach((img) => img.decode?.().catch(() => {}));
                 }}
                 className="os-shot"
+                data-shot={s}
                 data-on={on || undefined}
                 data-out={s === prev || undefined}
                 data-wait={(!on && s !== prev) || undefined}
