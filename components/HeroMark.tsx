@@ -35,6 +35,9 @@ export default function HeroMark() {
   const tilt = useRef<HTMLDivElement>(null);
   const layers = useRef<HTMLDivElement[]>([]);
   const halos = useRef<HTMLDivElement[]>([]);
+  /** Резкий луч и его заранее размытая копия: в разлёте одна сменяет другую. */
+  const sharps = useRef<SVGSVGElement[]>([]);
+  const softs = useRef<HTMLDivElement[]>([]);
   const bloom = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -133,10 +136,13 @@ export default function HeroMark() {
         // Смаз в полёте был анимацией `filter: blur` на каждом луче: радиус
         // менялся с каждым кадром прокрутки, и браузер заново отрисовывал
         // три больших слоя вместе со свечением внутри — на уходе с первого
-        // экрана до половины кадров не успевали в срок (замер по трассировке,
-        // BRIEF.md, раздел 50). Теперь смаз даёт сама видеокарта: слои
-        // закреплены текстурой (will-change на них в разметке), и при
-        // увеличении вдвое она растягивается — мягко, без перерисовки.
+        // экрана заметная часть кадров не успевала в срок (замер по
+        // трассировке, BRIEF.md, раздел 50). Теперь у каждого луча лежит
+        // заранее размытая копия: размытие считается один раз, а в полёте
+        // резкий луч гаснет и проявляется мягкий — меняется только
+        // прозрачность, это работа видеокарты.
+        st.fromTo(softs.current, { opacity: 0 }, { opacity: 1, ease: 'power1.in' }, 0);
+        st.fromTo(sharps.current, { opacity: 1 }, { opacity: 0, ease: 'power1.in' }, 0);
         // вспышка ядер в момент прохода сквозь центр
         if (bloom.current) {
           st.fromTo(
@@ -257,7 +263,13 @@ export default function HeroMark() {
                   ))}
                 </svg>
               </div>
-              <svg viewBox="0 0 100 100" className="relative h-full w-full overflow-visible">
+              <svg
+                ref={(el) => {
+                  if (el) sharps.current[i] = el;
+                }}
+                viewBox="0 0 100 100"
+                className="relative h-full w-full overflow-visible will-change-[opacity]"
+              >
                 <defs>
                   {arm.facets.map((f) => {
                     const [a, b] = FACET_FILL[f.facet] ?? FACET_FILL.column;
@@ -279,6 +291,20 @@ export default function HeroMark() {
                   <path key={f.facet} d={f.d} fill={`url(#hm-${arm.arm}-${f.facet})`} />
                 ))}
               </svg>
+              {/* мягкая копия для разлёта: те же грани, размытие постоянное */}
+              <div
+                ref={(el) => {
+                  if (el) softs.current[i] = el;
+                }}
+                className="absolute inset-0 opacity-0 will-change-[opacity]"
+                style={{ filter: 'blur(6px)' }}
+              >
+                <svg viewBox="0 0 100 100" className="h-full w-full overflow-visible">
+                  {arm.facets.map((f) => (
+                    <path key={f.facet} d={f.d} fill={`url(#hm-${arm.arm}-${f.facet})`} />
+                  ))}
+                </svg>
+              </div>
             </div>
           ))}
         </div>
