@@ -70,6 +70,8 @@ export function onThemeChange(fn: (t: Theme, instant: boolean) => void) {
 export function setTheme(next: Theme, instant = false) {
   if (typeof document === 'undefined') return;
   document.documentElement.dataset.theme = next;
+  // разогрев был под прошлую тему: следующему наведению — греть заново
+  warmedFor = null;
   try {
     localStorage.setItem(KEY, next);
   } catch {
@@ -101,9 +103,41 @@ const preparers = new Set<(next: Theme) => Promise<unknown> | void>();
 
 export function onThemePrepare(fn: (next: Theme) => Promise<unknown> | void) {
   preparers.add(fn);
+  // состав того, что надо приготовить, изменился: прошлый разогрев уже не про то
+  warmedFor = null;
   return () => {
     preparers.delete(fn);
+    warmedFor = null;
   };
+}
+
+/** Блок сейчас на экране — значит, под волной его увидят и картинки новой темы стоит дождаться. */
+export function inView(el: Element | null) {
+  if (!el) return false;
+  const r = el.getBoundingClientRect();
+  return r.width > 0 && r.bottom > 0 && r.top < innerHeight;
+}
+
+/**
+ * Картинки другой темы качаются заранее — когда рука только легла на кнопку.
+ *
+ * Волна ждёт их (до `PREPARE_MS`), и на далёком соединении это было слышно:
+ * от нажатия до начала волны на живом сайте проходило 0,45–0,8 с — кнопка
+ * как будто не срабатывала. Наведение опережает нажатие на те же полсекунды.
+ */
+let warmedFor: Theme | null = null;
+let warmRun: Promise<unknown> | null = null;
+
+/** Все, кому есть что приготовить к смене темы, готовят это — и мы ждём тех, кто просит ждать. */
+const prepare = (to: Theme) => Promise.all([...preparers].map((fn) => fn(to)));
+
+export function warmTheme() {
+  if (typeof document === 'undefined') return;
+  const to: Theme = readTheme() === 'light' ? 'dark' : 'light';
+  if (warmedFor === to) return;
+  warmedFor = to;
+  // нажатие подхватит этот же заход, а не начнёт качать заново
+  warmRun = prepare(to).catch(() => {});
 }
 
 const WAVE_MS = 1050;
@@ -140,7 +174,7 @@ export async function switchTheme(next: Theme, origin?: { x: number; y: number }
     switching = true;
     document.documentElement.dataset.themeSwitching = '';
     try {
-      await Promise.race([Promise.all([...preparers].map((fn) => fn(next))), new Promise((ok) => setTimeout(ok, PREPARE_MS))]);
+      await Promise.race([warmedFor === next && warmRun ? warmRun : prepare(next), new Promise((ok) => setTimeout(ok, PREPARE_MS))]);
       const fade = start.call(document, async () => {
         setTheme(next, true);
         await new Promise((ok) => setTimeout(ok, 60));
@@ -161,7 +195,7 @@ export async function switchTheme(next: Theme, origin?: { x: number; y: number }
   rim.className = 'theme-rim';
   rim.setAttribute('aria-hidden', 'true');
   try {
-    await Promise.race([Promise.all([...preparers].map((fn) => fn(next))), new Promise((ok) => setTimeout(ok, PREPARE_MS))]);
+    await Promise.race([warmedFor === next && warmRun ? warmRun : prepare(next), new Promise((ok) => setTimeout(ok, PREPARE_MS))]);
 
     // радиус — до дальнего угла экрана, плюс кромка: волна должна уйти за край целиком
     const reach = Math.hypot(Math.max(origin.x, innerWidth - origin.x), Math.max(origin.y, innerHeight - origin.y)) + WAVE_EDGE;

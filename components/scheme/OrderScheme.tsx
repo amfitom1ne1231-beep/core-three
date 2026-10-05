@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
-import { onThemeChange, onThemePrepare, readTheme, type Theme } from '@/lib/theme';
+import { inView, onThemeChange, onThemePrepare, readTheme, type Theme } from '@/lib/theme';
 import darkShots from '@/public/scheme/dark/shots.json';
 import lightShots from '@/public/scheme/light/shots.json';
 
@@ -273,11 +273,14 @@ export default function OrderScheme({
   }, []);
 
   // Смена темы идёт волной по снимку страницы: кадр станции в новой теме
-  // должен быть скачан и разобран до неё, иначе под фронтом окажется пустота
+  // должен быть скачан и разобран до неё, иначе под фронтом окажется пустота.
+  // Ждать его есть смысл, только пока сцена на экране: иначе волна стояла бы
+  // полсекунды ради картинки, которую никто не видит. Качаться она начинает
+  // в любом случае — к моменту, когда до сцены долистают, будет готова.
   useEffect(() => {
     if (!ready) return;
-    return onThemePrepare((to) =>
-      Promise.all(
+    return onThemePrepare((to) => {
+      const loaded = Promise.all(
         (['', '-a', '-b', '-c'] as const)
           .filter((k) => k !== '-a' || MAPS[to].shots[cur].a)
           .map((k) => {
@@ -285,8 +288,9 @@ export default function OrderScheme({
             img.src = `${ROOT}/${to}/${cur}${k}.webp`;
             return img.decode().catch(() => {});
           })
-      )
-    );
+      );
+      return inView(root.current) ? loaded : undefined;
+    });
   }, [ready, cur]);
 
   // Ролики следующего шага меняются не сразу: прошлый ещё растворяется

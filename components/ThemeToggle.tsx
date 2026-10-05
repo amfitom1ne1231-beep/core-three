@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { onThemeChange, readTheme, restoreTheme, switchTheme, type Theme } from '@/lib/theme';
+import { onThemeChange, readTheme, restoreTheme, switchTheme, warmTheme, type Theme } from '@/lib/theme';
 
 /**
  * Кнопка света — одна круглая, с переливами внутри.
@@ -69,8 +69,13 @@ export default function ThemeToggle({ className = '' }: { className?: string }) 
         const r = ball.current?.getBoundingClientRect();
         switchTheme(readTheme() === 'light' ? 'dark' : 'light', r && { x: r.left + r.width / 2, y: r.top + r.height / 2 });
       }}
-      onPointerEnter={() => pace(2.2)}
+      onPointerEnter={() => {
+        pace(2.2);
+        warmTheme();
+      }}
       onPointerLeave={() => pace(1)}
+      onFocus={warmTheme}
+      onTouchStart={warmTheme}
       aria-pressed={lit}
       aria-label={lit ? 'Свет включён. Выключить — тёмная тема' : 'Свет выключен. Включить — светлая тема'}
       className={`orb pointer-events-auto ${className}`}

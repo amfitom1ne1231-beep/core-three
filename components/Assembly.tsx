@@ -5,7 +5,7 @@ import Link from 'next/link';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { SITE } from '@/content/site';
-import { onThemeChange, onThemePrepare, readTheme, type Theme } from '@/lib/theme';
+import { inView as onScreen, onThemeChange, onThemePrepare, readTheme, type Theme } from '@/lib/theme';
 import Words from './Words';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -117,7 +117,9 @@ export default function Assembly() {
       onThemePrepare((to) => {
         const img = new Image();
         img.src = `${ROOT}/${to}/face-${FACES[face]}.webp`;
-        return img.decode().catch(() => {});
+        const loaded = img.decode().catch(() => {});
+        // ждать кадр — только пока блок на экране; качаться он начинает всегда
+        return onScreen(stage.current) ? loaded : undefined;
       }),
     [face]
   );
