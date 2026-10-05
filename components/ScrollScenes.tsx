@@ -18,12 +18,17 @@ gsap.registerPlugin(ScrollTrigger);
  *    а следующая наезжает поверх — появляется глубина между сценами.
  *
  * При prefers-reduced-motion ничего из этого не включается.
+ *
+ * На телефоне — тоже: первый экран гас и уменьшался, пока его кнопки
+ * были ещё на виду, а уходящая секция тускнела под пальцем, хотя её ещё
+ * читали — на экране в один блок высотой «глубина между сценами» выглядит
+ * поломкой. Там блоки просто стоят и появляются один раз (Reveal).
  */
 export default function ScrollScenes() {
   useEffect(() => {
     const ctx = gsap.context(() => {
       const mm = gsap.matchMedia();
-      mm.add('(prefers-reduced-motion: no-preference)', () => {
+      mm.add('(min-width: 768px) and (prefers-reduced-motion: no-preference)', () => {
         const hero = document.querySelector<HTMLElement>('[data-hero]');
         if (hero) {
           gsap.to(hero, {

@@ -55,7 +55,7 @@ export default function ServicePage({ page, children }: { page: Page; children?:
             {page.n}
           </span>
 
-          <div className="relative grid items-center gap-[clamp(32px,6vh,64px)] px-4 pb-[clamp(56px,10vh,120px)] pt-[clamp(120px,19vh,200px)] sm:px-8 lg:min-h-[100svh] lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] lg:gap-[clamp(40px,5vw,88px)] lg:px-[72px] tp:min-h-0 tp:grid-cols-1 tp:gap-11 tp:pt-[136px]">
+          <div className="relative grid items-center gap-[clamp(32px,6vh,64px)] px-4 pb-[clamp(56px,10vh,120px)] pt-[clamp(120px,19vh,200px)] max-sm:pb-12 max-sm:pt-[108px] sm:px-8 lg:min-h-[100svh] lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] lg:gap-[clamp(40px,5vw,88px)] lg:px-[72px] tp:min-h-0 tp:grid-cols-1 tp:gap-11 tp:pt-[136px]">
             <div data-hero>
               {/* номер тот же, что в атласе: страница — продолжение карусели */}
               <span className="rail-label">

@@ -550,7 +550,7 @@ export default function Assembly() {
       aria-roledescription="карусель"
       aria-label="Направления"
     >
-      <div className="px-4 pt-[12vh] sm:px-8 lg:px-[72px]">
+      <div className="px-4 pt-[12vh] max-sm:pt-14 sm:px-8 lg:px-[72px]">
         <span className="rail-label">{SITE.atlas.label}</span>
         <div className="mt-4 grid gap-[clamp(16px,3vh,32px)] lg:grid-cols-[1.7fr_1fr] lg:items-end">
           <h2 data-skew className="display m-0 text-[clamp(28px,5.2vw,80px)]">
@@ -563,7 +563,7 @@ export default function Assembly() {
       <div
         ref={shell}
         onKeyDown={onKey}
-        className="grid items-center gap-x-[clamp(24px,4vw,72px)] px-4 pb-[clamp(56px,10vh,120px)] sm:px-8 lg:grid-cols-[minmax(300px,0.82fr)_minmax(0,1.18fr)] lg:px-[72px]"
+        className="grid items-center gap-x-[clamp(24px,4vw,72px)] px-4 pb-[clamp(56px,10vh,120px)] max-sm:pb-14 sm:px-8 lg:grid-cols-[minmax(300px,0.82fr)_minmax(0,1.18fr)] lg:px-[72px]"
       >
         {/* ---------- текст передней грани: номер и одна крупная фраза ---------- */}
         <div className="order-3 flex flex-col lg:order-1">

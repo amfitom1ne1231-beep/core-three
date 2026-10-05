@@ -57,21 +57,31 @@ export default function Home() {
         <section
           data-chapter="hero"
           data-cursor="ring"
-          className="relative z-20 h-[100svh] select-none overflow-x-clip"
+          // Телефон: две строки — текст и место под знак. Знак занимает
+          // то, что осталось под кнопками, и не может на них наехать:
+          // раньше он стоял от низа экрана, и на iPhone, где видимая
+          // высота меньше, закрывал «Смотреть концепты».
+          className="relative z-20 h-[100svh] select-none overflow-x-clip max-sm:grid max-sm:h-auto max-sm:min-h-[100svh] max-sm:grid-rows-[auto_minmax(0,1fr)]"
           aria-label="Начало"
         >
-          {/* знак-объект: прилетает из прелоадера, тянется за курсором, на скролле разлетается */}
-          <HeroMark />
+          {/* знак-объект: прилетает из прелоадера, тянется за курсором, на скролле разлетается.
+              Обёртка существует только на телефоне (вторая строка сетки, от её
+              высоты знак считает свой размер); шире она растворяется */}
+          <div className="max-sm:relative max-sm:row-start-2 max-sm:min-h-[150px] max-sm:[container-type:size] sm:contents">
+            <HeroMark />
+          </div>
 
           {/* текст — отдельный слой: на скролле он уходит вглубь, а знак разлетается */}
           <div
             data-hero
             // на телефоне текст наверху, знак поднимается снизу; на десктопе они рядом;
             // на планшете в портрете текст наверху, знак целиком под ним
-            className="relative z-10 flex h-full flex-col justify-start px-4 pt-[clamp(150px,23vh,210px)] sm:px-8 lg:justify-center lg:px-[72px] lg:pt-0 tp:justify-start tp:pt-[150px]"
+            // md:will-change — слой текста уходит вглубь по прокрутке: закреплён
+            // текстурой, чтобы уменьшение не перерисовывало заголовок каждый кадр
+            className="relative z-10 flex h-full flex-col justify-start px-4 pt-[clamp(150px,23vh,210px)] md:[will-change:transform,opacity] max-sm:row-start-1 max-sm:h-auto max-sm:pt-[136px] sm:px-8 lg:justify-center lg:px-[72px] lg:pt-0 tp:justify-start tp:pt-[150px]"
           >
             {/* рельс трёх ядер — имена с дескриптора логотипа */}
-            <div className="absolute left-4 right-4 top-[clamp(88px,14vh,150px)] flex flex-wrap gap-x-[clamp(12px,3vw,40px)] gap-y-2 sm:left-8 sm:right-8 lg:left-[72px] lg:right-[72px] tp:top-[104px]">
+            <div className="absolute left-4 right-4 top-[clamp(88px,14vh,150px)] max-sm:top-[84px] flex flex-wrap gap-x-[clamp(12px,3vw,40px)] gap-y-2 sm:left-8 sm:right-8 lg:left-[72px] lg:right-[72px] tp:top-[104px]">
               {SITE.cores.map((core) => (
                 <span key={core.n} className="rail-label">
                   <b>{core.n}</b> / {core.name}

@@ -37,7 +37,7 @@ export default function ConceptsPage() {
       <main id="content" className="relative z-10 w-full">
         {/* ---------- первый экран ---------- */}
         <section data-chapter="hero" className="relative overflow-hidden" aria-label="Начало">
-          <div data-hero className="px-4 pb-[clamp(48px,9vh,110px)] pt-[clamp(120px,19vh,200px)] sm:px-8 lg:px-[72px] tp:pb-10 tp:pt-[136px]">
+          <div data-hero className="px-4 pb-[clamp(48px,9vh,110px)] pt-[clamp(120px,19vh,200px)] max-sm:pt-[108px] sm:px-8 lg:px-[72px] tp:pb-10 tp:pt-[136px]">
             <span className="rail-label">{PAGE.label}</span>
             <div className="mt-6 grid items-end gap-[clamp(28px,5vh,56px)] lg:grid-cols-[1.6fr_1fr] lg:gap-[clamp(40px,5vw,96px)] tp:grid-cols-1">
               <h1

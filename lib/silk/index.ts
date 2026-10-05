@@ -229,9 +229,13 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
   const requestSize = () => {
     wantSize = true;
     dirty = true;
+    kick();
   };
   const resize = () => {
-    const dpr = Math.min(devicePixelRatio || 1, 2);
+    // На компьютере — не плотнее 1,5: материал гладкий, на экране Retina
+    // разницы с двойной плотностью глаз не видит, а точек почти вдвое меньше.
+    // Фон был самой дорогой частью кадра при прокрутке.
+    const dpr = Math.min(devicePixelRatio || 1, isMobile ? 2 : 1.5);
     const cssW = canvas.clientWidth || innerWidth;
     const cssH = canvas.clientHeight || innerHeight;
     canvas.width = Math.max(1, Math.round(cssW * dpr * renderScale));
@@ -270,12 +274,14 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
   let hidden = document.hidden && !opts.ignoreVisibility;
   const onVisibility = () => {
     hidden = document.hidden && !opts.ignoreVisibility;
+    kick();
   };
 
   let onScreen = true;
   const io = new IntersectionObserver(
     ([entry]) => {
       onScreen = entry.isIntersecting;
+      kick();
     },
     { threshold: 0 }
   );
@@ -305,8 +311,16 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
   const still = reduced || isMobile;
   let paused = false;
 
+  /**
+   * Цикл идёт, только пока есть что рисовать. Раньше он просил кадр всегда —
+   * и под глухой завесой, и во вкладке на заднем плане — и только потом
+   * решал, что рисовать нечего. Сам пустой кадр дёшев, но страница из-за
+   * него просыпалась 60 раз в секунду, а с ней пересчитывались все идущие
+   * анимации. Теперь, когда рисовать нечего, цикл стоит; будит его `kick`
+   * — из всех мест, где появляется работа.
+   */
   const frame = (now: number) => {
-    raf = requestAnimationFrame(frame);
+    raf = 0;
     // первый кадр рисуется в любом случае: его ждёт прелоадер, а страница,
     // открытая посреди схемы, начинает как раз под полной завесой
     if (hidden || !onScreen || (paused && announced) || !silk) {
@@ -317,6 +331,7 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
       last = now;
       return;
     }
+    raf = requestAnimationFrame(frame);
     dirty = false;
     if (wantSize) {
       wantSize = false;
@@ -432,6 +447,9 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
     }
   };
   raf = requestAnimationFrame(frame);
+  function kick() {
+    if (!raf) raf = requestAnimationFrame(frame);
+  }
 
   return {
     destroy() {
@@ -457,6 +475,7 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
       const needsRebuild = patch.octaves !== undefined && patch.octaves !== P.octaves;
       Object.assign(P, patch);
       dirty = true;
+      kick();
       if (needsRebuild) {
         if (silk) gl.deleteProgram(silk.program);
         silk = build(`#define OCT ${P.octaves | 0}\n${SILK_FRAG}`);
@@ -466,9 +485,11 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
       modeTarget = next;
       if (instant) mode = next;
       dirty = true;
+      kick();
     },
     setPaused(next) {
       paused = next;
+      if (!next) kick();
     }
   };
 }

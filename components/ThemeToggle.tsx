@@ -29,17 +29,29 @@ export default function ThemeToggle({ className = '' }: { className?: string }) 
     return onThemeChange(setLocal);
   }, []);
 
-  // играет только видимая сфера; без движения — стоят обе, на первом кадре
+  // Играет только видимая сфера; без движения — стоят обе, на первом кадре.
+  // «Видимая» — ещё и буквально: кнопок на странице две (шапка и пульт),
+  // и ролик той, что сейчас скрыта или не в кадре, крутить незачем.
   useEffect(() => {
-    const films = ball.current?.querySelectorAll('video');
-    if (!films || !theme) return;
+    const el = ball.current;
+    const films = el?.querySelectorAll('video');
+    if (!el || !films || !theme) return;
     const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    films.forEach((v) => {
-      // на тёмной странице видна светлая сфера, и наоборот
-      const shown = v.dataset.orb !== theme;
-      if (shown && !still) v.play().catch(() => {});
-      else v.pause();
+    let seen = true;
+    const apply = () =>
+      films.forEach((v) => {
+        // на тёмной странице видна светлая сфера, и наоборот
+        const shown = v.dataset.orb !== theme;
+        if (shown && !still && seen) v.play().catch(() => {});
+        else v.pause();
+      });
+    const watch = new IntersectionObserver(([entry]) => {
+      seen = entry?.isIntersecting ?? true;
+      apply();
     });
+    watch.observe(el);
+    apply();
+    return () => watch.disconnect();
   }, [theme]);
 
   /** Под курсором переливы идут быстрее — кнопка отвечает раньше, чем её нажали. */

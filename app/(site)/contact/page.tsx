@@ -74,7 +74,7 @@ export default function ContactPage() {
       <main id="content" className="relative z-10 w-full">
         <section
           data-chapter="contact"
-          className="relative px-4 pb-[clamp(56px,10vh,120px)] pt-[clamp(112px,16vh,176px)] sm:px-8 lg:px-[72px] tp:pt-[136px]"
+          className="relative px-4 pb-[clamp(56px,10vh,120px)] pt-[clamp(112px,16vh,176px)] max-sm:pt-[108px] sm:px-8 lg:px-[72px] tp:pt-[136px]"
           aria-label="Заявка"
         >
           <Brief intro={intro} />

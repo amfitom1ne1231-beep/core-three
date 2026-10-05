@@ -11,7 +11,7 @@ export default function LegalPage({ doc, extra = {} }: { doc: LegalDoc; extra?: 
   return (
     <>
       <main id="content" className="relative z-10 w-full bg-bg">
-        <div className="px-4 pb-[10vh] pt-[clamp(112px,18vh,180px)] sm:px-8 lg:px-[72px]">
+        <div className="px-4 pb-[10vh] pt-[clamp(112px,18vh,180px)] max-sm:pt-[108px] sm:px-8 lg:px-[72px]">
           <span className="rail-label">{doc.label}</span>
           <h1 className="display m-0 mt-6 max-w-[18ch] text-[clamp(32px,5vw,76px)]">{doc.title}</h1>
           <p className="m-0 mt-6 font-mono text-[10px] uppercase tracking-rail text-faint">{doc.edition}</p>

@@ -290,9 +290,10 @@ export default function NavPod() {
     // Парение: медленное всплытие на четыре пикселя и обратно. Отдельный
     // слой — внешний занят появлением, внутренний вращением; наложи их
     // друг на друга, и каждая анимация затирала бы чужой трансформ.
-    const idle = reduced
-      ? null
-      : gsap.to(bob, { y: -4, duration: 3.4, ease: 'sine.inOut', yoyo: true, repeat: -1 });
+    // Ведёт его CSS (`.pod-float` в globals.css), а не скрипт: твин GSAP
+    // переписывал стиль 60 раз в секунду на каждой странице без остановки,
+    // и браузер на каждом кадре пересчитывал стили и слои ради четырёх
+    // пикселей. CSS-анимацию трансформа видеокарта исполняет сама.
 
     let raf = 0;
     const sync = () => {
@@ -348,7 +349,6 @@ export default function NavPod() {
     addEventListener('scroll', sync, { passive: true });
     return () => {
       cancelAnimationFrame(raf);
-      idle?.kill();
       off();
       removeEventListener('scroll', sync);
     };
@@ -461,7 +461,7 @@ export default function NavPod() {
       aria-hidden={!live}
     >
       {/* слой парения: медленно всплывает и опускается */}
-      <div ref={float}>
+      <div ref={float} className="pod-float">
       <div
         ref={shell}
         data-tour="pod"

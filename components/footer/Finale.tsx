@@ -20,7 +20,7 @@ export default function Finale() {
   return (
     <section
       id="lead"
-      className="px-4 pb-[clamp(44px,8vh,92px)] pt-[clamp(72px,13vh,150px)] sm:px-8 lg:px-[72px]"
+      className="px-4 pb-[clamp(44px,8vh,92px)] max-sm:pb-10 pt-[clamp(72px,13vh,150px)] max-sm:pt-14 sm:px-8 lg:px-[72px]"
       aria-label={footer.label}
     >
       <span className="rail-label">{footer.label}</span>
