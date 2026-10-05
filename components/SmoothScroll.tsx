@@ -19,11 +19,6 @@ let lenisTicking = false;
 /** Будит тикер GSAP, если он спит. Задаёт сторож тикера, зовёт Lenis. */
 let rouseTicker: () => void = () => {};
 
-/** Предел скоса, градусы: дальше текст начинает читаться криво. */
-const SKEW_MAX = 2.2;
-/** Градусов на пиксель скорости за кадр. */
-const SKEW_K = 0.06;
-
 /**
  * Плавный скролл и его связка с ScrollTrigger.
  *
@@ -110,16 +105,21 @@ export default function SmoothScroll() {
      * никто не трогал, а с ней на каждом кадре пересчитывались все идущие
      * анимации (замер по трассировке — BRIEF.md, раздел 50). Теперь такт
      * включают колесо, палец и программная прокрутка, а выключается он
-     * сам, когда Lenis доехал и скос текста встал в ноль.
+     * сам, когда Lenis доехал.
+     *
+     * Скоса заголовков по скорости прокрутки здесь больше нет. Заголовок
+     * шириной в экран на ходу вставал криво относительно линий и кнопок
+     * рядом — до 1,2° в Chrome и до 2° в Safari, где колесо отдаёт скорость
+     * рывками (38 px перепада между краями строки; замер — BRIEF.md,
+     * раздел 51). Вместе с ним ушли четыре постоянных слоя под эти заголовки.
      */
     let ticking = false;
     let idle = 0;
     const tick = () => {
       lenis.raf(performance.now());
-      skewTick();
       // полсекунды покоя с запасом: гасить такт на первом же тихом кадре
       // нельзя — между двумя щелчками колеса бывает кадр без движения
-      idle = lenis.isScrolling === 'smooth' || dirty ? 0 : idle + 1;
+      idle = lenis.isScrolling === 'smooth' ? 0 : idle + 1;
       if (idle > 30) {
         ticking = false;
         lenisTicking = false;
@@ -147,43 +147,6 @@ export default function SmoothScroll() {
       return scrollTo(...args);
     }) as Lenis['scrollTo'];
     wake();
-
-    /**
-     * Скос по скорости скролла: страница «тянется» за колесом. Только
-     * для мыши — на телефоне скролл нативный, а кадры дороже.
-     *
-     * Размытие отсюда убрано, а стили в покое больше не снимаются.
-     * Из-за них и мерцало: `filter` заводит элементу собственный слой,
-     * а снятие `transform` и `filter` возвращает текст с серой
-     * растеризации на субпиксельную. На каждой остановке прокрутки
-     * крупные заголовки перерисовывались целиком — это и читалось как
-     * вспышка на долю секунды. Теперь скос просто паркуется в ноль:
-     * элемент всё время в одном режиме, перерисовывать нечего.
-     */
-    const fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
-    let skew = 0;
-    let dirty = false;
-    const skewTick = () => {
-      if (!fine) return;
-      const target = gsap.utils.clamp(-SKEW_MAX, SKEW_MAX, -lenis.velocity * SKEW_K);
-      skew += (target - skew) * 0.12;
-      const els = () => document.querySelectorAll<HTMLElement>('[data-skew]');
-      if (Math.abs(skew) < 0.01 && Math.abs(target) < 0.01) {
-        // приехали: паркуем ровно в ноль и больше ничего не трогаем
-        if (dirty) {
-          els().forEach((el) => {
-            el.style.transform = 'skewY(0deg)';
-          });
-          dirty = false;
-        }
-        skew = 0;
-        return;
-      }
-      dirty = true;
-      els().forEach((el) => {
-        el.style.transform = `skewY(${skew.toFixed(3)}deg)`;
-      });
-    };
 
     return () => {
       setLenis(null);

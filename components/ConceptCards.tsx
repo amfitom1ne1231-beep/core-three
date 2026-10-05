@@ -94,7 +94,7 @@ export default function ConceptCards({
             onMouseLeave={() => warp(c.slug, false)}
           >
             <div data-reveal="clip" className="relative overflow-hidden border-b border-line bg-bg">
-              <svg data-skew="blur" viewBox="0 0 320 200" className="block h-auto w-full text-fg" aria-hidden>
+              <svg viewBox="0 0 320 200" className="block h-auto w-full text-fg" aria-hidden>
                 <defs>
                   <filter id={`warp-${c.slug}`} x="-10%" y="-10%" width="120%" height="120%">
                     <feTurbulence

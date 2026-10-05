@@ -112,7 +112,7 @@ export default function Journey() {
         <div className="grid gap-6 lg:grid-cols-[1fr_minmax(0,460px)] lg:items-end">
           <div>
             <span className="rail-label">{label}</span>
-            <h2 data-skew className="display m-0 mt-4 text-[clamp(30px,5vw,80px)]">
+            <h2 className="display m-0 mt-4 text-[clamp(30px,5vw,80px)]">
               {title} <span className="title-accent">{titleAccent}</span>
             </h2>
           </div>
