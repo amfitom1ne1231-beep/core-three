@@ -176,20 +176,25 @@ function UptimeRow({
 
       {/* 90 суток. На узком экране показываем последние 45: 90 полосок
           по полтора пикселя — это не история, а шум.
-          Собираются слева направо при появлении в кадре: история
-          прочитывается как история, а не возникает готовой таблицей. */}
-      <div ref={barsRef} className="mt-3 flex h-6 items-stretch gap-px sm:gap-[2px]">
+          Открываются слева направо при появлении в кадре: история
+          прочитывается как история, а не возникает готовой таблицей.
+          Движется одна шторка на строку, а не каждая полоска: раньше у всех
+          девяноста был свой переход с задержкой, строк на экране шесть —
+          и Safari, заводя полтысячи анимаций в одном кадре, замирал
+          на 55–70 мс прямо на ходу прокрутки. */}
+      <div
+        ref={barsRef}
+        className="mt-3 flex h-6 items-stretch gap-px sm:gap-[2px]"
+        style={{
+          clipPath: built ? 'inset(0 0 0 0)' : 'inset(0 100% 0 0)',
+          transition: 'clip-path 0.85s cubic-bezier(0.22,1,0.36,1)'
+        }}
+      >
         {bars.map((b, i) => (
           <i
             key={i}
-            className={`block flex-1 origin-bottom rounded-[1px] ${i < DAYS - 45 ? 'hidden sm:block' : ''}`}
-            style={{
-              background: HEALTH_COLOR[b],
-              opacity: b === 'ok' ? 0.5 : 1,
-              transform: built ? 'scaleY(1)' : 'scaleY(0.08)',
-              transition: 'transform 0.42s cubic-bezier(0.22,1,0.36,1)',
-              transitionDelay: `${Math.min(i, 90) * 5}ms`
-            }}
+            className={`block flex-1 rounded-[1px] ${i < DAYS - 45 ? 'hidden sm:block' : ''}`}
+            style={{ background: HEALTH_COLOR[b], opacity: b === 'ok' ? 0.5 : 1 }}
             title={`${daysAgoLabel(DAYS - 1 - i)} — ${HEALTH_LABEL[b]}`}
           />
         ))}

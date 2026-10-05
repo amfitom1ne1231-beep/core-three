@@ -65,6 +65,8 @@ export type SilkHandle = {
    * остаётся на канвасе, под непрозрачной завесой его всё равно не видно.
    */
   setPaused: (paused: boolean) => void;
+  /** Замереть на последнем кадре: под наплывом темы страница не должна меняться. */
+  setHeld: (held: boolean) => void;
 };
 
 const hexToRgb = (hex: string): [number, number, number] => {
@@ -106,7 +108,7 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
     // Без WebGL остаётся фон из токенов темы — первый экран не ломается.
     canvas.style.display = 'none';
     opts.onFirstFrame?.();
-    return { destroy: () => {}, setParams: () => {}, setTheme: () => {}, setPaused: () => {} };
+    return { destroy: () => {}, setParams: () => {}, setTheme: () => {}, setPaused: () => {}, setHeld: () => {} };
   }
 
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -175,7 +177,7 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
   if (!silk || !sim) {
     canvas.style.display = 'none';
     opts.onFirstFrame?.();
-    return { destroy: () => {}, setParams: () => {}, setTheme: () => {}, setPaused: () => {} };
+    return { destroy: () => {}, setParams: () => {}, setTheme: () => {}, setPaused: () => {}, setHeld: () => {} };
   }
 
   /* --- поле следа курсора: две RGBA8-текстуры по кругу --- */
@@ -310,6 +312,7 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
   let announced = false;
   const still = reduced || isMobile;
   let paused = false;
+  let held = false;
 
   /**
    * Цикл идёт, только пока есть что рисовать. Раньше он просил кадр всегда —
@@ -323,7 +326,7 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
     raf = 0;
     // первый кадр рисуется в любом случае: его ждёт прелоадер, а страница,
     // открытая посреди схемы, начинает как раз под полной завесой
-    if (hidden || !onScreen || (paused && announced) || !silk) {
+    if (hidden || !onScreen || held || (paused && announced) || !silk) {
       last = now;
       return;
     }
@@ -489,6 +492,10 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
     },
     setPaused(next) {
       paused = next;
+      if (!next) kick();
+    },
+    setHeld(next) {
+      held = next;
       if (!next) kick();
     }
   };

@@ -7,6 +7,7 @@ import { MARK_ARMS, MARK_CENTER } from './mark-geometry';
 import { BEVEL, FACET_FILL } from './mark-palette';
 import { isRevealed, preloaderLeaving } from '@/lib/boot';
 import { CORE_PHASE, CORE_SPEED, silkClock } from '@/lib/silk';
+import { isThemeStill } from '@/lib/theme';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -34,7 +35,7 @@ export default function HeroMark() {
   const scene = useRef<HTMLDivElement>(null);
   const tilt = useRef<HTMLDivElement>(null);
   const layers = useRef<HTMLDivElement[]>([]);
-  const halos = useRef<HTMLDivElement[]>([]);
+  const halos = useRef<HTMLImageElement[]>([]);
   /** Резкий луч и его заранее размытая копия: в разлёте одна сменяет другую. */
   const sharps = useRef<SVGSVGElement[]>([]);
   const softs = useRef<HTMLDivElement[]>([]);
@@ -174,6 +175,8 @@ export default function HeroMark() {
     // 4. Дыхание ядер в такт материалу
     const t0 = performance.now();
     const breathe = () => {
+      // под наплывом темы знак стоит — см. `isThemeStill`
+      if (isThemeStill()) return;
       const t = silkClock.live ? silkClock.t : ((performance.now() - t0) / 1000) * 0.135;
       halos.current.forEach((h, i) => {
         const b = 0.78 + 0.22 * Math.sin(t * CORE_SPEED[i] * 3 + CORE_PHASE[i]);
@@ -249,20 +252,27 @@ export default function HeroMark() {
               className="absolute inset-0 will-change-transform"
               style={{ transformOrigin: ORIGIN }}
             >
-              {/* свечение ядра: размытый силуэт луча, дышит прозрачностью */}
-              <div
-                ref={(el) => {
-                  if (el) halos.current[i] = el;
-                }}
-                className="absolute inset-0 will-change-[opacity]"
-                style={{ filter: 'blur(28px)', opacity: 0.5 }}
-              >
-                <svg viewBox="0 0 100 100" className="h-full w-full overflow-visible">
-                  {arm.facets.map((f) => (
-                    <path key={f.facet} d={f.d} fill="#6e9bcc" />
-                  ))}
-                </svg>
-              </div>
+              {/* Свечение ядра: размытый силуэт луча, дышит прозрачностью.
+                  Размытие запечено в картинку (brand/halos.mjs). Раньше это был
+                  `filter: blur(28px)` на каждом луче, и под наплывом смены темы
+                  Safari пересчитывал все три на каждом кадре — наплыв на главной
+                  шёл рывками. Вынос на 30% — поле под хвост размытия, то же,
+                  что у картинки; на телефоне знак меньше, а радиус размытия
+                  тот же, поэтому там своя картинка. */}
+              <picture>
+                <source media="(max-width: 639.98px)" srcSet={`/mark/halo-${i + 1}-s.webp`} />
+                <img
+                  ref={(el) => {
+                    if (el) halos.current[i] = el;
+                  }}
+                  src={`/mark/halo-${i + 1}.webp`}
+                  alt=""
+                  decoding="async"
+                  draggable={false}
+                  className="absolute left-[-30%] top-[-30%] h-[160%] w-[160%] max-w-none will-change-[opacity]"
+                  style={{ opacity: 0.5 }}
+                />
+              </picture>
               <svg
                 ref={(el) => {
                   if (el) sharps.current[i] = el;

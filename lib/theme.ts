@@ -103,6 +103,34 @@ type Transition = { ready: Promise<void>; finished: Promise<void> };
 const isSafari = () => /^((?!chrome|chromium|android|crios|fxios|edg).)*safari/i.test(navigator.userAgent);
 let switching = false;
 
+/**
+ * Пока идёт наплыв, страница под ним стоит.
+ *
+ * Новая тема под наплывом — не снимок, а живая страница: Safari переснимает
+ * её на каждом кадре, где что-то изменилось. На главной менялось всегда —
+ * знак «дышит» прозрачностью трёх размытых слоёв, материал течёт, — и наплыв
+ * шёл кадрами по 50 мс вместо 17 (на странице документа, где ничего не
+ * движется, он ровный; замер — BRIEF.md, раздел 51). Четверть секунды
+ * неподвижности под наплывом глаз не замечает, а кадры возвращаются в срок.
+ */
+let still = false;
+const stillListeners = new Set<(on: boolean) => void>();
+
+export const isThemeStill = () => still;
+
+export function onThemeStill(fn: (on: boolean) => void) {
+  stillListeners.add(fn);
+  return () => {
+    stillListeners.delete(fn);
+  };
+}
+
+function setStill(on: boolean) {
+  if (still === on) return;
+  still = on;
+  stillListeners.forEach((fn) => fn(on));
+}
+
 export async function switchTheme(next: Theme, origin?: { x: number; y: number }) {
   if (typeof document === 'undefined' || switching || readTheme() === next) return;
   const start = (document as Document & { startViewTransition?: (cb: () => Promise<void>) => Transition }).startViewTransition;
@@ -126,10 +154,16 @@ export async function switchTheme(next: Theme, origin?: { x: number; y: number }
         setTheme(next, true);
         await new Promise((ok) => setTimeout(ok, 60));
       });
+      // снимки готовы, наплыв пошёл — с этого кадра под ним ничего не меняется
+      fade.ready.then(
+        () => switching && setStill(true),
+        () => {}
+      );
       await fade.finished;
     } catch {
       if (readTheme() !== next) setTheme(next);
     } finally {
+      setStill(false);
       delete document.documentElement.dataset.themeSwitching;
       switching = false;
     }

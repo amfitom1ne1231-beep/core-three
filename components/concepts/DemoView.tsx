@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from 'react';
 /** В каких координатах грузится страница демо внутри кадра. */
 const W = 1280;
 const H = 800;
+/** Сколько страница должна простоять, чтобы живой кадр начал грузиться. */
+const SETTLE_MS = 220;
 
 /**
  * Живой кадр демо.
@@ -38,6 +40,14 @@ const H = 800;
  * полосы, и гасить кадр у полосы, которая видна, — значит показывать
  * снимок там, где обещано живое демо. Дальше выигрыш даёт не порог, а шаг
  * между полосами.
+ *
+ * Кадр поднимается, когда прокрутка остановилась, а не на ходу. Живой
+ * кадр — целая страница: её разбор и запуск идут в том же потоке, что
+ * и прокрутка. В Safari каждая полоса, подъезжая к экрану, давала две
+ * паузы по 50–85 мс — двенадцать запинок за один проход витрины (замер —
+ * BRIEF.md, раздел 51). Пока страница едет, в рамке стоит снимок той же
+ * страницы; остановились посмотреть — через долю секунды он оживает.
+ * Мимо чего пролистали, то не грузится вовсе.
  */
 export default function DemoView({
   slug,
@@ -74,10 +84,26 @@ export default function DemoView({
 
     if (!heavyOk) return () => ro.disconnect();
 
-    const near = new IntersectionObserver(([e]) => e.isIntersecting && setLive(true), { rootMargin: '150px' });
+    let wanted = false;
+    let timer = 0;
+    // каждое событие прокрутки откладывает подъём: кадр оживает в тишине
+    const arm = () => {
+      window.clearTimeout(timer);
+      if (wanted) timer = window.setTimeout(() => setLive(true), SETTLE_MS);
+    };
+    const near = new IntersectionObserver(
+      ([e]) => {
+        if (!e.isIntersecting) return;
+        wanted = true;
+        arm();
+      },
+      { rootMargin: '150px' }
+    );
     const far = new IntersectionObserver(
       ([e]) => {
         if (e.isIntersecting) return;
+        wanted = false;
+        window.clearTimeout(timer);
         setLive(false);
         setShown(false);
       },
@@ -85,7 +111,10 @@ export default function DemoView({
     );
     near.observe(el);
     far.observe(el);
+    addEventListener('scroll', arm, { passive: true });
     return () => {
+      window.clearTimeout(timer);
+      removeEventListener('scroll', arm);
       ro.disconnect();
       near.disconnect();
       far.disconnect();

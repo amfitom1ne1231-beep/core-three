@@ -123,6 +123,8 @@ export default function NavPod() {
   const [open, setOpen] = useState(false);
   /** Какое направление показывает живой экран панели. */
   const [active, setActive] = useState(0);
+  /** Какие живые экраны уже подняты с момента открытия панели. */
+  const [seen, setSeen] = useState<number[]>([]);
   /** Места текущей страницы и то из них, где человек сейчас. */
   const [places, setPlaces] = useState<string[]>([]);
   const [at, setAt] = useState(0);
@@ -150,6 +152,13 @@ export default function NavPod() {
 
   // закрываем при переходе — панель не должна пережить страницу
   useEffect(() => setOpen(false), [pathname]);
+
+  // показанный экран остаётся поднятым, пока панель открыта: вернулись
+  // к нему — он проявляется сразу, без второй сборки
+  useEffect(() => {
+    if (!open) setSeen([]);
+    else setSeen((s) => (s.includes(active) ? s : [...s, active]));
+  }, [open, active]);
 
   /**
    * Ширина слушается, а не спрашивается один раз.
@@ -580,6 +589,12 @@ export default function NavPod() {
            * Живой экран направления. Играет ровно одна вставка — та, на
            * которой сейчас палец или курсор: шесть одновременных таймлайнов
            * в меню никому не нужны. Закрытая панель не держит ни одной.
+           *
+           * И поднимается по одной — та, что на виду; остальные — когда
+           * до них дойдут. Раньше открытие собирало все разом: каждая
+           * вставка ставит свои анимации и меряет себя, и на одно нажатие
+           * выходило 126 пересчётов вёрстки — 32 мс в Chrome и 150–170 мс
+           * в Safari, пульт открывался с заметной заминкой (BRIEF.md, раздел 51).
            */}
           <div
             className="relative mb-2 overflow-hidden rounded-[12px] border border-line bg-elev"
@@ -588,11 +603,12 @@ export default function NavPod() {
           >
             {open &&
               ROUTES.map((r, i) => {
+                if (i !== active && !seen.includes(i)) return null;
                 const Live = r.live;
                 return (
                   <div
                     key={r.href}
-                    className="absolute inset-0 transition-opacity duration-300"
+                    className="pod-live-in absolute inset-0 transition-opacity duration-300"
                     style={{
                       // вставка нарисована в макетных координатах, рамка её масштабирует
                       ['--live-k' as string]: (SCREEN_W / LIVE_W).toFixed(4),
