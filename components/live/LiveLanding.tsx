@@ -7,37 +7,22 @@ import { Check, LiveScreen, Pointer, countTo, useLoop, type LiveProps } from './
  * Акварель ученика — главный кадр лендинга курса рисования.
  *
  * Фотографий у нас нет, но курс учит рисовать, и его витрина — сами
- * работы. Акварель собрана из SVG-фильтров: турбулентность рвёт край
- * заливки так, как краска растекается по мокрой бумаге, второй шум даёт
- * зерно листа. Появляется она мазком — маска прорисовывается кистью.
+ * работы. Акварель собрана из SVG-фильтров — турбулентность рвёт край
+ * заливки, второй шум даёт зерно листа, — но считаются они не здесь:
+ * работа запечена в две картинки (`brand/watercolor.mjs`). Safari
+ * пересчитывал фильтры на каждом кадре перехода между темами, и на
+ * странице «Сайты» волна шла рывками. Появляется акварель по-прежнему
+ * мазком: маска прорисовывается кистью поверх чистого листа.
  */
 function Watercolor() {
   // свои идентификаторы: вставка бывает на странице не одна (карусель,
-  // пульт), а одинаковые id фильтров в SVG забирают друг у друга
+  // пульт), а одинаковые id масок в SVG забирают друг у друга
   const u = useId().replace(/[^a-zA-Z0-9]/g, '');
-  const id = (name: string) => `${name}-${u}`;
+  const brush = `lw-brush-${u}`;
   return (
     <svg viewBox="0 0 200 150" className="h-full w-full" aria-hidden>
       <defs>
-        <filter id={id('lw-bleed')} x="-10%" y="-10%" width="120%" height="120%">
-          <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="4" result="n" />
-          <feDisplacementMap in="SourceGraphic" in2="n" scale="9" xChannelSelector="R" yChannelSelector="G" result="d" />
-          <feGaussianBlur in="d" stdDeviation="0.6" />
-        </filter>
-        <filter id={id('lw-edge')} x="-10%" y="-10%" width="120%" height="120%">
-          <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="2" seed="9" result="n" />
-          <feDisplacementMap in="SourceGraphic" in2="n" scale="5" xChannelSelector="R" yChannelSelector="G" />
-        </filter>
-        <filter id={id('lw-paper')}>
-          <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="2" />
-          <feColorMatrix values="0 0 0 0 0.45  0 0 0 0 0.4  0 0 0 0 0.35  0 0 0 0.09 0" />
-        </filter>
-        <linearGradient id={id('lw-sky')} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#8fb4d9" />
-          <stop offset="0.55" stopColor="#e9c9a6" />
-          <stop offset="1" stopColor="#f1d9bb" />
-        </linearGradient>
-        <mask id={id('lw-brush')}>
+        <mask id={brush}>
           {/* кисть: широкие горизонтальные проходы сверху вниз */}
           <path
             data-brush
@@ -51,25 +36,9 @@ function Watercolor() {
           />
         </mask>
       </defs>
-      <rect width="200" height="150" fill="#f6efe3" />
-      <g mask={`url(#${id('lw-brush')})`}>
-        <g filter={`url(#${id('lw-bleed')})`} opacity="0.92">
-          <rect x="4" y="4" width="192" height="92" fill={`url(#${id('lw-sky')})`} />
-          <circle cx="138" cy="58" r="15" fill="#f2a65a" opacity="0.85" />
-          <path d="M-5 92 C30 70 52 64 80 78 C104 90 118 66 148 70 C170 73 186 84 205 80 V150 H-5Z" fill="#6b8f8a" opacity="0.8" />
-          <path d="M-5 104 C26 92 60 96 92 104 C130 114 160 98 205 102 V150 H-5Z" fill="#3f6470" opacity="0.85" />
-          <path d="M-5 120 C40 112 90 118 130 122 C160 125 182 118 205 120 V150 H-5Z" fill="#2c4a5a" opacity="0.8" />
-          {/* отражение солнца в воде */}
-          <ellipse cx="138" cy="128" rx="18" ry="2.2" fill="#f2c28c" opacity="0.7" />
-          <ellipse cx="136" cy="134" rx="11" ry="1.6" fill="#f2c28c" opacity="0.55" />
-        </g>
-        {/* тонкие штрихи поверх заливки — рука ученика */}
-        <g filter={`url(#${id('lw-edge')})`} fill="none" stroke="#243a46" strokeWidth="0.9" strokeLinecap="round" opacity="0.55">
-          <path d="M60 86 l3 -10 l3 10 M66 84 l2.5 -8 l2.5 8" />
-          <path d="M22 72 q8 -4 14 0 M28 66 q6 -3 11 0" />
-        </g>
-      </g>
-      <rect width="200" height="150" filter={`url(#${id('lw-paper')})`} />
+      {/* чистый лист с тем же зерном, что у работы: под кистью меняется только рисунок */}
+      <image href="/live/watercolor-paper.webp" width="200" height="150" />
+      <image href="/live/watercolor.webp" width="200" height="150" mask={`url(#${brush})`} />
     </svg>
   );
 }
@@ -154,7 +123,14 @@ export default function LiveLanding({ playing }: LiveProps) {
         className="absolute inset-0 font-sans text-white"
         style={{ background: 'radial-gradient(120% 90% at 78% -10%, #24497a 0%, #0c1b31 46%, #05080d 100%)' }}
       >
-        <div className="absolute -top-20 right-10 h-56 w-56 rounded-full opacity-50 blur-3xl" style={{ background: '#3d6aa3' }} />
+        {/* Свечение за окном. Это тот же круг 224 px, размытый на 64 px, только
+            посчитанный заранее и записанный градиентом: с `filter: blur`
+            Safari размывал его заново на каждом кадре перехода между темами,
+            и волна на странице «Сайты» шла на 37 кадрах в секунду. */}
+        <div
+          className="absolute h-[556px] w-[556px]"
+          style={{ top: -246, right: -126, background: 'radial-gradient(closest-side, rgb(61 106 163 / 0.392) 0%, rgb(61 106 163 / 0.376) 10%, rgb(61 106 163 / 0.332) 20%, rgb(61 106 163 / 0.267) 30%, rgb(61 106 163 / 0.192) 40%, rgb(61 106 163 / 0.122) 50%, rgb(61 106 163 / 0.068) 60%, rgb(61 106 163 / 0.033) 70%, rgb(61 106 163 / 0.013) 80%, rgb(61 106 163 / 0.005) 90%, transparent 100%)' }}
+        />
 
         {/* окно браузера */}
         <div
