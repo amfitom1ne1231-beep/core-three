@@ -21,3 +21,13 @@ admin/dist
 .env
 deploy/*.env
 backups
+
+# не участвует в сборке сайта и бота: правка скрипта выкладки или записки
+# не должна пересобирать образы
+deploy
+docker-compose.yml
+test
+.github
+HANDOFF.md
+BOT.md
+HELP.md
