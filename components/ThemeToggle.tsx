@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { onThemeChange, readTheme, switchTheme, type Theme } from '@/lib/theme';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { onThemeChange, readTheme, restoreTheme, switchTheme, type Theme } from '@/lib/theme';
 
 /**
  * Кнопка света — одна круглая, с переливами внутри.
@@ -23,6 +23,9 @@ export default function ThemeToggle({ className = '' }: { className?: string }) 
   // на сервере темы ещё нет — подпись для читалки появляется после первого кадра
   const [theme, setLocal] = useState<Theme | null>(null);
   const ball = useRef<HTMLSpanElement>(null);
+
+  // до первой отрисовки: на 404 тему некому вернуть, кроме нас (см. `restoreTheme`)
+  useLayoutEffect(restoreTheme, []);
 
   useEffect(() => {
     setLocal(readTheme());

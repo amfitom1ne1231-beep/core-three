@@ -33,6 +33,25 @@ const KEY = 'ct-theme-2';
  */
 export const THEME_BOOT = `(function(){try{if(localStorage.getItem('${KEY}')==='dark'){var d=document;d.documentElement.dataset.theme='dark';var m=d.createElement('meta');m.name='theme-color';m.content='#050608';d.head.insertBefore(m,d.head.firstChild)}}catch(e){}})()`;
 
+/**
+ * Вернуть сохранённую тему, если строка в `<head>` не отработала.
+ *
+ * Так бывает на странице 404: её Next собирает целиком в браузере, а скрипт,
+ * вставленный таким способом, браузер не выполняет. Человек, выбравший
+ * тёмную тему, попадал по битой ссылке на светлую страницу. На обычных
+ * страницах тема к этому моменту уже верна, и вызов ничего не делает.
+ */
+export function restoreTheme() {
+  if (typeof document === 'undefined') return;
+  let stored: string | null = null;
+  try {
+    stored = localStorage.getItem(KEY);
+  } catch {
+    /* приватный режим: сохранённого выбора нет */
+  }
+  if (stored === 'dark' && readTheme() !== 'dark') setTheme('dark', true);
+}
+
 export function readTheme(): Theme {
   if (typeof document === 'undefined') return DEFAULT_THEME;
   return document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
