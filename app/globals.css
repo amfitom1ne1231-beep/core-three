@@ -2112,6 +2112,15 @@ html.has-cursor :is(input:not([type='checkbox']):not([type='radio']):not([type='
    Страница в новой теме проявляется кругом от переключателя:
    кромка мягкая, по фронту идёт полоса света.
    ============================================================ */
+/* Пока тема меняется, у элементов нет своих цветовых переходов:
+   новая тема приходит волной (или наплывом на телефоне) целым снимком,
+   и переходы под ним только нагружают страницу (lib/theme.ts). */
+html[data-theme-switching] *,
+html[data-theme-switching] *::before,
+html[data-theme-switching] *::after {
+  transition: none !important;
+}
+
 @property --wave {
   syntax: '<length>';
   inherits: false;

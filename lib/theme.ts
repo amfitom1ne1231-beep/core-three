@@ -104,6 +104,31 @@ export async function switchTheme(next: Theme, origin?: { x: number; y: number }
     return;
   }
 
+  // Сенсорные устройства: вместо волны — наплыв. Волна — маска во весь
+  // экран, радиус которой страница пересчитывает на каждом кадре; на
+  // телефоне с процессором вчетверо слабее настольного на ней не успевало
+  // в срок 13–14% кадров (замер по трассировке, BRIEF.md, раздел 50).
+  // Наплыв — два готовых снимка страницы, которые меняются прозрачностью:
+  // это целиком делает видеокарта. Картинки новой темы ждём так же.
+  if (matchMedia('(pointer: coarse)').matches) {
+    switching = true;
+    document.documentElement.dataset.themeSwitching = '';
+    try {
+      await Promise.race([Promise.all([...preparers].map((fn) => fn(next))), new Promise((ok) => setTimeout(ok, PREPARE_MS))]);
+      const fade = start.call(document, async () => {
+        setTheme(next, true);
+        await new Promise((ok) => setTimeout(ok, 60));
+      });
+      await fade.finished;
+    } catch {
+      if (readTheme() !== next) setTheme(next);
+    } finally {
+      delete document.documentElement.dataset.themeSwitching;
+      switching = false;
+    }
+    return;
+  }
+
   switching = true;
   const root = document.documentElement;
   const rim = document.createElement('div');
@@ -118,6 +143,11 @@ export async function switchTheme(next: Theme, origin?: { x: number; y: number }
     root.style.setProperty('--wave-y', `${origin.y}px`);
     root.style.setProperty('--wave-edge', `${WAVE_EDGE}px`);
     root.dataset.themeWave = next;
+    // Свои цветовые переходы элементов на время смены выключены (правило
+    // в globals.css): их больше сотни, каждый пересчитывался на каждом
+    // кадре, а снимок новой темы делался посреди них — с промежуточными
+    // цветами, которые после волны «дощёлкивали» до верных.
+    root.dataset.themeSwitching = '';
     document.body.appendChild(rim);
 
     const vt = start.call(document, async () => {
@@ -140,6 +170,7 @@ export async function switchTheme(next: Theme, origin?: { x: number; y: number }
   } finally {
     rim.remove();
     delete root.dataset.themeWave;
+    delete root.dataset.themeSwitching;
     switching = false;
   }
 }

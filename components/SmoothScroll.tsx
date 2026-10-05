@@ -114,8 +114,8 @@ export default function SmoothScroll() {
      */
     let ticking = false;
     let idle = 0;
-    const tick = (time: number) => {
-      lenis.raf(time * 1000);
+    const tick = () => {
+      lenis.raf(performance.now());
       skewTick();
       // полсекунды покоя с запасом: гасить такт на первом же тихом кадре
       // нельзя — между двумя щелчками колеса бывает кадр без движения
@@ -133,6 +133,10 @@ export default function SmoothScroll() {
       if (ticking) return;
       ticking = true;
       lenisTicking = true;
+      // Lenis считает шаг от своего прошлого кадра. После простоя тот был
+      // давно, и первая же анимация «доезжала» за один кадр — страница
+      // прыгала без инерции. Сверяем его часы до того, как он тронется.
+      lenis.raf(performance.now());
       gsap.ticker.add(tick);
     };
     lenis.on('virtual-scroll', wake);
