@@ -94,6 +94,13 @@ const WAVE_EDGE = 150;
 const PREPARE_MS = 700;
 
 type Transition = { ready: Promise<void>; finished: Promise<void> };
+
+/**
+ * Safari (и всё на его движке). Маску волны он перекрашивает на каждом кадре
+ * заметно медленнее Chrome — в замере волна шла на 34–37 кадрах в секунду, —
+ * поэтому здесь тема приходит наплывом, как на телефонах.
+ */
+const isSafari = () => /^((?!chrome|chromium|android|crios|fxios|edg).)*safari/i.test(navigator.userAgent);
 let switching = false;
 
 export async function switchTheme(next: Theme, origin?: { x: number; y: number }) {
@@ -110,7 +117,7 @@ export async function switchTheme(next: Theme, origin?: { x: number; y: number }
   // в срок 13–14% кадров (замер по трассировке, BRIEF.md, раздел 50).
   // Наплыв — два готовых снимка страницы, которые меняются прозрачностью:
   // это целиком делает видеокарта. Картинки новой темы ждём так же.
-  if (matchMedia('(pointer: coarse)').matches) {
+  if (matchMedia('(pointer: coarse)').matches || isSafari()) {
     switching = true;
     document.documentElement.dataset.themeSwitching = '';
     try {
