@@ -47,7 +47,24 @@ const nextConfig = {
       }
     ];
     if (process.env.SITE_NOINDEX === '1') security.push({ key: 'X-Robots-Tag', value: 'noindex, nofollow' });
-    return [{ source: '/:path*', headers: security }];
+    /**
+     * Картинки и ролики из `public/` браузер держит сутки, не переспрашивая.
+     *
+     * По умолчанию Next отдаёт их с `max-age=0`: каждое обращение — запрос
+     * «не изменилось ли?». Для того, кто далеко от сервера, это четверть
+     * секунды на каждый кадр схемы и каждую грань блока направлений —
+     * в том числе на те, что он уже видел минуту назад: отсюда пустые
+     * кадры в схеме и пауза перед сменой темы на живом сайте (BRIEF.md,
+     * раздел 52). Имена файлов без отпечатка содержимого, поэтому срок —
+     * сутки, а не год: заменённую картинку вернувшийся посетитель увидит
+     * не позже чем через день; до тех пор браузер показывает прежнюю
+     * и обновляет её в фоне.
+     */
+    const media = [{ key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=2592000' }];
+    return [
+      { source: '/:path*', headers: security },
+      { source: '/:dir(assembly|demos|live|mark|materials|scheme|theme|video)/:path*', headers: media }
+    ];
   },
   compiler: {
     // шейдерные строки большие, но статичные — убираем только логи
