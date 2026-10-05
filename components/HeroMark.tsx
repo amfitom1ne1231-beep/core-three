@@ -7,7 +7,6 @@ import { MARK_ARMS, MARK_CENTER } from './mark-geometry';
 import { BEVEL, FACET_FILL } from './mark-palette';
 import { isRevealed, preloaderLeaving } from '@/lib/boot';
 import { CORE_PHASE, CORE_SPEED, silkClock } from '@/lib/silk';
-import { isThemeStill } from '@/lib/theme';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -175,8 +174,6 @@ export default function HeroMark() {
     // 4. Дыхание ядер в такт материалу
     const t0 = performance.now();
     const breathe = () => {
-      // под наплывом темы знак стоит — см. `isThemeStill`
-      if (isThemeStill()) return;
       const t = silkClock.live ? silkClock.t : ((performance.now() - t0) / 1000) * 0.135;
       halos.current.forEach((h, i) => {
         const b = 0.78 + 0.22 * Math.sin(t * CORE_SPEED[i] * 3 + CORE_PHASE[i]);

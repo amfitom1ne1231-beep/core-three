@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { markSilkReady } from '@/lib/boot';
 import { createSilk, SILK_DEFAULTS, type SilkParams } from '@/lib/silk';
-import { onThemeChange, onThemeStill, readTheme } from '@/lib/theme';
+import { onThemeChange, readTheme } from '@/lib/theme';
 
 type Num = 'exposure' | 'warp' | 'sheen' | 'glint' | 'fresnel' | 'core1' | 'core2' | 'core3' | 'vignette' | 'edge';
 type Chapter = Partial<Pick<SilkParams, Num>> & { veil: number; accent?: string };
@@ -168,14 +168,11 @@ export default function HeroSilk({ params }: { params?: Partial<SilkParams> }) {
      * материал сразу в текущей теме (см. `mode` выше).
      */
     const offTheme = onThemeChange((t, instant) => silk.setTheme(t === 'light' ? 1 : 0, instant));
-    // под наплывом темы материал стоит: новую тему он к этому кадру уже нарисовал
-    const offStill = onThemeStill((on) => silk.setHeld(on));
 
     return () => {
       reblend.current = null;
       cancelAnimationFrame(raf);
       offTheme();
-      offStill();
       removeEventListener('scroll', schedule);
       removeEventListener('resize', schedule);
       silk.destroy();

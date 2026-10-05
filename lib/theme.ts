@@ -114,41 +114,7 @@ const PREPARE_MS = 700;
 
 type Transition = { ready: Promise<void>; finished: Promise<void> };
 
-/**
- * Safari (и всё на его движке). Маску волны он перекрашивает на каждом кадре
- * заметно медленнее Chrome — в замере волна шла на 34–37 кадрах в секунду, —
- * поэтому здесь тема приходит наплывом, как на телефонах.
- */
-const isSafari = () => /^((?!chrome|chromium|android|crios|fxios|edg).)*safari/i.test(navigator.userAgent);
 let switching = false;
-
-/**
- * Пока идёт наплыв, страница под ним стоит.
- *
- * Новая тема под наплывом — не снимок, а живая страница: Safari переснимает
- * её на каждом кадре, где что-то изменилось. На главной менялось всегда —
- * знак «дышит» прозрачностью трёх размытых слоёв, материал течёт, — и наплыв
- * шёл кадрами по 50 мс вместо 17 (на странице документа, где ничего не
- * движется, он ровный; замер — BRIEF.md, раздел 51). Четверть секунды
- * неподвижности под наплывом глаз не замечает, а кадры возвращаются в срок.
- */
-let still = false;
-const stillListeners = new Set<(on: boolean) => void>();
-
-export const isThemeStill = () => still;
-
-export function onThemeStill(fn: (on: boolean) => void) {
-  stillListeners.add(fn);
-  return () => {
-    stillListeners.delete(fn);
-  };
-}
-
-function setStill(on: boolean) {
-  if (still === on) return;
-  still = on;
-  stillListeners.forEach((fn) => fn(on));
-}
 
 export async function switchTheme(next: Theme, origin?: { x: number; y: number }) {
   if (typeof document === 'undefined' || switching || readTheme() === next) return;
@@ -164,7 +130,13 @@ export async function switchTheme(next: Theme, origin?: { x: number; y: number }
   // в срок 13–14% кадров (замер по трассировке, BRIEF.md, раздел 50).
   // Наплыв — два готовых снимка страницы, которые меняются прозрачностью:
   // это целиком делает видеокарта. Картинки новой темы ждём так же.
-  if (matchMedia('(pointer: coarse)').matches || isSafari()) {
+  //
+  // Safari на компьютере идёт волной, как Chrome. Одно время он тоже шёл
+  // наплывом: волна давала в нём 34–37 кадров в секунду. Виновата была
+  // не маска, а три размытых слоя свечения знака, которые он пересчитывал
+  // на каждом кадре перехода; с запечённым свечением волна в нём ровная
+  // (BRIEF.md, раздел 52).
+  if (matchMedia('(pointer: coarse)').matches) {
     switching = true;
     document.documentElement.dataset.themeSwitching = '';
     try {
@@ -173,16 +145,10 @@ export async function switchTheme(next: Theme, origin?: { x: number; y: number }
         setTheme(next, true);
         await new Promise((ok) => setTimeout(ok, 60));
       });
-      // снимки готовы, наплыв пошёл — с этого кадра под ним ничего не меняется
-      fade.ready.then(
-        () => switching && setStill(true),
-        () => {}
-      );
       await fade.finished;
     } catch {
       if (readTheme() !== next) setTheme(next);
     } finally {
-      setStill(false);
       delete document.documentElement.dataset.themeSwitching;
       switching = false;
     }
