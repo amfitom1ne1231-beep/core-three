@@ -12,22 +12,11 @@ import { plain } from '@/content/glossary';
 
 const url = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 
-// Заголовок, описание и картинку главная берёт из корня. Блок openGraph
-// повторён целиком ради одного поля — url: по нему мессенджер понимает,
-// что ссылка с меткой (?utm_source=qr) и ссылка без неё — одна страница,
-// и не заводит на каждую своё превью. Целиком — потому что Next сливает
-// метаданные не вглубь (lib/meta.ts).
-export const metadata: Metadata = {
-  alternates: { canonical: '/' },
-  openGraph: {
-    type: 'website',
-    locale: 'ru_RU',
-    siteName: SITE.name,
-    title: 'CoreThree — от идеи до запуска',
-    description: SITE.hero.lead,
-    url: '/'
-  }
-};
+// Остальное — заголовок, описание, картинка — главная берёт из корня.
+// Свой блок openGraph ей задавать нельзя: Next сливает метаданные не вглубь,
+// и вместе с ним главная теряет картинку превью — файл opengraph-image
+// лежит в корне, а не рядом с этой страницей. Проверено на живом сайте.
+export const metadata: Metadata = { alternates: { canonical: '/' } };
 
 /** Разметка для поисковиков: кто мы, чем занимаемся, как связаться. */
 const jsonLd = {
