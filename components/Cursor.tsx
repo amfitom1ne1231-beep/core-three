@@ -73,19 +73,11 @@ export default function Cursor() {
       gsap.to(el, { x: 0, y: 0, duration: 0.8, ease: 'elastic.out(1, 0.45)', overwrite: 'auto' });
 
     let first = true;
-    const onMove = (e: PointerEvent) => {
-      if (e.pointerType !== 'mouse') return;
-      if (first) {
-        // первый кадр — без догонялок из левого верхнего угла
-        gsap.set([d, r], { x: e.clientX, y: e.clientY });
-        first = false;
-      }
-      dx(e.clientX);
-      dy(e.clientY);
-      rx(e.clientX);
-      ry(e.clientY);
+    let px = 0;
+    let py = 0;
 
-      const t = e.target instanceof Element ? e.target : null;
+    /** Что под курсором: режим и магнит. Точка — в координатах окна. */
+    const read = (t: Element | null, x: number, y: number) => {
       const field = t?.closest(
         'input:not([type=checkbox]):not([type=radio]):not([type=submit]), textarea, [contenteditable]'
       );
@@ -108,13 +100,49 @@ export default function Cursor() {
         const cx = b.left + b.width / 2 - Number(gsap.getProperty(m, 'x'));
         const cy = b.top + b.height / 2 - Number(gsap.getProperty(m, 'y'));
         gsap.to(m, {
-          x: (e.clientX - cx) * 0.3,
-          y: (e.clientY - cy) * 0.3,
+          x: (x - cx) * 0.3,
+          y: (y - cy) * 0.3,
           duration: 0.45,
           ease: 'power3.out',
           overwrite: 'auto'
         });
       }
+    };
+
+    const onMove = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse') return;
+      if (first) {
+        // первый кадр — без догонялок из левого верхнего угла
+        gsap.set([d, r], { x: e.clientX, y: e.clientY });
+        first = false;
+      }
+      px = e.clientX;
+      py = e.clientY;
+      dx(px);
+      dy(py);
+      rx(px);
+      ry(py);
+      read(e.target instanceof Element ? e.target : null, px, py);
+    };
+
+    /**
+     * Прокрутка уводит содержимое из-под неподвижной мыши, а события
+     * движения при этом нет: Chrome после прокрутки обновляет только
+     * `:hover`. Режим оставался от того, что уехало, — круг «Крутить»
+     * от блока направлений доезжал до подвала и лежал на заголовке, пока
+     * мышь не тронут. Safari событие присылает сам, там сбоя не было.
+     *
+     * Перечитываем не чаще раза в 80 мс и один раз после остановки:
+     * на каждый кадр прокрутки проверка попадания не нужна.
+     */
+    let due = 0;
+    const reread = () => {
+      due = 0;
+      if (first || mode === 'gone') return;
+      read(document.elementFromPoint(px, py), px, py);
+    };
+    const onScroll = () => {
+      if (!due) due = window.setTimeout(reread, 80);
     };
 
     const onLeave = () => {
@@ -126,12 +154,15 @@ export default function Cursor() {
     const onUp = () => r.classList.remove('is-down');
 
     addEventListener('pointermove', onMove, { passive: true });
+    addEventListener('scroll', onScroll, { passive: true });
     root.addEventListener('mouseleave', onLeave);
     addEventListener('pointerdown', onDown);
     addEventListener('pointerup', onUp);
 
     return () => {
       removeEventListener('pointermove', onMove);
+      removeEventListener('scroll', onScroll);
+      clearTimeout(due);
       root.removeEventListener('mouseleave', onLeave);
       removeEventListener('pointerdown', onDown);
       removeEventListener('pointerup', onUp);
