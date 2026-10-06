@@ -42,7 +42,7 @@ export default function NotFound() {
           <div className="relative">
             <span className="rail-label">404 / Не найдено</span>
             <h1 className="display m-0 mt-6 text-[clamp(38px,7vw,112px)]">
-              Этой страницы <span className="title-accent block">пока нет.</span>
+              Этой страницы <span className="title-accent block">пока нет</span>
             </h1>
             <p className="m-0 mt-8 max-w-[44ch] text-[clamp(14px,1.15vw,17px)] leading-relaxed text-dim">
               Раздел может быть ещё в сборке — сайт растёт вместе со студией. Или ссылка устарела. Главная и заявка

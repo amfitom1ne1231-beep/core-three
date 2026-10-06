@@ -57,7 +57,7 @@ const TIMES = NEEDS.filter((n) => n.id !== 'unsure').map((n) => {
 export const HELP = {
   label: 'Помощь',
   title: 'Объясним',
-  titleAccent: 'без терминов.',
+  titleAccent: 'без терминов',
   lead: 'Всё о сайте и о работе с нами — простыми словами. Выберите тему, а не найдёте ответа — напишем сами.',
   meta: {
     title: 'Помощь',

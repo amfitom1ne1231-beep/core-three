@@ -114,7 +114,7 @@ export default function ConceptsPage() {
           <div className="px-4 section-y sm:px-8 lg:px-[72px]">
             <div className="grid gap-[clamp(24px,4vh,48px)] lg:grid-cols-[1.6fr_1fr] lg:items-end lg:gap-[clamp(40px,5vw,96px)]">
               <h2 className="display m-0 text-[clamp(26px,4.2vw,64px)]">
-                {PAGE.cta.title.replace('?', '')} <span className="title-accent">— соберём.</span>
+                {PAGE.cta.title.replace('?', '')} <span className="title-accent">— соберём</span>
               </h2>
               <p className="m-0 max-w-[44ch] text-[clamp(13px,1.1vw,16px)] leading-relaxed text-dim">{PAGE.cta.text}</p>
             </div>
