@@ -6,40 +6,53 @@
  * двое: рантайм материала (у шейдера своя палитра, CSS туда не достаёт)
  * и цвет строки браузера.
  *
- * По умолчанию — светлая, какая бы ни стояла в системе: так решил заказчик
- * (04.10.2026). Раньше сайт шёл за системной настройкой, и у большинства
- * открывался тёмным. Выбор, сделанный кнопкой света, запоминается
- * в localStorage и с этого момента главнее умолчания.
+ * По умолчанию — тёмная, какая бы ни стояла в системе: так решил заказчик
+ * (06.10.2026). До этого два дня умолчанием была светлая (04.10.2026),
+ * ещё раньше сайт шёл за системной настройкой. Выбор, сделанный кнопкой
+ * света, запоминается в localStorage и с этого момента главнее умолчания.
+ *
+ * Умолчание задано в одном месте — `DEFAULT_THEME`. Всё остальное
+ * (разметка сервера, цвет строки браузера, загрузочная строка,
+ * восстановление на странице 404) считает от него и о том, какая именно
+ * тема сейчас умолчание, не знает.
  */
 
 export type Theme = 'dark' | 'light';
 
-export const DEFAULT_THEME: Theme = 'light';
+export const DEFAULT_THEME: Theme = 'dark';
+
+/** Цвет строки браузера под каждую тему — фон страницы. */
+export const THEME_COLOR: Record<Theme, string> = { dark: '#050608', light: '#f4f5f7' };
+
+/** Тема, которая не умолчание: её и возвращает загрузочная строка тому, кто её выбрал. */
+const OTHER_THEME: Theme = DEFAULT_THEME === 'dark' ? 'light' : 'dark';
 
 /**
- * Ключ сменён вместе с умолчанием: прежние выборы делались, когда сайт
- * шёл за системой, и на новое умолчание их переносить незачем.
+ * Ключ меняется вместе с умолчанием: прежние выборы делались при другом
+ * умолчании, и переносить их незачем — все увидят новое, пока сами
+ * не нажмут кнопку света.
  */
-const KEY = 'ct-theme-2';
+const KEY = 'ct-theme-3';
 
 /**
  * Одна строка, которую страница выполняет до первой отрисовки. Разметка
- * сервера уже светлая (`data-theme` на `<html>`, светлая строка браузера);
- * строке остаётся одно — вернуть тёмную тому, кто выбрал её сам.
+ * сервера уже в теме по умолчанию (`data-theme` на `<html>`, цвет строки
+ * браузера); строке остаётся одно — вернуть другую тому, кто выбрал её сам.
  *
  * Цвет строки браузера — своим тегом в начале `<head>`: браузер берёт
  * первый по порядку. Править тег, который отрисовал сервер, нельзя —
  * React при оживлении страницы не узнаёт его и ставит рядом второй.
  */
-export const THEME_BOOT = `(function(){try{if(localStorage.getItem('${KEY}')==='dark'){var d=document;d.documentElement.dataset.theme='dark';var m=d.createElement('meta');m.name='theme-color';m.content='#050608';d.head.insertBefore(m,d.head.firstChild)}}catch(e){}})()`;
+export const THEME_BOOT = `(function(){try{if(localStorage.getItem('${KEY}')==='${OTHER_THEME}'){var d=document;d.documentElement.dataset.theme='${OTHER_THEME}';var m=d.createElement('meta');m.name='theme-color';m.content='${THEME_COLOR[OTHER_THEME]}';d.head.insertBefore(m,d.head.firstChild)}}catch(e){}})()`;
 
 /**
  * Вернуть сохранённую тему, если строка в `<head>` не отработала.
  *
  * Так бывает на странице 404: её Next собирает целиком в браузере, а скрипт,
  * вставленный таким способом, браузер не выполняет. Человек, выбравший
- * тёмную тему, попадал по битой ссылке на светлую страницу. На обычных
- * страницах тема к этому моменту уже верна, и вызов ничего не делает.
+ * не ту тему, что по умолчанию, попадал по битой ссылке на страницу
+ * в теме по умолчанию. На обычных страницах тема к этому моменту уже
+ * верна, и вызов ничего не делает.
  */
 export function restoreTheme() {
   if (typeof document === 'undefined') return;
@@ -49,7 +62,7 @@ export function restoreTheme() {
   } catch {
     /* приватный режим: сохранённого выбора нет */
   }
-  if (stored === 'dark' && readTheme() !== 'dark') setTheme('dark', true);
+  if ((stored === 'dark' || stored === 'light') && readTheme() !== stored) setTheme(stored, true);
 }
 
 export function readTheme(): Theme {
@@ -79,7 +92,7 @@ export function setTheme(next: Theme, instant = false) {
   }
   // строка браузера — по той же теме
   document.querySelectorAll('meta[name="theme-color"]').forEach((m) => {
-    m.setAttribute('content', next === 'light' ? '#f4f5f7' : '#050608');
+    m.setAttribute('content', THEME_COLOR[next]);
   });
   listeners.forEach((fn) => fn(next, instant));
 }

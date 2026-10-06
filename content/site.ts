@@ -23,7 +23,7 @@ export const SITE = {
 
   hero: {
     title: 'От идеи',
-    titleStrong: 'до запуска.',
+    titleStrong: 'до запуска',
     lead: 'Сайты, магазины, боты и Telegram-приложения. Проектируем, собираем и держим в работе то, что запускается быстро и не падает.',
     primary: { label: 'Обсудить проект', href: '/contact' },
     secondary: { label: 'Смотреть концепты', href: '/concepts' }
