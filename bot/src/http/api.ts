@@ -16,9 +16,13 @@ import {
   takeLead,
   type LeadFilter
 } from '../domain/leads';
+import { helpSections } from '../domain/help';
 import { computeMetrics, lastDays } from '../domain/metrics';
+import { PrefsShape, loadPrefs, savePrefs, slaOf } from '../domain/prefs';
+import { getGroup } from '../domain/settings';
+import { today } from '../domain/today';
 import { CLOSED, FUNNEL, KIND_LABEL, LOST_REASONS, SOURCE_LABEL, STAGE_LABEL, type LostReason } from '../domain/stages';
-import { team } from '../domain/team';
+import { createInvite, removeMember, team } from '../domain/team';
 import type { StudioBot } from '../tg/bot';
 import { appAuth, type AppEnv } from './auth';
 import { mountProjects } from './projects-api';
@@ -105,12 +109,93 @@ export function createApi({
     });
   });
 
+  /** Рабочие часы и сроки — из настроек, которые команда меняет здесь же. */
+  const sla = async () => slaOf(config, await loadPrefs(db, config));
+
   /** Метрики за период: последние 7, 30, 90 дней или всё время. */
   api.get('/metrics', async (c) => {
     const days = z.enum(['7', '30', '90', 'all']).default('30').safeParse(c.req.query('days'));
     if (!days.success) return c.json({ error: 'bad request' }, 400);
     const range = days.data === 'all' ? { from: null, to: now() } : lastDays(Number(days.data), now(), config.work.tz);
-    return c.json(await computeMetrics(db, { ...range, work: config.work, slaMin: config.SLA_TAKE_MIN, now: now() }));
+    const s = await sla();
+    return c.json(await computeMetrics(db, { ...range, work: s.work, slaMin: s.takeMin, now: now() }));
+  });
+
+  /**
+   * «Сегодня» — что ждёт этого человека: та же выборка, что у пульта в боте.
+   * Людей отдаём без лишнего: имени и номера хватает, id в Telegram — нет.
+   */
+  api.get('/today', async (c) => {
+    const me = c.get('member');
+    const who = (m: { id: number; name: string } | null) => (m ? { id: m.id, name: m.name } : null);
+    const t = await today(db, me, now(), (await sla()).work);
+    return c.json({
+      day: t.day,
+      waiting: t.waiting,
+      mine: t.mine,
+      stale: t.stale,
+      tasks: t.tasks,
+      due: {
+        tasks: t.due.tasks.map(({ assignee, ...x }) => ({ ...x, assignee: who(assignee) })),
+        stages: t.due.stages.map(({ owner, ...x }) => ({ ...x, owner: who(owner) }))
+      }
+    });
+  });
+
+  /** Справочник — тот же текст, что бот показывает по /help. */
+  api.get('/help', async (c) => c.json({ sections: helpSections(await loadPrefs(db, config)) }));
+
+  /* ---------- команда и настройки ---------- */
+
+  async function settingsView(me: { id: number; role: string }) {
+    const people = await team(db);
+    const group = await getGroup(db);
+    return {
+      prefs: await loadPrefs(db, config),
+      tz: config.work.tz,
+      canEdit: me.role === 'owner',
+      // приглашение — ссылка в бота: без него её некуда вести
+      canInvite: me.role === 'owner' && Boolean(studio?.bot.isInited()),
+      team: people.map((m) => ({ id: m.id, name: m.name, username: m.username, role: m.role, me: m.id === me.id })),
+      group: group ? { title: group.title, topic: group.threadId !== null } : null
+    };
+  }
+
+  api.get('/settings', async (c) => c.json(await settingsView(c.get('member'))));
+
+  /** Менять настройки и состав команды могут владельцы — у студии это все трое. */
+  api.put('/settings', async (c) => {
+    const me = c.get('member');
+    if (me.role !== 'owner') return c.json({ error: 'forbidden' }, 403);
+    const body = PrefsShape.partial().safeParse(await c.req.json().catch(() => null));
+    if (!body.success) return c.json({ error: 'bad request' }, 400);
+    const saved = await savePrefs(db, config, body.data);
+    if (!saved.ok) return c.json({ error: 'invalid', fields: saved.fields }, 422);
+    log(`настройки изменены — участник ${me.id}`);
+    return c.json(await settingsView(me));
+  });
+
+  api.post('/team/invite', async (c) => {
+    const me = c.get('member');
+    if (me.role !== 'owner') return c.json({ error: 'forbidden' }, 403);
+    if (!studio?.bot.isInited()) return c.json({ error: 'no bot' }, 409);
+    const code = await createInvite(db, me, now());
+    log(`приглашение создано — участник ${me.id}`);
+    return c.json({ link: `https://t.me/${studio.bot.botInfo.username}?start=inv_${code}` }, 201);
+  });
+
+  /** Убрать можно приглашённого. Владельцы заданы на сервере и отсюда не снимаются. */
+  api.delete('/team/:id', async (c) => {
+    const me = c.get('member');
+    if (me.role !== 'owner') return c.json({ error: 'forbidden' }, 403);
+    const id = Id.safeParse(c.req.param('id'));
+    if (!id.success) return c.json({ error: 'not found' }, 404);
+    const target = (await team(db)).find((m) => m.id === id.data);
+    if (!target) return c.json({ error: 'not found' }, 404);
+    if (target.role === 'owner') return c.json({ error: 'owner' }, 409);
+    await removeMember(db, id.data);
+    log(`участник ${id.data} убран из команды — участник ${me.id}`);
+    return c.json(await settingsView(me));
   });
 
   api.get('/leads', async (c) => {

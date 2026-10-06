@@ -147,7 +147,8 @@ test('заявка вручную: те же правила, что у форм�
   assert.equal(d.lead.source, 'manual');
   assert.equal(d.owner?.name, 'Лев');
   const card = t.calls.find((c) => c.method === 'sendMessage' && c.payload.chat_id === GROUP.id);
-  assert.match(String(card?.payload.text), /Магазины<\/b> · вручную/);
+  assert.match(String(card?.payload.text), /^<b>#\d+ · Магазины<\/b> · <b>Новая<\/b> · ведёт Лев\n/, 'состояние — первой строкой');
+  assert.match(String(card?.payload.text), /\nвручную · /, 'откуда и когда — строкой под контактом');
   assert.match(String(card?.payload.text), /ведёт Лев/);
   await t.close();
 });

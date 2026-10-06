@@ -96,7 +96,7 @@ export function command(from: TgUserLike, text: string, chat: { id: number; type
   } as unknown as Omit<Update, 'update_id'>;
 }
 
-export function press(from: TgUserLike, data: string, messageId = 101, chat = GROUP) {
+export function press(from: TgUserLike, data: string, messageId = 101, chat: { id: number; type: string; title?: string } = GROUP) {
   return {
     callback_query: {
       id: String(Math.random()),

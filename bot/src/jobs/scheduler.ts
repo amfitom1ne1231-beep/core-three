@@ -17,13 +17,19 @@ import { errorLine } from '../../../lib/redact';
  * а ключ запуска не даёт повторить вечернюю тревогу после перезапуска.
  */
 
+/**
+ * Сроки и то, какие сводки включены. Сводки можно не указывать — тогда
+ * обе идут, как шли всегда.
+ */
+export type Plan = Sla & { morningDigest?: boolean; weeklyDigest?: boolean };
+
 /** Записать запуск по ключу. false — такой уже был. */
 export async function claim(db: Db, key: string, at = new Date()) {
   const rows = await db.insert(jobRuns).values({ key, ranAt: at }).onConflictDoNothing().returning();
   return rows.length > 0;
 }
 
-export async function tick(db: Db, studio: StudioBot | null, sla: Sla, now = new Date()) {
+export async function tick(db: Db, studio: StudioBot | null, sla: Plan, now = new Date()) {
   // заявки, пришедшие при недоступном Telegram: карточки догоняют, как только связь есть
   if (studio) await studio.publishPending(now).catch((e) => console.error('[bot] карточки', errorLine(e)));
 
@@ -53,25 +59,31 @@ export async function tick(db: Db, studio: StudioBot | null, sla: Sla, now = new
   const local = localParts(now, sla.work.tz);
   if (sla.work.days.includes(local.dow) && local.min >= sla.work.start) {
     const today = dayKey(now, sla.work.tz);
-    if (await claim(db, `digest:${today}`, now)) {
+    // Выключенная сводка день не занимает: включили в середине дня — придёт сегодняшняя.
+    if (sla.morningDigest !== false && (await claim(db, `digest:${today}`, now))) {
       const m = await morning(db, now, sla.work);
       if (studio) await studio.morningDigest(m, today).catch((e) => console.error('[digest] утро', errorLine(e)));
     }
     // итоги прошлой недели — в первый рабочий день новой
-    if (await claim(db, `week:${isoWeek(today)}`, now)) {
+    if (sla.weeklyDigest !== false && (await claim(db, `week:${isoWeek(today)}`, now))) {
       const w = await weekly(db, now, sla.work, sla.takeMin);
       if (studio) await studio.weeklyDigest(w).catch((e) => console.error('[digest] неделя', errorLine(e)));
     }
   }
 }
 
-export function startScheduler(db: Db, studio: StudioBot | null, sla: Sla, everyMs = 30_000) {
+/**
+ * `plan` — готовые сроки или функция, которая их отдаёт. Функция зовётся
+ * на каждом заходе: настройки меняют из приложения, и новый час
+ * напоминания должен начать действовать без перезапуска сервиса.
+ */
+export function startScheduler(db: Db, studio: StudioBot | null, plan: Plan | (() => Promise<Plan>), everyMs = 30_000) {
   let running = false;
   const run = async () => {
     if (running) return;
     running = true;
     try {
-      await tick(db, studio, sla);
+      await tick(db, studio, typeof plan === 'function' ? await plan() : plan);
     } catch (e) {
       console.error('[scheduler]', errorLine(e));
     } finally {

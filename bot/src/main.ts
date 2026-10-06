@@ -1,6 +1,7 @@
 import { serve } from '@hono/node-server';
 import { loadConfig } from './config';
 import { openDb } from './db/client';
+import { loadPrefs, slaOf } from './domain/prefs';
 import { getGroup, setGroup } from './domain/settings';
 import { createApp } from './http/app';
 import { startScheduler } from './jobs/scheduler';
@@ -71,6 +72,8 @@ async function connectTelegram(studio: StudioBot) {
   }
   await studio.syncMenu();
   await studio.syncCards();
+  // описание и общее меню команд — мелочь: не вышло сейчас, выйдет при следующем запуске
+  await studio.syncProfile().catch((e) => console.error('[bot] профиль:', errorLine(e)));
   console.info(config.PUBLIC_URL ? `[app] ${config.PUBLIC_URL}/app/` : '[app] публичного адреса нет — мини-приложение только в браузере');
 }
 
@@ -87,17 +90,22 @@ if (studio) {
   attempt();
 }
 
-const stopScheduler = startScheduler(db, studio, {
-  work: config.work,
-  takeMin: config.SLA_TAKE_MIN,
-  alarmBeforeEndMin: config.SLA_ALARM_BEFORE_END_MIN
+// Рабочие часы, срок реакции и сводки команда меняет из приложения —
+// расписание перечитывает их на каждом заходе, перезапуск не нужен.
+const stopScheduler = startScheduler(db, studio, async () => {
+  const prefs = await loadPrefs(db, config);
+  return { ...slaOf(config, prefs), morningDigest: prefs.morningDigest, weeklyDigest: prefs.weeklyDigest };
 });
 
 // Google-таблица — отражение базы: раз в минуту в неё уходит то, что изменилось
-const sheets = config.SHEETS_URL && config.SHEETS_SECRET ? setInterval(() => void sheetsTick(db, config), 30_000) : null;
+const toSheets = async () => {
+  const sla = slaOf(config, await loadPrefs(db, config));
+  await sheetsTick(db, { ...config, SLA_TAKE_MIN: sla.takeMin, work: sla.work });
+};
+const sheets = config.SHEETS_URL && config.SHEETS_SECRET ? setInterval(() => void toSheets(), 30_000) : null;
 if (sheets) {
   console.info('[sheets] дублирование в таблицу включено');
-  void sheetsTick(db, config);
+  void toSheets();
 }
 
 async function shutdown(signal: string) {
