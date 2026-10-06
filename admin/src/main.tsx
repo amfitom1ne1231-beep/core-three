@@ -3,6 +3,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ApiError } from './api';
 import { App } from './App';
+import './fonts.css';
 import './styles.css';
 import { boot } from './tg';
 

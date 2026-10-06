@@ -3,7 +3,7 @@ import { useMyTasks, useProjectChange, useProjects, type Day, type MyTask, type 
 import { dueLabel, isOverdue, plural, PROJECT_STATUS } from '../format';
 import { navigate } from '../router';
 import { haptic } from '../tg';
-import { Check, Icon, Notice, RowsPlaceholder } from '../ui';
+import { Brand, Check, Icon, Notice, RowsPlaceholder } from '../ui';
 
 /**
  * Проекты. Сверху — мои задачи: то, что ждёт именно этого человека,
@@ -31,6 +31,7 @@ export function Projects() {
 
   return (
     <main className="screen screen--tabbed">
+      <Brand />
       <header className="top">
         <h1 className="top__title">Проекты</h1>
         <button type="button" className="btn btn--tinted btn--small" onClick={() => navigate({ name: 'project-new' })}>

@@ -73,9 +73,9 @@ export class ApiError extends Error {
   }
 }
 
-async function call<T>(path: string, body?: unknown): Promise<T> {
+async function call<T>(path: string, body?: unknown, method?: 'PUT' | 'DELETE'): Promise<T> {
   const res = await fetch(`/api/app${path}`, {
-    method: body === undefined ? 'GET' : 'POST',
+    method: method ?? (body === undefined ? 'GET' : 'POST'),
     headers: { ...authHeader(), ...(body === undefined ? {} : { 'content-type': 'application/json' }) },
     body: body === undefined ? undefined : JSON.stringify(body)
   });
@@ -120,6 +120,7 @@ export function useLeadAction(id: number) {
     onSuccess: (detail) => {
       qc.setQueryData(['lead', id], detail);
       void qc.invalidateQueries({ queryKey: ['leads'] });
+      void qc.invalidateQueries({ queryKey: ['today'] });
       // «Договор» заводит проект
       void qc.invalidateQueries({ queryKey: ['projects'] });
       haptic.done();
@@ -137,6 +138,7 @@ export function useCreateLead() {
     onSuccess: (detail) => {
       qc.setQueryData(['lead', detail.lead.id], detail);
       void qc.invalidateQueries({ queryKey: ['leads'] });
+      void qc.invalidateQueries({ queryKey: ['today'] });
       haptic.done();
     },
     onError: () => haptic.fail()
@@ -236,6 +238,7 @@ export function useProjectChange() {
       qc.setQueryData(['project', view.project.id], view);
       void qc.invalidateQueries({ queryKey: ['projects'] });
       void qc.invalidateQueries({ queryKey: ['tasks'] });
+      void qc.invalidateQueries({ queryKey: ['today'] });
       // проект вырос из заявки — у неё на экране есть ссылка на него
       void qc.invalidateQueries({ queryKey: ['lead'] });
       haptic.done();
@@ -279,3 +282,75 @@ export function useMetrics(period: MetricsPeriod) {
     placeholderData: (prev) => prev
   });
 }
+
+/* ---------- «Сегодня» ---------- */
+
+type Who = { id: number; name: string } | null;
+
+/** Что ждёт этого человека — та же выборка, что у пульта в боте. */
+export type Today = {
+  day: Day;
+  /** Клиенту ещё не ответили. */
+  waiting: LeadRow[];
+  /** Мои открытые заявки, кроме тех, что уже в `waiting`. */
+  mine: LeadRow[];
+  /** Открытые заявки без движения два рабочих дня и больше. */
+  stale: (LeadRow & { idleDays: number })[];
+  tasks: MyTask[];
+  /** Что горит у всей команды: срок сегодня или раньше. */
+  due: { tasks: (Task & { project: string; assignee: Who })[]; stages: (ProjectStage & { project: string; owner: Who })[] };
+};
+
+export const useToday = () => useQuery({ queryKey: ['today'], queryFn: () => call<Today>('/today'), refetchInterval: 30_000 });
+
+/* ---------- справка ---------- */
+
+export type HelpSection = { id: string; title: string; intro: string; items: { term: string; text: string }[] };
+
+/** Справочник меняется только вместе с настройками — перезапрашивать его незачем. */
+export const useHelp = () => useQuery({ queryKey: ['help'], queryFn: async () => (await call<{ sections: HelpSection[] }>('/help')).sections, staleTime: 5 * 60_000 });
+
+/* ---------- команда и настройки ---------- */
+
+export type Prefs = {
+  /** Минуты от полуночи. */
+  workStart: number;
+  workEnd: number;
+  /** 0 — воскресенье … 6 — суббота. */
+  workDays: number[];
+  takeMin: number;
+  alarmBeforeEndMin: number;
+  morningDigest: boolean;
+  weeklyDigest: boolean;
+};
+
+export type Settings = {
+  prefs: Prefs;
+  tz: string;
+  canEdit: boolean;
+  canInvite: boolean;
+  team: { id: number; name: string; username: string | null; role: 'owner' | 'member'; me: boolean }[];
+  group: { title: string | null; topic: boolean } | null;
+};
+
+export const useSettings = () => useQuery({ queryKey: ['settings'], queryFn: () => call<Settings>('/settings') });
+
+/** Правка настроек или состава команды: сервис отвечает всем экраном целиком. */
+export function useSettingsChange() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (change: { prefs: Partial<Prefs> } | { remove: number }) =>
+      'prefs' in change ? call<Settings>('/settings', change.prefs, 'PUT') : call<Settings>(`/team/${change.remove}`, undefined, 'DELETE'),
+    onSuccess: (next) => {
+      qc.setQueryData(['settings'], next);
+      // от рабочих часов зависят «Сегодня», метрики и числа в справке
+      for (const key of ['today', 'metrics', 'help', 'me']) void qc.invalidateQueries({ queryKey: [key] });
+      haptic.done();
+    },
+    onError: () => haptic.fail()
+  });
+}
+
+/** Ссылка-приглашение: действует двое суток и один раз. */
+export const createInvite = () => call<{ link: string }>('/team/invite', {});
+

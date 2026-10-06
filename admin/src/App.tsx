@@ -2,12 +2,15 @@ import { useEffect } from 'react';
 import { ApiError, useMe } from './api';
 import { back, isRoot, navigate, useRoute, type Route } from './router';
 import { LeadScreen } from './screens/Lead';
+import { HelpScreen } from './screens/Help';
 import { Leads } from './screens/Leads';
 import { MetricsScreen } from './screens/Metrics';
 import { NewLead } from './screens/NewLead';
 import { NewProject } from './screens/NewProject';
 import { ProjectScreen } from './screens/Project';
 import { Projects } from './screens/Projects';
+import { SettingsScreen } from './screens/Settings';
+import { TodayScreen } from './screens/Today';
 import { inTelegram, nativeBack, startTarget } from './tg';
 import { MeContext, Notice, RowsPlaceholder, TabBar } from './ui';
 
@@ -28,8 +31,14 @@ function Screen({ route }: { route: Route }) {
       return <NewProject />;
     case 'metrics':
       return <MetricsScreen />;
-    default:
+    case 'leads':
       return <Leads />;
+    case 'help':
+      return <HelpScreen />;
+    case 'settings':
+      return <SettingsScreen />;
+    default:
+      return <TodayScreen />;
   }
 }
 
@@ -47,7 +56,7 @@ export function App() {
     if (startHandled) return;
     startHandled = true;
     const target = startTarget();
-    if (target && route.name === 'leads') navigate(target, { replace: true });
+    if (target && route.name === 'today') navigate(target, { replace: true });
   }, [route.name]);
 
   if (me.isPending) {

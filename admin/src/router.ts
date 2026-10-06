@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react';
 
 /**
- * Маршруты приложения — семь экранов, поэтому без библиотеки. Адрес — путь
+ * Маршруты приложения — десяток экранов, поэтому без библиотеки. Адрес — путь
  * под /app/ (History API): в браузере экран переживает перезагрузку,
  * а бот может открыть приложение сразу на заявке (`/app/leads/12`).
  *
@@ -11,16 +11,19 @@ import { useSyncExternalStore } from 'react';
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
 
 export type Route =
+  | { name: 'today' }
   | { name: 'leads' }
   | { name: 'lead'; id: number }
   | { name: 'new' }
   | { name: 'projects' }
   | { name: 'project'; id: number }
   | { name: 'project-new' }
-  | { name: 'metrics' };
+  | { name: 'metrics' }
+  | { name: 'help' }
+  | { name: 'settings' };
 
 /** Корневые экраны — те, что стоят на вкладках внизу. */
-export const isRoot = (route: Route) => route.name === 'leads' || route.name === 'projects' || route.name === 'metrics';
+export const isRoot = (route: Route) => route.name === 'today' || route.name === 'leads' || route.name === 'projects' || route.name === 'metrics';
 
 function parse(pathname: string): Route {
   const path = pathname.startsWith(BASE) ? pathname.slice(BASE.length) : pathname;
@@ -32,7 +35,11 @@ function parse(pathname: string): Route {
   if (/^\/projects\/new\/?$/.test(path)) return { name: 'project-new' };
   if (/^\/projects\/?$/.test(path)) return { name: 'projects' };
   if (/^\/metrics\/?$/.test(path)) return { name: 'metrics' };
-  return { name: 'leads' };
+  if (/^\/leads\/?$/.test(path)) return { name: 'leads' };
+  if (/^\/help\/?$/.test(path)) return { name: 'help' };
+  if (/^\/settings\/?$/.test(path)) return { name: 'settings' };
+  // корень — «Сегодня»: приложение открывается на том, что ждёт именно этого человека
+  return { name: 'today' };
 }
 
 export function hrefOf(route: Route) {
@@ -49,6 +56,12 @@ export function hrefOf(route: Route) {
       return `${BASE}/projects/new`;
     case 'metrics':
       return `${BASE}/metrics`;
+    case 'leads':
+      return `${BASE}/leads`;
+    case 'help':
+      return `${BASE}/help`;
+    case 'settings':
+      return `${BASE}/settings`;
     default:
       return `${BASE}/`;
   }
@@ -72,7 +85,8 @@ export function navigate(route: Route, opts: { replace?: boolean } = {}) {
 export function back() {
   if (depth > 0) return window.history.back();
   const here = parse(window.location.pathname).name;
-  navigate({ name: here === 'project' || here === 'project-new' ? 'projects' : 'leads' }, { replace: true });
+  const up: Route['name'] = here === 'project' || here === 'project-new' ? 'projects' : here === 'lead' || here === 'new' ? 'leads' : 'today';
+  navigate({ name: up } as Route, { replace: true });
 }
 
 window.addEventListener('popstate', (e) => {

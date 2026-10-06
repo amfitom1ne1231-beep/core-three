@@ -4,7 +4,7 @@ import { BarList, Columns, type Column } from '../charts';
 import { plural } from '../format';
 import { navigate } from '../router';
 import { haptic } from '../tg';
-import { Notice, RowsPlaceholder, useMeData } from '../ui';
+import { Brand, Notice, RowsPlaceholder, useMeData } from '../ui';
 
 /**
  * Метрики. Всё считается по заявкам, пришедшим за выбранный период:
@@ -38,6 +38,7 @@ export function MetricsScreen() {
 
   return (
     <main className="screen screen--tabbed">
+      <Brand />
       <header className="top">
         <h1 className="top__title">Метрики</h1>
       </header>
