@@ -12,6 +12,9 @@ import { SITE } from '@/content/site';
 
 const SCENES = ['Знак', 'Путь одного заказа', 'Разделы', 'Связь'];
 
+/** На какой сцене главную оставили: вернувшись с другой вкладки, человек застаёт её там же. */
+let left = 0;
+
 /**
  * Главная на телефоне: четыре сцены по экрану (MOBILE.md).
  *
@@ -36,10 +39,15 @@ export default function PhoneHome() {
   useEffect(() => {
     const el = scroller.current;
     if (!el) return;
+    if (left) {
+      el.scrollTop = left * el.clientHeight;
+      setScene(left);
+    }
     let raf = 0;
     const read = () => {
       raf = 0;
-      setScene(Math.round(el.scrollTop / Math.max(el.clientHeight, 1)));
+      left = Math.round(el.scrollTop / Math.max(el.clientHeight, 1));
+      setScene(left);
       dispatchEvent(new Event('scroll'));
     };
     const onScroll = () => {

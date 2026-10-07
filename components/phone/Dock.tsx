@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import Mark from '@/components/Mark';
 import { navigate } from '@/lib/phone';
 import { contactHref } from '@/lib/lead';
+import { scrollToY } from '@/lib/scroll';
 import { SITE } from '@/content/site';
 
 type Tab = 'home' | 'services' | 'demo' | 'more';
@@ -18,6 +19,9 @@ const ICONS: Record<Exclude<Tab, 'home'>, React.ReactNode> = {
 
 const SERVICE_PATHS: string[] = SITE.pages.map((p) => p.href);
 const MORE_PATHS = ['/about', '/help', '/privacy', '/consent'];
+
+/** Прокрутка экранов, с которых ушли по вкладке: адрес → положение. */
+const kept = new Map<string, number>();
 
 const tabOf = (pathname: string): Tab | null =>
   pathname === '/'
@@ -52,13 +56,14 @@ export default function Dock({ onMore, moreOpen }: { onMore: () => void; moreOpe
   const [small, setSmall] = useState(false);
   const active = moreOpen ? 'more' : tabOf(pathname);
 
+  const lastY = useRef(0);
   useEffect(() => {
-    let last = scrollY;
+    lastY.current = scrollY;
     const onScroll = () => {
       const y = scrollY;
-      const delta = y - last;
+      const delta = y - lastY.current;
       if (Math.abs(delta) < 6) return;
-      last = y;
+      lastY.current = y;
       const atEnd = y + innerHeight >= document.documentElement.scrollHeight - 24;
       setSmall(delta > 0 && y > 80 && !atEnd);
     };
@@ -69,11 +74,41 @@ export default function Dock({ onMore, moreOpen }: { onMore: () => void; moreOpe
   // новый экран — остров развёрнут
   useEffect(() => setSmall(false), [pathname]);
 
+  /**
+   * Вкладка помнит, где её оставили: уходя, запоминаем прокрутку экрана,
+   * возвращаясь — ставим её обратно. Касание уже открытой вкладки ведёт
+   * наверх, как в приложениях. (Главная помнит свою сцену сама — она
+   * листается не прокруткой страницы.)
+   */
+  const returnTo = useRef<number | null>(null);
   const go = (href: string) => (e: React.MouseEvent) => {
     if (e.metaKey || e.ctrlKey || e.shiftKey) return;
     e.preventDefault();
-    if (href !== pathname) navigate(() => router.push(href));
+    if (href === pathname) {
+      const home = document.querySelector('.phone-home');
+      if (home) home.scrollTo({ top: 0, behavior: 'smooth' });
+      // прокруткой страницы ведает Lenis: родной плавный скролл он перебивает
+      else scrollToY(0);
+      return;
+    }
+    kept.set(pathname, scrollY);
+    returnTo.current = kept.get(href) ?? null;
+    navigate(() => router.push(href));
   };
+
+  useEffect(() => {
+    const y = returnTo.current;
+    returnTo.current = null;
+    if (!y) return;
+    // после своей прокрутки к началу, которую делает переход на новый экран
+    const t = requestAnimationFrame(() => {
+      // возврат на место — не «человек листает вниз»: остров остаётся развёрнутым
+      lastY.current = y;
+      scrollTo(0, y);
+      setSmall(false);
+    });
+    return () => cancelAnimationFrame(t);
+  }, [pathname]);
 
   const cell = 'flex h-full flex-1 flex-col items-center justify-center gap-1 transition-[color,transform] duration-200 active:scale-95';
   const tone = (id: Tab) => (active === id ? 'text-fg' : 'text-faint');
