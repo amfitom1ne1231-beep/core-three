@@ -25,10 +25,10 @@ const titleOf = (pathname: string) =>
               : '';
 
 /**
- * Верхняя строка телефона: знак слева, название экрана по центру.
- * Навигации здесь нет — она вся внизу, под большим пальцем.
+ * Верхняя строка телефона: знак слева, название экрана по центру, справа
+ * «?» — помощь. Навигации здесь нет — она вся внизу, под большим пальцем.
  */
-export default function Bar() {
+export default function Bar({ onHelp, helpOpen }: { onHelp: () => void; helpOpen: boolean }) {
   const pathname = usePathname() ?? '';
   const router = useRouter();
   const home = pathname === '/';
@@ -62,6 +62,16 @@ export default function Bar() {
           {home && <span className="font-mono text-[11px] uppercase tracking-rail">{SITE.name}</span>}
         </Link>
         {title && <span className="absolute left-1/2 -translate-x-1/2 text-[15px] font-medium text-fg">{title}</span>}
+        {/* помощь — в одно касание с любого экрана (HelpSheet) */}
+        <button
+          type="button"
+          onClick={onHelp}
+          aria-label="Помощь: что на этом экране"
+          aria-expanded={helpOpen}
+          className="pointer-events-auto ml-auto flex h-9 w-9 items-center justify-center rounded-full border border-line-strong bg-bg/40 text-[15px] font-medium text-fg backdrop-blur transition-transform duration-200 active:scale-95"
+        >
+          ?
+        </button>
       </div>
     </header>
   );

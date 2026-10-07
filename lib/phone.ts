@@ -11,6 +11,17 @@ export const PHONE_QUERY = '(max-width: 639.98px)';
 
 export const isPhone = () => typeof window !== 'undefined' && matchMedia(PHONE_QUERY).matches;
 
+/**
+ * Какая сцена главной сейчас на экране. Главная листается внутри своей
+ * рамки, и снаружи об этом не узнать — а карточке «?» в верхней строке
+ * нужно знать, про какой экран рассказывать.
+ */
+let homeScene = 0;
+export const setHomeScene = (n: number) => {
+  homeScene = n;
+};
+export const getHomeScene = () => homeScene;
+
 type Kind = 'tab' | 'grow';
 type Transition = { finished: Promise<void> };
 

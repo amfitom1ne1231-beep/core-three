@@ -5,7 +5,10 @@ import PhoneEntries from './PhoneEntries';
 import PhoneFinale from './PhoneFinale';
 import PhoneJourney from './PhoneJourney';
 import PhoneMark from './PhoneMark';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { revealReady } from '@/lib/boot';
+import { navigate, setHomeScene } from '@/lib/phone';
 import { SITE } from '@/content/site';
 
 const SCENES = ['Знак', 'Путь одного заказа', 'Разделы', 'Связь'];
@@ -27,8 +30,11 @@ let left = 0;
  */
 export default function PhoneHome() {
   const scroller = useRef<HTMLDivElement>(null);
+  const router = useRouter();
   const [scene, setScene] = useState(0);
   const [shown, setShown] = useState(false);
+  // человек уже листал — приглашение «Листайте» больше не нужно
+  const [moved, setMoved] = useState(false);
 
   useEffect(() => {
     revealReady.then(() => setShown(true));
@@ -40,12 +46,16 @@ export default function PhoneHome() {
     if (left) {
       el.scrollTop = left * el.clientHeight;
       setScene(left);
+      setMoved(true);
     }
+    setHomeScene(left);
     let raf = 0;
     const read = () => {
       raf = 0;
       left = Math.round(el.scrollTop / Math.max(el.clientHeight, 1));
       setScene(left);
+      setHomeScene(left);
+      if (left > 0) setMoved(true);
       dispatchEvent(new Event('scroll'));
     };
     const onScroll = () => {
@@ -57,6 +67,52 @@ export default function PhoneHome() {
       cancelAnimationFrame(raf);
     };
   }, []);
+
+  /**
+   * Первый заход: следующая сцена один раз выглядывает снизу и уходит.
+   * Каждая сцена занимает ровно экран, под ней ничего не видно, и без этого
+   * первый экран выглядит целой страницей. Палец или колесо отменяют показ.
+   */
+  useEffect(() => {
+    const el = scroller.current;
+    if (!shown || !el || left || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    try {
+      if (sessionStorage.getItem('ct-peek')) return;
+      sessionStorage.setItem('ct-peek', '1');
+    } catch {
+      return;
+    }
+    let raf = 0;
+    const stop = () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(timer);
+      el.style.scrollSnapType = '';
+      el.removeEventListener('pointerdown', stop);
+      el.removeEventListener('wheel', stop);
+    };
+    const timer = window.setTimeout(() => {
+      if (el.scrollTop > 0) return stop();
+      // привязка сцен на время показа снята: она тянула бы экран обратно рывком
+      el.style.scrollSnapType = 'none';
+      const t0 = performance.now();
+      const step = (now: number) => {
+        const k = Math.min((now - t0) / 1250, 1);
+        el.scrollTop = 72 * Math.sin(Math.PI * k) ** 2;
+        if (k < 1) raf = requestAnimationFrame(step);
+        else stop();
+      };
+      raf = requestAnimationFrame(step);
+    }, 1700);
+    el.addEventListener('pointerdown', stop, { passive: true });
+    el.addEventListener('wheel', stop, { passive: true });
+    return stop;
+  }, [shown]);
+
+  const pick = (e: React.MouseEvent) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey) return;
+    e.preventDefault();
+    navigate(() => router.push('/help#start'));
+  };
 
   const pad = { paddingTop: 'calc(env(safe-area-inset-top, 0px) + 68px)', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 108px)' };
   const rise = (delay: number) => ({
@@ -73,8 +129,11 @@ export default function PhoneHome() {
     >
       {/* 1. знак и заголовок */}
       <section data-chapter="hero" aria-label="Начало" className="relative flex h-full snap-start snap-always flex-col px-4" style={pad}>
-        <PhoneMark className="mx-auto mt-1 w-[min(84vw,44svh)] shrink-0" />
-        <div className="mt-auto">
+        {/* знак берёт всё, что осталось над текстом: текст входит на любом экране, знак подстраивается */}
+        <div className="flex min-h-0 flex-1 items-center justify-center">
+          <PhoneMark className="h-full max-h-[80vw]" />
+        </div>
+        <div>
           <h1 className="display m-0 text-[clamp(44px,14vw,60px)]" style={rise(0.05)}>
             <span className="block">{SITE.hero.title}</span>
             <span className="block font-bold tracking-[-0.035em]">{SITE.hero.titleStrong}</span>
@@ -82,7 +141,22 @@ export default function PhoneHome() {
           <p className="mb-0 mt-4 max-w-[36ch] text-[15px] leading-[1.55] text-dim" style={rise(0.18)}>
             {SITE.hero.lead}
           </p>
-          <div className="scroll-cue mt-5" aria-hidden />
+          {/* тому, кто не знает, что ему нужно, — сразу в подбор, не дожидаясь третьей сцены */}
+          <p className="mb-0 mt-3 text-[14px] leading-[1.5] text-dim" style={rise(0.28)}>
+            Не знаете, что вам нужно?
+          </p>
+          <div className="mt-1 flex items-center justify-between gap-3" style={rise(0.34)}>
+            <Link href="/help#start" onClick={pick} className="text-[14px] leading-[1.5] text-fg underline decoration-line-strong underline-offset-4">
+              Подберём за четыре вопроса
+            </Link>
+            {/* приглашение листать: видно, пока человек не листал */}
+            <span className={`phone-cue flex shrink-0 items-center gap-1.5 transition-opacity duration-500 ${moved ? 'opacity-0' : 'opacity-100'}`} aria-hidden>
+              <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M8 13V3 M3.5 7.5 8 3l4.5 4.5" />
+              </svg>
+              <span className="rail-label !text-fg">Листайте</span>
+            </span>
+          </div>
         </div>
       </section>
 

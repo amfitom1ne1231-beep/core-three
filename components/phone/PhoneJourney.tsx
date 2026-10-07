@@ -46,6 +46,8 @@ export default function PhoneJourney({ active }: { active: boolean }) {
   const [lit, setLit] = useState(0);
   const [flying, setFlying] = useState(false);
   const [held, setHeld] = useState(false);
+  // первая встреча с историями: на пару секунд — как ими управлять
+  const [hint, setHint] = useState(false);
 
   const video = useRef<HTMLVideoElement>(null);
   const fills = useRef<(HTMLSpanElement | null)[]>([]);
@@ -72,7 +74,29 @@ export default function PhoneJourney({ active }: { active: boolean }) {
   }, [theme]);
 
   st.current.active = active;
-  st.current.held = held;
+  // пока висит подсказка, кадр стоит: человек читает её, а не пропускает первый кадр
+  st.current.held = held || hint;
+
+  const hintOff = useCallback(() => {
+    setHint(false);
+    try {
+      localStorage.setItem('ct-stories-hint', '1');
+    } catch {
+      /* без хранилища подсказка просто покажется ещё раз */
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!active) return;
+    try {
+      if (localStorage.getItem('ct-stories-hint')) return;
+    } catch {
+      return;
+    }
+    setHint(true);
+    const t = window.setTimeout(hintOff, 3200);
+    return () => clearTimeout(t);
+  }, [active, hintOff]);
 
   const land = useCallback((to: number, floor: number) => {
     const s = st.current;
@@ -200,6 +224,11 @@ export default function PhoneJourney({ active }: { active: boolean }) {
       setHeld(false);
       return;
     }
+    // касание по подсказке её закрывает и кадр не переключает
+    if (hint) {
+      hintOff();
+      return;
+    }
     if (e.type === 'pointercancel' || Math.abs(e.clientX - p.x) > 12) return;
     const w = (e.currentTarget as HTMLElement).clientWidth;
     step(e.clientX < w * 0.32 ? -1 : 1);
@@ -272,6 +301,20 @@ export default function PhoneJourney({ active }: { active: boolean }) {
           className="absolute inset-0 h-full w-full object-cover"
           style={{ opacity: flying ? 1 : 0 }}
         />
+      </div>
+
+      {/* жесты — один раз: где касаться, чтобы идти назад и дальше, и про паузу */}
+      <div
+        aria-hidden
+        className={`pointer-events-none absolute inset-0 flex bg-bg/70 transition-opacity duration-300 ${hint ? 'opacity-100' : 'opacity-0'}`}
+      >
+        <span className="flex w-[32%] items-center justify-center border-r border-dashed border-fg/40">
+          <span className="rail-label !text-fg">Назад</span>
+        </span>
+        <span className="relative flex flex-1 flex-col items-center justify-center gap-3">
+          <span className="rail-label !text-fg">Дальше</span>
+          <span className="text-[13px] text-dim">удерживайте — пауза</span>
+        </span>
       </div>
 
       {/* низ уходит в фон: под карточкой и островом кадр не спорит с текстом */}

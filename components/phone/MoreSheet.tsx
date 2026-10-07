@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import MessengerMark from '@/components/MessengerMark';
 import ThemeToggle from '@/components/ThemeToggle';
+import Sheet from './Sheet';
 import { navigate } from '@/lib/phone';
-import { lockScroll } from '@/lib/scroll';
 import { onThemeChange, readTheme, type Theme } from '@/lib/theme';
 import { OPERATOR } from '@/content/legal';
 import { SITE } from '@/content/site';
@@ -23,35 +23,16 @@ const chevron = (
  * свет, контакты, документы. Раньше это жило в меню-гамбургере, которого
  * на телефоне больше нет.
  *
- * Настоящий диалог: Escape и касание затемнения закрывают, страница под
- * карточкой заморожена. Карточку можно стянуть вниз за верхнюю кромку.
+ * Сама карточка — общий `Sheet`.
  */
 export default function MoreSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const router = useRouter();
-  const panel = useRef<HTMLDivElement>(null);
   const [theme, setTheme] = useState<Theme | null>(null);
-  const [pull, setPull] = useState(0);
-  const drag = useRef<{ y: number } | null>(null);
 
   useEffect(() => {
     setTheme(readTheme());
     return onThemeChange(setTheme);
   }, []);
-
-  useEffect(() => {
-    lockScroll(open);
-    if (!open) return;
-    setPull(0);
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    addEventListener('keydown', onKey);
-    panel.current?.querySelector<HTMLElement>('a, button')?.focus({ preventScroll: true });
-    return () => {
-      removeEventListener('keydown', onKey);
-      lockScroll(false);
-    };
-  }, [open, onClose]);
 
   const go = (href: string) => (e: React.MouseEvent) => {
     if (e.metaKey || e.ctrlKey || e.shiftKey) return;
@@ -60,49 +41,8 @@ export default function MoreSheet({ open, onClose }: { open: boolean; onClose: (
     navigate(() => router.push(href));
   };
 
-  const onDown = (e: React.PointerEvent) => {
-    drag.current = { y: e.clientY };
-    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
-  };
-  const onMove = (e: React.PointerEvent) => {
-    if (drag.current) setPull(Math.max(0, e.clientY - drag.current.y));
-  };
-  const onUp = () => {
-    if (!drag.current) return;
-    drag.current = null;
-    if (pull > 90) onClose();
-    else setPull(0);
-  };
-
   return (
-    <div className="sm:hidden" aria-hidden={!open} inert={!open}>
-      <div
-        onClick={onClose}
-        className={`fixed inset-0 z-[120] bg-black/55 transition-opacity duration-300 ${open ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
-      />
-      <div
-        ref={panel}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Ещё"
-        className="phone-sheet fixed inset-x-0 bottom-0 z-[121] max-h-[86svh] overflow-y-auto overscroll-contain rounded-t-[28px] border-t border-line-strong bg-elev px-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        style={{
-          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 24px)',
-          transform: open ? `translateY(${pull}px)` : 'translateY(104%)',
-          transition: drag.current ? 'none' : 'transform 0.42s cubic-bezier(0.22, 1, 0.36, 1)'
-        }}
-      >
-        {/* кромка: за неё карточку стягивают вниз */}
-        <div
-          className="sticky top-0 z-10 -mx-5 flex touch-none justify-center bg-elev px-5 pb-3 pt-3"
-          onPointerDown={onDown}
-          onPointerMove={onMove}
-          onPointerUp={onUp}
-          onPointerCancel={onUp}
-        >
-          <span className="h-1 w-10 rounded-full bg-fg/25" />
-        </div>
-
+    <Sheet open={open} onClose={onClose} label="Ещё">
         <nav aria-label="Разделы">
           <Link href="/about" onClick={go('/about')} className={row}>
             О нас {chevron}
@@ -150,7 +90,6 @@ export default function MoreSheet({ open, onClose }: { open: boolean; onClose: (
         <p className="mt-5 font-mono text-[9px] uppercase leading-relaxed tracking-rail text-faint">
           © 2026 {SITE.name} · Самозанятый {OPERATOR.name} · ИНН {OPERATOR.inn}
         </p>
-      </div>
-    </div>
+    </Sheet>
   );
 }
