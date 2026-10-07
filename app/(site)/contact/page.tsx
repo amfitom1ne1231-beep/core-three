@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Brief from '@/components/contact/Brief';
 import Footer from '@/components/Footer';
+import PhoneBrief from '@/components/phone/PhoneBrief';
 import RevealText from '@/components/RevealText';
 import ScrollScenes from '@/components/ScrollScenes';
 import Process from '@/components/service/Process';
@@ -72,9 +73,13 @@ export default function ContactPage() {
   return (
     <>
       <main id="content" className="relative z-10 w-full">
+        {/* На телефоне заявка идёт по шагам во весь экран (MOBILE.md).
+            Бриф в две колонки — всё, что в этой обёртке, — остаётся шире 640 px. */}
+        <PhoneBrief />
+        <div className="max-sm:hidden">
         <section
           data-chapter="contact"
-          className="relative px-4 pb-[clamp(56px,10vh,120px)] pt-[clamp(112px,16vh,176px)] sm:px-8 lg:px-[72px] tp:pt-[136px]"
+          className="relative px-4 pb-[clamp(56px,10vh,120px)] pt-[clamp(112px,16vh,176px)] max-sm:pt-[108px] sm:px-8 lg:px-[72px] tp:pt-[136px]"
           aria-label="Заявка"
         >
           <Brief intro={intro} />
@@ -88,8 +93,11 @@ export default function ContactPage() {
           lead="Ни одного из них не будет без вашего согласия — ни созвона, ни счёта."
           chapter="concepts"
         />
+        </div>
       </main>
-      <Footer cta={false} />
+      <div className="max-sm:hidden">
+        <Footer cta={false} />
+      </div>
       <ScrollScenes />
     </>
   );

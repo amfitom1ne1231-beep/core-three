@@ -229,9 +229,13 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
   const requestSize = () => {
     wantSize = true;
     dirty = true;
+    kick();
   };
   const resize = () => {
-    const dpr = Math.min(devicePixelRatio || 1, 2);
+    // На компьютере — не плотнее 1,5: материал гладкий, на экране Retina
+    // разницы с двойной плотностью глаз не видит, а точек почти вдвое меньше.
+    // Фон был самой дорогой частью кадра при прокрутке.
+    const dpr = Math.min(devicePixelRatio || 1, isMobile ? 2 : 1.5);
     const cssW = canvas.clientWidth || innerWidth;
     const cssH = canvas.clientHeight || innerHeight;
     canvas.width = Math.max(1, Math.round(cssW * dpr * renderScale));
@@ -270,12 +274,14 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
   let hidden = document.hidden && !opts.ignoreVisibility;
   const onVisibility = () => {
     hidden = document.hidden && !opts.ignoreVisibility;
+    kick();
   };
 
   let onScreen = true;
   const io = new IntersectionObserver(
     ([entry]) => {
       onScreen = entry.isIntersecting;
+      kick();
     },
     { threshold: 0 }
   );
@@ -284,16 +290,16 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
   addEventListener('resize', requestSize, { passive: true });
   addEventListener('scroll', onScroll, { passive: true });
   document.addEventListener('visibilitychange', onVisibility);
-  if (!isMobile) {
-    addEventListener('pointermove', onPointerMove, { passive: true });
-    addEventListener('pointerleave', onPointerLeave, { passive: true });
-  }
+  // на телефоне материал отвечает на касание: блик идёт за пальцем
+  addEventListener('pointermove', onPointerMove, { passive: true });
+  addEventListener(isMobile ? 'pointerup' : 'pointerleave', onPointerLeave, { passive: true });
 
   resize();
 
   /* --- цикл --- */
   const t0 = performance.now();
   let last = t0;
+  let clock = 0;
   let mode: number = opts.mode ?? 0;
   let modeTarget: number = mode;
   let frames = 0;
@@ -302,21 +308,38 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
   let fast = 0;
   let raf = 0;
   let announced = false;
-  const still = reduced || isMobile;
+  /**
+   * На телефоне материал раньше стоял — ради батареи. Теперь он живой
+   * (решение заказчика, MOBILE.md), но только там, где телефон его тянет:
+   * если на самом низком разрешении кадры всё равно проседают, материал
+   * замирает на последнем кадре и больше не просыпается. След курсора
+   * на телефоне по-прежнему не считается — курсора там нет.
+   */
+  const noTrail = reduced || isMobile;
+  let frozen = false;
   let paused = false;
 
+  /**
+   * Цикл идёт, только пока есть что рисовать. Раньше он просил кадр всегда —
+   * и под глухой завесой, и во вкладке на заднем плане — и только потом
+   * решал, что рисовать нечего. Сам пустой кадр дёшев, но страница из-за
+   * него просыпалась 60 раз в секунду, а с ней пересчитывались все идущие
+   * анимации. Теперь, когда рисовать нечего, цикл стоит; будит его `kick`
+   * — из всех мест, где появляется работа.
+   */
   const frame = (now: number) => {
-    raf = requestAnimationFrame(frame);
+    raf = 0;
     // первый кадр рисуется в любом случае: его ждёт прелоадер, а страница,
     // открытая посреди схемы, начинает как раз под полной завесой
     if (hidden || !onScreen || (paused && announced) || !silk) {
       last = now;
       return;
     }
-    if (reduced && !dirty && Math.abs(modeTarget - mode) < 0.001) {
+    if ((reduced || frozen) && !dirty && Math.abs(modeTarget - mode) < 0.001) {
       last = now;
       return;
     }
+    raf = requestAnimationFrame(frame);
     dirty = false;
     if (wantSize) {
       wantSize = false;
@@ -325,7 +348,9 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
 
     const dt = Math.min((now - last) / 1000, 0.05);
     last = now;
-    const time = (now - t0) / 1000;
+    // замёрзший материал стоит на том кадре, где его остановили
+    if (!frozen) clock += dt;
+    const time = clock;
     silkClock.t = (reduced ? 12 : time) * 0.15 * P.speed;
     silkClock.w = [P.core1, P.core2, P.core3];
     silkClock.live = true;
@@ -342,7 +367,7 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
     mode += (modeTarget - mode) * Math.min(dt * 3.2, 1);
 
     // 1. след курсора
-    if (!still) {
+    if (!noTrail) {
       const dst = targets[1 - src];
       gl.bindFramebuffer(gl.FRAMEBUFFER, dst.fbo);
       gl.viewport(0, 0, FW, FH);
@@ -381,12 +406,12 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
       (pointer.uv[0] * 2 - 1) * aspect * P.scale,
       (pointer.uv[1] * 2 - 1) * P.scale
     );
-    gl.uniform1f(silk.loc('uPointerVel'), still ? 0 : pointer.speed);
+    gl.uniform1f(silk.loc('uPointerVel'), reduced ? 0 : pointer.speed);
     gl.uniform1f(silk.loc('uScroll'), scrollNorm);
     gl.uniform1f(silk.loc('uVelocity'), reduced ? 0 : Math.min(scrollVel, 6));
     gl.uniform1f(silk.loc('uScale'), P.scale);
     gl.uniform1f(silk.loc('uWarp'), P.warp);
-    gl.uniform1f(silk.loc('uFlow'), still ? 0 : P.flow);
+    gl.uniform1f(silk.loc('uFlow'), noTrail ? 0 : P.flow);
     gl.uniform1f(silk.loc('uExposure'), P.exposure);
     gl.uniform1f(silk.loc('uSheen'), P.sheen);
     gl.uniform1f(silk.loc('uGlint'), P.glint);
@@ -422,6 +447,9 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
         requestSize();
         slow = 0;
         fast = 0;
+      } else if (slow >= 4 && isMobile) {
+        // ниже разрешение уже не опустить, а кадры не держатся — замираем
+        frozen = true;
       } else if (fast >= 6 && renderScale < (isMobile ? 0.7 : 1)) {
         renderScale = Math.min(isMobile ? 0.7 : 1, renderScale + 0.1);
         requestSize();
@@ -432,6 +460,9 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
     }
   };
   raf = requestAnimationFrame(frame);
+  function kick() {
+    if (!raf) raf = requestAnimationFrame(frame);
+  }
 
   return {
     destroy() {
@@ -457,6 +488,7 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
       const needsRebuild = patch.octaves !== undefined && patch.octaves !== P.octaves;
       Object.assign(P, patch);
       dirty = true;
+      kick();
       if (needsRebuild) {
         if (silk) gl.deleteProgram(silk.program);
         silk = build(`#define OCT ${P.octaves | 0}\n${SILK_FRAG}`);
@@ -466,9 +498,11 @@ export function createSilk(canvas: HTMLCanvasElement, opts: SilkOptions = {}): S
       modeTarget = next;
       if (instant) mode = next;
       dirty = true;
+      kick();
     },
     setPaused(next) {
       paused = next;
+      if (!next) kick();
     }
   };
 }

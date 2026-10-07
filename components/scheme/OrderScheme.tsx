@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
-import { onThemeChange, onThemePrepare, readTheme, type Theme } from '@/lib/theme';
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
+import { inView, onThemeChange, onThemePrepare, readTheme, type Theme } from '@/lib/theme';
 import darkShots from '@/public/scheme/dark/shots.json';
 import lightShots from '@/public/scheme/light/shots.json';
 
@@ -117,6 +117,14 @@ export default function OrderScheme({
   const [hub, setHub] = useState<string | null>(null);
 
   const root = useRef<HTMLDivElement>(null);
+  /**
+   * Сцена на экране есть? На телефоне этот блок скрыт — там схема идёт
+   * историями (components/phone), — но разметка в странице та же, и её
+   * кадры с роликом телефон качал бы зря. Пока блок скрыт, картинки ждут
+   * своей очереди, а ролик не подгружается.
+   */
+  const [armed, setArmed] = useState(false);
+  useEffect(() => setArmed(root.current?.offsetParent != null), []);
   const videos = useRef(new Map<string, HTMLVideoElement>());
   const stage = useRef({ cur, next });
   stage.current = { cur, next };
@@ -126,6 +134,33 @@ export default function OrderScheme({
 
   const ids = theme ? Object.keys(MAPS[theme].shots) : [];
   const near = (s: string, by: number) => ids[(ids.indexOf(s) + by + ids.length) % ids.length];
+
+  /**
+   * Кадр станции можно показывать: его картинки загружены и разобраны,
+   * и браузер успел их нарисовать.
+   *
+   * На это опирается всё, что уходит со сцены, — ролик пролёта и прошлый
+   * кадр. Раньше они уходили по часам, и если новый кадр к этому моменту
+   * не был готов (на телефоне по сети — обычное дело, да и разбор большой
+   * картинки там не мгновенный), под ними оказывалась пустота: на сцене
+   * на секунду-другую оставался фон страницы. Теперь уходящее держится,
+   * пока под ним не встанет готовый кадр.
+   */
+  const shown = useCallback(async (s: string) => {
+    // кадр мог ещё не попасть в разметку: даём React его поставить
+    await new Promise((ok) => requestAnimationFrame(ok));
+    const imgs = Array.from(root.current?.querySelectorAll<HTMLImageElement>(`.os-shot[data-shot="${s}"] img`) ?? []);
+    await Promise.all(
+      imgs.map((img) =>
+        img.decode().catch(
+          // не разобралась (сеть, формат) — ждём хотя бы конца загрузки
+          () => img.complete || new Promise((ok) => ['load', 'error'].forEach((e) => img.addEventListener(e, ok, { once: true })))
+        )
+      )
+    );
+    // два кадра экрана: первый — раскладка, второй — уже с картинкой
+    await new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok)));
+  }, []);
 
   useEffect(() => {
     const { cur: from, next: to } = stage.current;
@@ -178,8 +213,11 @@ export default function OrderScheme({
       setCur(id);
       setNext(null);
       setFlown(way);
-      setFlying(null);
       tell();
+      // Ролик стоит на последнем кадре, пока под ним не готов кадр станции,
+      // и только потом растворяется. Если за это время начался другой
+      // пролёт, на сцене уже его ролик — его не трогаем.
+      shown(id).then(() => setFlying((now) => (now === clip ? null : now)));
     };
     const begin = () => {
       clearTimeout(timer);
@@ -220,14 +258,22 @@ export default function OrderScheme({
     v.addEventListener('ended', land, { once: true });
     timer = window.setTimeout(fail, FLY_WAIT_MS);
     v.play().catch(fail);
-  }, [id]);
+  }, [id, shown]);
 
   useEffect(() => () => abort.current?.(), []);
 
+  // Прошлый кадр лежит под новым, пока тот проявляется, — и пока тот
+  // не готов: новый кадр, который ещё грузится, прозрачен, и без прошлого
+  // под ним была бы пустота
   useEffect(() => {
-    const t = window.setTimeout(() => setPrev(null), CROSS_MS);
-    return () => clearTimeout(t);
-  }, [cur]);
+    let off = false;
+    Promise.all([new Promise((ok) => window.setTimeout(ok, CROSS_MS)), shown(cur)]).then(() => {
+      if (!off) setPrev(null);
+    });
+    return () => {
+      off = true;
+    };
+  }, [cur, shown]);
 
   useEffect(() => {
     setTheme(readTheme());
@@ -235,11 +281,14 @@ export default function OrderScheme({
   }, []);
 
   // Смена темы идёт волной по снимку страницы: кадр станции в новой теме
-  // должен быть скачан и разобран до неё, иначе под фронтом окажется пустота
+  // должен быть скачан и разобран до неё, иначе под фронтом окажется пустота.
+  // Ждать его есть смысл, только пока сцена на экране: иначе волна стояла бы
+  // полсекунды ради картинки, которую никто не видит. Качаться она начинает
+  // в любом случае — к моменту, когда до сцены долистают, будет готова.
   useEffect(() => {
     if (!ready) return;
-    return onThemePrepare((to) =>
-      Promise.all(
+    return onThemePrepare((to) => {
+      const loaded = Promise.all(
         (['', '-a', '-b', '-c'] as const)
           .filter((k) => k !== '-a' || MAPS[to].shots[cur].a)
           .map((k) => {
@@ -247,8 +296,9 @@ export default function OrderScheme({
             img.src = `${ROOT}/${to}/${cur}${k}.webp`;
             return img.decode().catch(() => {});
           })
-      )
-    );
+      );
+      return inView(root.current) ? loaded : undefined;
+    });
   }, [ready, cur]);
 
   // Ролики следующего шага меняются не сразу: прошлый ещё растворяется
@@ -290,6 +340,7 @@ export default function OrderScheme({
                   if (el && !on) el.querySelectorAll('img').forEach((img) => img.decode?.().catch(() => {}));
                 }}
                 className="os-shot"
+                data-shot={s}
                 data-on={on || undefined}
                 data-out={s === prev || undefined}
                 data-wait={(!on && s !== prev) || undefined}
@@ -298,7 +349,7 @@ export default function OrderScheme({
                 {/* кадр дышит: за время показа камера чуть подходит к станции */}
                 <div className="os-cam" style={{ transformOrigin: `${pct(shot.focus[0], W)} ${pct(shot.focus[1], H)}` }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={src(`${s}.webp`)} alt="" decoding="async" draggable={false} className="absolute inset-0 h-full w-full" />
+                  <img src={src(`${s}.webp`)} alt="" loading={armed ? 'eager' : 'lazy'} decoding="async" draggable={false} className="absolute inset-0 h-full w-full" />
                   {(['a', 'b', 'c'] as const).map((k) => {
                     const layer = shot[k];
                     return (
@@ -308,6 +359,7 @@ export default function OrderScheme({
                           key={k}
                           src={src(`${s}-${k}.webp`)}
                           alt=""
+                          loading={armed ? 'eager' : 'lazy'}
                           decoding="async"
                           draggable={false}
                           className={`os-lit os-${k}`}
@@ -336,7 +388,7 @@ export default function OrderScheme({
               playsInline
               // вперёд показ идёт сам — этот ролик нужен всегда; назад — только
               // тому, кто взялся за управление
-              preload={way === 'fwd' || eager ? 'auto' : 'none'}
+              preload={armed && (way === 'fwd' || eager) ? 'auto' : 'none'}
               disablePictureInPicture
               disableRemotePlayback
               tabIndex={-1}

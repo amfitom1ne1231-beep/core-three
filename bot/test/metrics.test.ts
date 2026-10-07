@@ -189,7 +189,7 @@ test('утренняя сводка: кому не ответили и что с
   await tick(t.db, t.studio, t.sla, clock);
   assert.equal(mornings().length, 1);
   const text = mornings()[0]!;
-  assert.match(text, /^<b>Утро, пт 9 окт<\/b>\nЗаявок с прошлого рабочего дня: 1/);
+  assert.match(text, /^<b>Утро · пт, 9 окт<\/b>\nЗаявок с прошлого рабочего дня: 1/);
   // у «Ночной» карточки не было — расписание догнало её перед сводкой, и в сводке она уже ссылкой
   assert.match(
     text,

@@ -78,7 +78,7 @@ export default function CookieConsent() {
     <div
       role="region"
       aria-label="Cookie"
-      className="fixed bottom-4 left-4 right-4 z-[150] max-w-[420px] animate-[ct-rise_0.7s_cubic-bezier(0.2,0.7,0.2,1)_both] border border-line bg-bg/85 p-5 backdrop-blur-md sm:bottom-6 sm:left-8 sm:right-auto lg:left-[72px]"
+      className="fixed bottom-4 left-4 right-4 z-[150] max-sm:bottom-[calc(env(safe-area-inset-bottom,0px)+96px)] max-w-[420px] animate-[ct-rise_0.7s_cubic-bezier(0.2,0.7,0.2,1)_both] border border-line bg-bg/85 p-5 backdrop-blur-md sm:bottom-6 sm:left-8 sm:right-auto lg:left-[72px]"
     >
       <p className="m-0 text-[13px] leading-relaxed text-dim">
         Хотим понимать, какие страницы полезны. Для этого нужна Яндекс.Метрика и её cookie — только с вашего

@@ -59,10 +59,12 @@ echo 'Перезапуск…'
 # Без домена webhook невозможен (Telegram некуда стучаться) — бот опрашивает
 # Telegram сам. Строку BOT_MODE в .env скрипт ставит и снимает только свою:
 # о ней помнит файл .no-domain; заданную руками не трогает.
+# С доменом опрос остаётся, если бот ходит через ретранслятор: раз до Telegram
+# напрямую не достать, то и его входящие сюда, скорее всего, не дойдут.
 if [ "$CADDYFILE" = deploy/Caddyfile.ip ]; then
   MODE="grep -q '^BOT_MODE=' .env || { echo BOT_MODE=polling >> .env; touch .no-domain; }"
 else
-  MODE="if [ -f .no-domain ]; then sed -i '/^BOT_MODE=polling\$/d' .env; rm -f .no-domain; fi"
+  MODE="if [ -f .no-domain ]; then rm -f .no-domain; grep -q '^TELEGRAM_API_ROOT=.' deploy/bot.env || sed -i '/^BOT_MODE=polling\$/d' .env; fi"
 fi
 
 # reload — чтобы работающий Caddy перечитал свой файл; у только что созданного это лишнее, не ошибка

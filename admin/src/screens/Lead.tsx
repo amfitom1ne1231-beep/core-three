@@ -121,7 +121,7 @@ function Body({ detail, busy, failed, run }: { detail: Detail; busy: boolean; fa
                 </button>
               )}
               <button type="button" className="btn btn--tinted" disabled={busy} onClick={() => setSheet('stages')}>
-                Этап…
+                Другой этап
               </button>
               {owner && owner.id !== me.id && (
                 <button type="button" className="btn btn--tinted" disabled={busy} onClick={() => run({ do: 'take' })}>

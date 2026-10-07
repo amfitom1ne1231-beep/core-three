@@ -8,6 +8,7 @@ import {
   addNote,
   cardlessLeads,
   leadView,
+  listLeads,
   markLost,
   openLeads,
   reopenLead,
@@ -22,19 +23,36 @@ import { getGroup, getSetting, setGroup, setSetting } from '../domain/settings';
 import type { Morning, Weekly } from '../domain/digest';
 import { FUNNEL, KIND_LABEL, LOST_REASONS, STAGE_LABEL, type LostReason } from '../domain/stages';
 import { acceptInvite, createInvite, ensureOwner, memberByTg, team } from '../domain/team';
+import { helpSections, span } from '../domain/help';
+import { loadPrefs, slaOf } from '../domain/prefs';
+import { today } from '../domain/today';
 import { dayKey, shortTime } from '../domain/worktime';
 import { cardKeyboard, cardText, cb, esc, mention, parseCb, type Menu } from './card';
+import { dayTitle, helpIndex, helpSection, pb, pultHome, pultLeads, pultMine, pultToday, welcome, type PultEnv, type Screen } from './pult';
 import { errorLine } from '../../../lib/redact';
 
 /**
  * Бот студии. Работает в двух местах:
  * — в рабочей группе: карточки заявок с кнопками, заметки ответом
  *   на сообщение, напоминания и тревоги;
- * — в личке: вход в команду, приглашения, список открытых заявок.
+ * — в личке: пульт (что ждёт именно меня), справка по разделам, вход
+ *   в команду и приглашения.
  *
  * Посторонним бот вежливо отвечает ссылкой на сайт и больше ничего
  * не показывает: это рабочий инструмент, а не витрина.
  */
+
+/**
+ * Профиль бота у Telegram: описание до нажатия «Запустить», строка
+ * «О боте» и общее меню команд. Меняется редко, поэтому отправляется
+ * один раз на версию — поправили слова, подняли номер.
+ */
+const PROFILE_V = '1';
+const PROFILE = {
+  description:
+    'Рабочий инструмент студии CoreThree: заявки, проекты и сроки команды.\n\nХотите обсудить проект — оставьте заявку на corethree.ru/contact, ответим в течение дня.',
+  about: 'Рабочий бот студии CoreThree. Обсудить проект — corethree.ru/contact'
+};
 
 type Ctx = Context & { member?: Member | null };
 
@@ -79,19 +97,48 @@ export function createBot({ db, config, now = () => new Date(), botInfo }: Deps)
     return config.MINI_APP_LINK === 'direct' ? `https://t.me/${me}?startapp=lead_${id}` : `https://t.me/${me}?start=lead_${id}`;
   }
 
-  /** Кнопка меню в личке у каждого из команды: открывает приложение. Нет адреса — обычный список команд. */
-  async function setMenu(tgId: number) {
+  /**
+   * Личка у каждого из команды: кнопка меню открывает приложение (нет
+   * адреса — обычный список команд), а по «/» Telegram подсказывает
+   * команды — свои, не те, что видит посторонний.
+   */
+  async function setMenu(m: Pick<Member, 'tgId' | 'role'>) {
     await bot.api
       .setChatMenuButton({
-        chat_id: tgId,
+        chat_id: m.tgId,
         menu_button: appBase ? { type: 'web_app', text: 'Студия', web_app: { url: appBase } } : { type: 'commands' }
       })
       // человек ещё не открывал личку с ботом — кнопку поставим, когда напишет /start
       .catch(() => {});
+    await bot.api
+      .setMyCommands(
+        [
+          { command: 'start', description: 'Пульт: что ждёт меня сейчас' },
+          { command: 'leads', description: 'Открытые заявки' },
+          { command: 'help', description: 'Справка по разделам' },
+          { command: 'team', description: 'Команда' },
+          ...(m.role === 'owner' ? [{ command: 'invite', description: 'Пригласить в команду' }] : [])
+        ],
+        { scope: { type: 'chat', chat_id: m.tgId } }
+      )
+      .catch(() => {});
   }
 
   async function syncMenu() {
-    for (const m of await team(db)) await setMenu(m.tgId);
+    for (const m of await team(db)) await setMenu(m);
+  }
+
+  /** Описание бота и общее меню команд — один раз на версию текста (см. `PROFILE_V`). */
+  async function syncProfile() {
+    // объектом, а не строкой: строка «1» в поле jsonb прочиталась бы обратно числом
+    if ((await getSetting<{ v: string }>(db, 'profile'))?.v === PROFILE_V) return;
+    await bot.api.setMyDescription(PROFILE.description);
+    await bot.api.setMyShortDescription(PROFILE.about);
+    // постороннему — одна команда; своим их список ставит `setMenu`
+    await bot.api.setMyCommands([{ command: 'start', description: 'Начать' }]);
+    await bot.api.setMyCommands([{ command: 'bind', description: 'Присылать заявки в эту тему' }], { scope: { type: 'all_chat_administrators' } });
+    await setSetting(db, 'profile', { v: PROFILE_V });
+    log('профиль бота обновлён');
   }
 
   /**
@@ -190,13 +237,14 @@ export function createBot({ db, config, now = () => new Date(), botInfo }: Deps)
     });
   }
 
-  /** Час без «Беру»: зовём всех. */
+  /** Срок без «Беру» вышел: зовём всех. Сколько это — в настройках (по умолчанию час). */
   async function remind(lead: Lead) {
     const people = await team(db);
     const who = people.map(mention).join(', ');
+    const { takeMin } = await loadPrefs(db, config);
     const msg = await replyToCard(
       lead,
-      `Заявка #${lead.id} ждёт уже час — никто не взял. ${who}`,
+      `Заявка #${lead.id} ждёт уже ${span(takeMin)} — никто не взял. ${who}`,
       new InlineKeyboard().text('Беру', cb(lead.id, 'take'))
     );
     log(`#${lead.id} напоминание — ${msg?.is_topic_message ? `тема ${msg.message_thread_id}` : 'общая лента'}`);
@@ -210,7 +258,7 @@ export function createBot({ db, config, now = () => new Date(), botInfo }: Deps)
     const lines = list.map((l) => `#${l.id} · ${esc(l.name)} · с ${shortTime(l.createdAt, now(), tz)}`);
     await bot.api.sendMessage(
       group.chatId,
-      [`<b>К вечеру клиентам не ответили</b> — ${list.length}:`, ...lines, '', owners.map(mention).join(', ')].join('\n'),
+      [`<b>Вечер · ${dayTitle(dayKey(now(), tz))}</b>`, `Клиентам не ответили — ${list.length}:`, ...lines, '', owners.map(mention).join(', ')].join('\n'),
       { parse_mode: 'HTML', message_thread_id: group.threadId ?? undefined, link_preview_options: { is_disabled: true } }
     );
     log(`вечерняя тревога: ${list.length}`);
@@ -245,7 +293,6 @@ export function createBot({ db, config, now = () => new Date(), botInfo }: Deps)
     return lines;
   }
 
-  const WEEKDAY = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
   /** «2026-10-05» → «5 окт». */
   const dayLabel = (day: string) => {
     const [, m, d] = day.split('-').map(Number);
@@ -270,8 +317,8 @@ export function createBot({ db, config, now = () => new Date(), botInfo }: Deps)
     const hasDue = m.due.tasks.length > 0 || m.due.stages.length > 0;
     if (!group || (!m.waiting.length && !m.stale.length && !hasDue)) return false;
 
-    const dow = WEEKDAY[new Date(`${today}T00:00:00Z`).getUTCDay()];
-    const lines: string[] = [`<b>Утро, ${dow} ${dayLabel(today)}</b>`];
+    // заголовки сводок одного вида: «Слово · день» — утро, вечер, неделя
+    const lines: string[] = [`<b>Утро · ${dayTitle(today)}</b>`];
     if (m.arrived) lines.push(`Заявок с прошлого рабочего дня: ${m.arrived}`);
 
     if (m.waiting.length) {
@@ -379,38 +426,71 @@ export function createBot({ db, config, now = () => new Date(), botInfo }: Deps)
     await next();
   });
 
+  /**
+   * Постороннему — два предложения и кнопка на форму сайта. Раньше была
+   * одна строка со ссылкой: человек, нашедший бота, не понимал, туда ли
+   * попал. Заявок бот по-прежнему не принимает — это рабочий инструмент.
+   */
   const outsider = (ctx: Ctx) =>
-    ctx.reply(`Это рабочий бот студии CoreThree. Оставить заявку можно на сайте: ${config.SITE_URL}/contact`, {
-      link_preview_options: { is_disabled: true }
-    });
+    ctx.reply(
+      [
+        'Это рабочий бот студии CoreThree — он для команды.',
+        `Обсудить проект можно на сайте: оставьте заявку, ответим в течение дня. ${config.SITE_URL}/contact`
+      ].join('\n'),
+      {
+        link_preview_options: { is_disabled: true },
+        reply_markup: new InlineKeyboard().url('Оставить заявку', `${config.SITE_URL}/contact`)
+      }
+    );
 
   /* ---------- личка ---------- */
 
-  const HELP = [
-    '<b>Бот студии CoreThree</b>',
-    '',
-    'Заявки приходят карточками в рабочую группу: «Беру», шаг по воронке, заметка, отказ — кнопками под карточкой.',
-    'Файл к проекту — перешлите его сюда, в личку: спрошу, к какому.',
-    '',
-    '/leads — открытые заявки',
-    '/team — команда',
-    '/invite — пригласить в команду (владельцы)',
-    '/bind — в группе: присылать заявки сюда'
-  ].join('\n');
+  const env: PultEnv = { appBase, tz, ref: (l) => leadRef(l) };
+
+  /** Что ждёт этого человека сейчас — по рабочим часам из настроек. */
+  async function mine(me: Member) {
+    return today(db, me, now(), slaOf(config, await loadPrefs(db, config)).work);
+  }
+
+  /** Экран пульта по имени: главный, списки или страница справки. `null` — такого нет. */
+  async function screen(view: string, me: Member): Promise<Screen | null> {
+    if (view === 'help') return helpIndex(helpSections(await loadPrefs(db, config)));
+    if (view.startsWith('h_')) return helpSection(helpSections(await loadPrefs(db, config)), view.slice(2));
+    const t = await mine(me);
+    switch (view) {
+      case 'home':
+        return pultHome(t, me, env);
+      case 'leads':
+        return pultLeads(t, await listLeads(db, { scope: 'open' }), env, now());
+      case 'mine':
+        return pultMine(t, me, env, now());
+      case 'today':
+        return pultToday(t, me, env);
+      default:
+        return null;
+    }
+  }
+
+  const show = (ctx: Ctx, s: Screen) =>
+    ctx.reply(s.text, { parse_mode: 'HTML', reply_markup: s.keyboard, link_preview_options: { is_disabled: true } });
 
   bot.command('start', async (ctx) => {
     if (ctx.chat.type !== 'private') return;
     const payload = ctx.match?.trim() ?? '';
+    let joined = false;
     if (payload.startsWith('inv_') && !ctx.member) {
       const m = await acceptInvite(db, payload.slice(4), ctx.from!);
       if (!m) return ctx.reply('Приглашение не действует: его уже использовали или прошло двое суток. Попросите новое.');
       ctx.member = m;
+      joined = true;
       for (const o of (await team(db)).filter((x) => x.role === 'owner')) {
         await bot.api.sendMessage(o.tgId, `${mention(m)} вошёл в команду.`, { parse_mode: 'HTML' }).catch(() => {});
       }
     }
     if (!ctx.member) return outsider(ctx);
-    await setMenu(ctx.from!.id);
+    await setMenu(ctx.member);
+    // только что вошёл по приглашению — не пульт, а три шага, с которых начать
+    if (joined) return show(ctx, welcome(ctx.member, (await getGroup(db))?.title ?? null, env));
 
     // пришли по «Открыть» с карточки в группе — отвечаем кнопкой на эту заявку
     const leadId = Number(payload.match(/^lead_(\d{1,9})$/)?.[1]);
@@ -427,10 +507,14 @@ export function createBot({ db, config, now = () => new Date(), botInfo }: Deps)
       const kb = appBase ? new InlineKeyboard().webApp('Открыть проект', `${appBase}projects/${projectId}`) : undefined;
       return ctx.reply(`<b>${esc(p.title)}</b>`, { parse_mode: 'HTML', reply_markup: kb });
     }
-    return ctx.reply(appBase ? `${HELP}\n\nВсё то же и подробнее — в приложении: кнопка «Студия» слева от поля ввода.` : HELP, { parse_mode: 'HTML' });
+    return show(ctx, pultHome(await mine(ctx.member), ctx.member, env));
   });
 
-  bot.command('help', (ctx) => (ctx.member ? ctx.reply(HELP, { parse_mode: 'HTML' }) : outsider(ctx)));
+  bot.command('help', async (ctx) => {
+    if (!ctx.member) return outsider(ctx);
+    // в личке справка листается из пульта и обратно; в группе — сама по себе
+    return show(ctx, helpIndex(helpSections(await loadPrefs(db, config)), ctx.chat.type === 'private'));
+  });
 
   bot.command('invite', async (ctx) => {
     if (ctx.chat.type !== 'private') return;
@@ -471,6 +555,20 @@ export function createBot({ db, config, now = () => new Date(), botInfo }: Deps)
     await setGroup(db, { chatId: ctx.chat.id, threadId, title: 'title' in ctx.chat ? (ctx.chat.title ?? null) : null });
     log(`/bind: ${threadId ? `тема ${threadId}` : 'группа без темы'}`);
     return ctx.reply(threadId ? 'Готово: заявки будут приходить в эту тему.' : 'Готово: заявки будут приходить в эту группу.');
+  });
+
+  /** Кнопки пульта и справки: сообщение не множится, а перелистывается на месте. */
+  bot.callbackQuery(/^p:([a-z_]+)$/, async (ctx) => {
+    if (!ctx.member) return ctx.answerCallbackQuery({ text: 'Кнопки — только для команды.', show_alert: true });
+    const s = await screen(ctx.match[1]!, ctx.member);
+    if (!s) return ctx.answerCallbackQuery();
+    try {
+      await ctx.editMessageText(s.text, { parse_mode: 'HTML', reply_markup: s.keyboard, link_preview_options: { is_disabled: true } });
+    } catch (e) {
+      // нажали кнопку экрана, на котором уже стоим, — он уже такой
+      if (!(e instanceof GrammyError && e.description.includes('message is not modified'))) throw e;
+    }
+    return ctx.answerCallbackQuery();
   });
 
   /** «К какому проекту?» — ответ на файл, присланный в личку. Сам файл — в сообщении, на которое отвечали. */
@@ -580,12 +678,18 @@ export function createBot({ db, config, now = () => new Date(), botInfo }: Deps)
   });
 
   bot.on('message', async (ctx) => {
-    if (ctx.chat.type === 'private' && !ctx.member) await outsider(ctx);
+    if (ctx.chat.type !== 'private') return;
+    if (!ctx.member) return outsider(ctx);
+    // Своему на непонятное — подсказка, а не тишина: раньше бот молчал,
+    // и было неясно, дошло ли сообщение вообще.
+    return ctx.reply('Не разобрал. Нажмите «Пульт» — там заявки, сроки и справка. Файл к проекту — просто перешлите сюда.', {
+      reply_markup: new InlineKeyboard().text('Пульт', pb('home')).text('Справка', pb('help'))
+    });
   });
 
   bot.catch((err) => console.error('[bot]', errorLine(err.error)));
 
-  return { bot, publishLead, publishPending, refreshCard, remind, alarm, morningDigest, weeklyDigest, sendFile, syncMenu, syncCards };
+  return { bot, publishLead, publishPending, refreshCard, remind, alarm, morningDigest, weeklyDigest, sendFile, syncMenu, syncCards, syncProfile };
 }
 
 /** Ссылка на карточку в супергруппе: t.me/c/<id без -100>/<сообщение>. */

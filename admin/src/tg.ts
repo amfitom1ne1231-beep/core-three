@@ -69,9 +69,10 @@ export function boot() {
   themeParams.isDark.sub(scheme);
 
   miniApp.mount.ifAvailable();
-  // шапка и подложка — цвета страницы, чтобы приложение не выглядело вклеенным
-  miniApp.setHeaderColor.ifAvailable('secondary_bg_color');
-  miniApp.setBgColor.ifAvailable('secondary_bg_color');
+  // Шапка и подложка — цвета страницы, чтобы приложение не выглядело вклеенным.
+  // Страница теперь на основном цвете темы, без серых плашек: линии вместо подложек.
+  miniApp.setHeaderColor.ifAvailable('bg_color');
+  miniApp.setBgColor.ifAvailable('bg_color');
 
   backButton.mount.ifAvailable();
 

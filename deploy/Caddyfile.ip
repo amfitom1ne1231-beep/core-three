@@ -10,6 +10,9 @@
 	encode zstd gzip
 	# по адресу машины сайт в поиск попасть не должен
 	header X-Robots-Tag "noindex, nofollow"
+	request_body {
+		max_size 256KB
+	}
 	reverse_proxy site:3000 {
 		header_up X-Real-IP {remote_host}
 	}

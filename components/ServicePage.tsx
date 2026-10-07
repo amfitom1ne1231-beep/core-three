@@ -14,6 +14,7 @@ import Words from './Words';
 import type { ServicePage as Page } from '@/content/services';
 import { SITE } from '@/content/site';
 import Cta from './Cta';
+import PhoneService from './phone/PhoneService';
 
 /**
  * Страница направления. Четыре штуки на одном шаблоне: отличается
@@ -31,7 +32,16 @@ import Cta from './Cta';
  * не повторяет плотность соседней; до этого страница шла шестью
  * одинаковыми сетками подряд и читалась документацией.
  */
-export default function ServicePage({ page, children }: { page: Page; children?: React.ReactNode }) {
+export default function ServicePage({
+  page,
+  children,
+  probe
+}: {
+  page: Page;
+  children?: React.ReactNode;
+  /** Живая проба сценария для телефонной раскладки — только у ботов. */
+  probe?: React.ReactNode;
+}) {
   const Live = LIVE_BY_KEY[page.live] ?? LiveLanding;
   const material = DIRECTION_MATERIAL[page.n] ?? 'silk';
   /**
@@ -44,6 +54,11 @@ export default function ServicePage({ page, children }: { page: Page; children?:
   return (
     <>
       <main id="content" className="relative z-10 w-full">
+        {/* На телефоне у направления своя раскладка: кадр и переключатель
+            разделов (MOBILE.md). Прежняя — всё, что в этой обёртке, —
+            остаётся шире 640 px. */}
+        <PhoneService page={page} live={Live} task={task} probe={probe} />
+        <div className="max-sm:hidden">
         {/* ---------- первый экран ---------- */}
         <section data-chapter="hero" className="relative overflow-x-clip" aria-label="Начало">
           {/* номер направления как якорь сцены: тот же приём, что у гигантских
@@ -55,7 +70,7 @@ export default function ServicePage({ page, children }: { page: Page; children?:
             {page.n}
           </span>
 
-          <div className="relative grid items-center gap-[clamp(32px,6vh,64px)] px-4 pb-[clamp(56px,10vh,120px)] pt-[clamp(120px,19vh,200px)] sm:px-8 lg:min-h-[100svh] lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] lg:gap-[clamp(40px,5vw,88px)] lg:px-[72px] tp:min-h-0 tp:grid-cols-1 tp:gap-11 tp:pt-[136px]">
+          <div className="relative grid items-center gap-[clamp(32px,6vh,64px)] px-4 pb-[clamp(56px,10vh,120px)] pt-[clamp(120px,19vh,200px)] max-sm:pb-12 max-sm:pt-[108px] sm:px-8 lg:min-h-[100svh] lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] lg:gap-[clamp(40px,5vw,88px)] lg:px-[72px] tp:min-h-0 tp:grid-cols-1 tp:gap-11 tp:pt-[136px]">
             <div data-hero>
               {/* номер тот же, что в атласе: страница — продолжение карусели */}
               <span className="rail-label">
@@ -150,7 +165,7 @@ export default function ServicePage({ page, children }: { page: Page; children?:
             </div>
           </div>
         </section>
-
+        </div>
       </main>
 
       {/* сцены на скролле: первый экран уходит вглубь, кадры раскрываются

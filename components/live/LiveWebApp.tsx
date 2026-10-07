@@ -73,7 +73,12 @@ export default function LiveWebApp({ playing }: LiveProps) {
         style={{ background: 'linear-gradient(135deg, #6e8fb3 0%, #2c5282 45%, #0b2c56 100%)' }}
       >
         <div data-app className="absolute inset-0">
-          <div className="absolute left-1/2 top-4 h-64 w-64 -translate-x-1/2 rounded-full bg-white/20 blur-3xl" />
+          {/* свечение: круг 256 px, размытый на 64 px, записан градиентом —
+              `filter: blur` Safari пересчитывал на каждом кадре перехода тем */}
+          <div
+            className="absolute left-1/2 h-[588px] w-[588px] -translate-x-1/2"
+            style={{ top: -150, background: 'radial-gradient(closest-side, rgb(255 255 255 / 0.173) 0%, rgb(255 255 255 / 0.167) 10%, rgb(255 255 255 / 0.15) 20%, rgb(255 255 255 / 0.123) 30%, rgb(255 255 255 / 0.091) 40%, rgb(255 255 255 / 0.059) 50%, rgb(255 255 255 / 0.033) 60%, rgb(255 255 255 / 0.016) 70%, rgb(255 255 255 / 0.006) 80%, rgb(255 255 255 / 0.002) 90%, transparent 100%)' }}
+          />
 
           {/* подпись слева */}
           <div data-side className="absolute left-6 top-[96px] w-[140px] text-white">

@@ -78,7 +78,7 @@ export default async function Service({ params }: { params: Promise<{ service: s
         // данные свои и статичные, экранирование < — от закрытия тега внутри строки
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
       />
-      <ServicePage page={page}>
+      <ServicePage page={page} probe={page.slug === 'bots' ? <TelegramDemo /> : undefined}>
         {/* живая проба сценария — только у ботов: показывать её на
             мониторинге не за чем, а шаблон остаётся общим */}
         {page.slug === 'bots' ? (
@@ -98,7 +98,10 @@ export default async function Service({ params }: { params: Promise<{ service: s
           </section>
         ) : null}
       </ServicePage>
-      <Footer />
+      {/* на телефоне экран кончается кнопкой заявки и следующим направлением */}
+      <div className="max-sm:hidden">
+        <Footer />
+      </div>
     </>
   );
 }

@@ -99,25 +99,30 @@ export default function Manifesto() {
           stagger: 0.02,
           duration: 0.5,
           ease: 'power1.out',
-          scrollTrigger: { trigger: el, start: 'top 70%', end: 'bottom 60%', toggleActions: 'play none none reverse' }
+          // один раз: при прокрутке назад текст не гаснет обратно
+          scrollTrigger: { trigger: el, start: 'top 78%', once: true }
         });
         gsap.to(coreEls, {
           opacity: 1,
           stagger: 0.12,
           duration: 0.4,
-          scrollTrigger: { trigger: el, start: 'top 65%' }
+          scrollTrigger: { trigger: el, start: 'top 74%', once: true }
         });
       });
 
       // Вход из глубины: после вспышки на первом экране текст проявляется
       // из лёгкого увеличения и размытия — камера «прошла сквозь» знак.
-      mm.add('(prefers-reduced-motion: no-preference)', () => {
+      // Только на широком экране: на телефоне блок высотой с экран читают
+      // как раз тогда, когда он въезжает, — размытым и увеличенным.
+      mm.add('(min-width: 768px) and (prefers-reduced-motion: no-preference)', () => {
         gsap.fromTo(
           el.querySelectorAll('[data-emerge]'),
-          { scale: 1.12, filter: 'blur(10px)', opacity: 0.25 },
+          // Без `filter: blur`: размытие, привязанное к прокрутке, заставляло
+          // перерисовывать весь текст на каждом кадре. Увеличение и
+          // проявление видеокарта делает сама, по готовой текстуре.
+          { scale: 1.12, opacity: 0.12 },
           {
             scale: 1,
-            filter: 'blur(0px)',
             opacity: 1,
             ease: 'power2.out',
             stagger: 0.06,
@@ -147,7 +152,9 @@ export default function Manifesto() {
       aria-label="Манифест"
     >
       {/* содержимое липнет к экрану, материал продолжает жить за текстом */}
-      <div className="md:sticky md:top-0 flex min-h-[100svh] flex-col justify-center overflow-hidden px-4 py-[16vh] sm:px-8 md:py-0 lg:px-[72px]">
+      {/* на телефоне блок — по высоте текста: экран целиком ради трёх фраз
+          оставлял по трети пустоты сверху и снизу */}
+      <div className="md:sticky md:top-0 flex flex-col justify-center overflow-hidden px-4 py-14 sm:px-8 md:min-h-[100svh] md:py-0 lg:px-[72px]">
         {/* завеса под текстом: материал остаётся видим, но контраст держится.
             Края с нуля — материал сквозной, и ступенька на стыке секций была бы видна */}
         <div
@@ -164,7 +171,7 @@ export default function Manifesto() {
             Чернила ушли фоном в финал, а манифест снова держит одна
             типографика — во всю колонку, без соседа. */}
         <div className="max-w-[1180px]">
-        <div data-emerge className="mb-[clamp(28px,6vh,72px)] flex flex-wrap items-center gap-x-[clamp(12px,3vw,40px)] gap-y-2">
+        <div data-emerge className="mb-[clamp(28px,6vh,72px)] flex flex-wrap md:will-change-transform items-center gap-x-[clamp(12px,3vw,40px)] gap-y-2">
           <span className="rail-label">{SITE.manifesto.label}</span>
           {SITE.cores.map((core) => (
             <span key={core.n} data-core-label className="rail-label">
@@ -183,7 +190,7 @@ export default function Manifesto() {
            * крупной типографики. Ограничение по 30ch снято: колонку уже
            * держит сетка, второй ограничитель просто отнимал строку.
            */
-          className="display m-0 origin-left text-[clamp(26px,4.4vw,72px)] leading-[1.06] lg:text-[clamp(34px,4.7vw,80px)]"
+          className="md:will-change-transform display m-0 origin-left text-[clamp(26px,4.4vw,72px)] leading-[1.06] lg:text-[clamp(34px,4.7vw,80px)]"
         >
           {/* Читалке — целый текст строкой, а не `aria-label` на абзаце:
               на <p> без роли он запрещён и игнорируется, и от манифеста

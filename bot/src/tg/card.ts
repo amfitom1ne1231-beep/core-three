@@ -39,31 +39,37 @@ export function parseCb(data: string): { id: number; act: string; arg?: string }
 
 const TASK_MAX = 1400;
 
+/**
+ * Первая строка — то, по чему карточку ищут глазами в ленте: номер,
+ * направление и состояние (этап и кто ведёт). Раньше состояние стояло
+ * под брифом, и чтобы понять, взята ли заявка, карточку приходилось
+ * дочитывать. Откуда и когда пришла — мелкой строкой под контактом.
+ */
 export function cardText(v: LeadView, now: Date, tz: string) {
   const { lead, owner, notes } = v;
   const lines: string[] = [];
-  lines.push(
-    `<b>#${lead.id} · ${esc(KIND_LABEL[lead.kind] ?? lead.kind)}</b> · ${SOURCE_LABEL[lead.source]} · ${shortTime(lead.createdAt, now, tz)}`
-  );
+
+  let status = `<b>${STAGE_LABEL[lead.stage]}</b>`;
+  if (lead.stage === 'lost' && lead.lostReason) status += `: ${esc(LOST_REASONS[lead.lostReason as LostReason] ?? lead.lostReason)}`;
+  status += owner ? ` · ведёт ${esc(owner.name)}` : ' · никто не взял';
+  lines.push(`<b>#${lead.id} · ${esc(KIND_LABEL[lead.kind] ?? lead.kind)}</b> · ${status}`);
+
   lines.push(`<b>${esc(lead.name)}</b> · ${contactHtml(lead.contact)}`);
+  lines.push([SOURCE_LABEL[lead.source], shortTime(lead.createdAt, now, tz), lead.page ? esc(lead.page) : ''].filter(Boolean).join(' · '));
   // «Мы напишем сами»: звонок был бы ровно тем, чего человек не просил
   if (lead.source === 'help') lines.push('<b>Нужна помощь</b> — написать по номеру в Telegram, Max или WhatsApp, не звонить');
   if (lead.spam) lines.push('', '<i>Сработала ловушка для ботов. Проверьте: она ошибается на тех, кто вставил текст из буфера.</i>');
 
   const task = lead.task.length > TASK_MAX ? `${lead.task.slice(0, TASK_MAX)}…` : lead.task;
   lines.push('', `<blockquote expandable>${esc(task)}</blockquote>`);
-  if (lead.page) lines.push(`Страница: ${esc(lead.page)}`);
 
-  let status = `<b>${STAGE_LABEL[lead.stage]}</b>`;
-  if (lead.stage === 'lost' && lead.lostReason) status += `: ${esc(LOST_REASONS[lead.lostReason as LostReason] ?? lead.lostReason)}`;
-  status += owner ? ` · ведёт ${esc(owner.name)}` : ' · никто не взял';
-  lines.push('', status);
-  if (v.project) lines.push(`Проект: ${esc(v.project.title)}`);
-
+  const below: string[] = [];
+  if (v.project) below.push(`Проект: ${esc(v.project.title)}`);
   for (const n of notes.slice(0, 2).reverse()) {
     const text = n.text.length > 300 ? `${n.text.slice(0, 300)}…` : n.text;
-    lines.push(`— ${n.who ? `${esc(n.who)}: ` : ''}${esc(text)}`);
+    below.push(`— ${n.who ? `${esc(n.who)}: ` : ''}${esc(text)}`);
   }
+  if (below.length) lines.push('', ...below);
   return lines.join('\n');
 }
 
@@ -97,7 +103,7 @@ export function cardKeyboard(v: LeadView, menu: Menu = 'main', open?: string | n
   } else {
     if (!lead.ownerId) kb.text('Беру', cb(id, 'take'));
     kb.text(nextStepLabel(lead.stage), cb(id, 'st', nextStage(lead.stage))).row();
-    kb.text('Этап…', cb(id, 'stages')).text('Заметка', cb(id, 'note')).text('Отказ', cb(id, 'lost'));
+    kb.text('Другой этап', cb(id, 'stages')).text('Заметка', cb(id, 'note')).text('Отказ', cb(id, 'lost'));
   }
   if (open) kb.row().url('Открыть', open);
   return kb;

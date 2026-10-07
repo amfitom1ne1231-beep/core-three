@@ -267,7 +267,7 @@ export default function HelpPage() {
       <main id="content" className="relative z-10 w-full">
         {/* ---------- первый экран ---------- */}
         <section data-chapter="hero" className="relative overflow-hidden" aria-label="Начало">
-          <div data-hero className="px-4 pb-[clamp(36px,6vh,72px)] pt-[clamp(120px,19vh,200px)] sm:px-8 lg:px-[72px] tp:pb-10 tp:pt-[136px]">
+          <div data-hero className="px-4 pb-[clamp(36px,6vh,72px)] pt-[clamp(120px,19vh,200px)] max-sm:pt-[108px] sm:px-8 lg:px-[72px] tp:pb-10 tp:pt-[136px]">
             <span className="rail-label">{HELP.label}</span>
             <div className="mt-6 grid items-end gap-[clamp(28px,5vh,56px)] lg:grid-cols-[1.6fr_1fr] lg:gap-[clamp(40px,5vw,96px)] tp:grid-cols-1">
               <h1 className="display m-0 text-[clamp(32px,5vw,86px)] tp:text-[min(8vw,80px)]" aria-label={`${HELP.title} ${HELP.titleAccent}`}>
@@ -292,7 +292,7 @@ export default function HelpPage() {
           tabIndex={-1}
           data-chapter="finale"
           aria-label={write.label}
-          className="relative z-10 w-full border-t border-line px-4 pb-[clamp(44px,8vh,92px)] pt-[clamp(64px,11vh,130px)] outline-none sm:px-8 lg:px-[72px]"
+          className="relative z-10 w-full border-t border-line px-4 pb-[clamp(44px,8vh,92px)] pt-[clamp(64px,11vh,130px)] max-sm:pt-14 outline-none sm:px-8 lg:px-[72px]"
         >
           <span className="rail-label">{write.label}</span>
           {/* Форма — главное здесь (HELP.md, «Свяжитесь со мной»). Написать

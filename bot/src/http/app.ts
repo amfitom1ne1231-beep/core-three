@@ -58,6 +58,8 @@ export function createApp({
 
   app.post('/api/intake/lead', async (c) => {
     if (!config.INTAKE_SECRET) return c.json({ error: 'intake disabled' }, 503);
+    // размер — до чтения: тело читается в память целиком, а подпись проверяется уже после
+    if (Number(c.req.header('content-length')) > 20_000) return c.json({ error: 'too large' }, 413);
     const body = await c.req.text();
     if (body.length > 20_000) return c.json({ error: 'too large' }, 413);
     if (!verify(config.INTAKE_SECRET, c.req.header(TIMESTAMP_HEADER), c.req.header(SIGNATURE_HEADER), body)) {

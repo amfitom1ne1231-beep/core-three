@@ -96,7 +96,7 @@ const SERVICE: TourStep[] = [
     targets: [{ sel: `${section('Начало')} [data-hero]` }]
   },
   {
-    title: 'Живой кадр',
+    title: 'Пример экрана',
     text: 'Так это может выглядеть у вас. Под кадром — задача, которую он решает.',
     targets: [{ sel: '[data-tour="stage"]' }]
   },

@@ -178,3 +178,26 @@ export function projectEventText(e: ProjectEvent): string {
       return who;
   }
 }
+
+const WEEKDAY = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
+
+/** «пн · 6 окт» — день в шапке «Сегодня». */
+export function dayTitle(day: Day) {
+  const [, m, d] = day.split('-').map(Number);
+  return `${WEEKDAY[new Date(`${day}T00:00:00Z`).getUTCDay()]} · ${d} ${MON[m! - 1]}`;
+}
+
+/** Минуты от полуночи ↔ «10:00» — для полей времени в настройках. */
+export const clock = (min: number) => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
+export const minutesOf = (hhmm: string) => {
+  const [h, m] = hhmm.split(':').map(Number);
+  return Number.isFinite(h) && Number.isFinite(m) ? h! * 60 + m! : null;
+};
+
+/** «час», «30 мин», «1 ч 30 мин» — теми же словами, что бот. */
+export function span(min: number) {
+  if (min === 60) return 'час';
+  if (min < 60) return `${min} мин`;
+  return min % 60 ? `${Math.floor(min / 60)} ч ${min % 60} мин` : `${min / 60} ч`;
+}
+

@@ -4,7 +4,7 @@ import SmoothScroll from '@/components/SmoothScroll';
 import SourceMemo from '@/components/SourceMemo';
 import { SITE } from '@/content/site';
 import { SEEN_BOOT } from '@/lib/boot';
-import { DEFAULT_THEME, THEME_BOOT } from '@/lib/theme';
+import { DEFAULT_THEME, THEME_BOOT, THEME_COLOR } from '@/lib/theme';
 import './globals.css';
 
 // Шрифт сайта (Onest) — в components/siteFont.ts, его берёт только оболочка
@@ -33,6 +33,9 @@ export const metadata: Metadata = {
     description: SITE.hero.lead
   },
   twitter: { card: 'summary_large_image' },
+  // Значок на домашнем экране телефона открывает сайт во весь экран, без
+  // строки браузера (MOBILE.md); имя и значки — в app/manifest.ts
+  appleWebApp: { capable: true, title: SITE.name, statusBarStyle: 'black' },
   // Канонический адрес здесь не задаётся: из корня он наследовался всем,
   // у кого нет своего, и 404 объявляла себя главной. Каждая страница
   // называет свой адрес сама (lib/meta.ts).
@@ -44,24 +47,24 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  // Сайт по умолчанию светлый при любой системной настройке — и строка
-  // браузера светлая с первого кадра. Тёмную возвращает загрузочный скрипт
-  // тому, кто выбрал её сам; дальше цвет ведёт переключатель.
-  themeColor: '#f4f5f7',
+  // Сайт открывается в теме по умолчанию при любой системной настройке —
+  // и строка браузера того же цвета с первого кадра. Другую тему возвращает
+  // загрузочный скрипт тому, кто выбрал её сам; дальше цвет ведёт переключатель.
+  themeColor: THEME_COLOR[DEFAULT_THEME],
   colorScheme: 'light dark'
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    // Сервер отдаёт страницу в теме по умолчанию — светлой: она верна
-    // и без скриптов. Выбранную тёмную и data-seen выставляют загрузочные
+    // Сервер отдаёт страницу в теме по умолчанию: она верна и без скриптов.
+    // Выбранную человеком тему и data-seen выставляют загрузочные
     // скрипты до первой отрисовки; suppressHydrationWarning — потому что
     // про выбор человека и про уже виденный прелоадер сервер не знает
     <html lang="ru" data-theme={DEFAULT_THEME} suppressHydrationWarning className={mono.variable}>
       <head>
         {/*
           Тема применяется до первого кадра. Без этого страница успевает
-          мигнуть светлой у того, кто выбрал тёмную: скрипт в <head>
+          мигнуть темой по умолчанию у того, кто выбрал другую: скрипт в <head>
           выполняется раньше, чем браузер что-либо рисует.
         */}
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT }} />

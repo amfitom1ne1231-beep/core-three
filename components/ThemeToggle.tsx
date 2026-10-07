@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { onThemeChange, readTheme, switchTheme, type Theme } from '@/lib/theme';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { onThemeChange, readTheme, restoreTheme, switchTheme, warmTheme, type Theme } from '@/lib/theme';
 
 /**
  * Кнопка света — одна круглая, с переливами внутри.
@@ -24,22 +24,39 @@ export default function ThemeToggle({ className = '' }: { className?: string }) 
   const [theme, setLocal] = useState<Theme | null>(null);
   const ball = useRef<HTMLSpanElement>(null);
 
+  // до первой отрисовки: на 404 тему некому вернуть, кроме нас (см. `restoreTheme`)
+  useLayoutEffect(restoreTheme, []);
+
   useEffect(() => {
     setLocal(readTheme());
     return onThemeChange(setLocal);
   }, []);
 
-  // играет только видимая сфера; без движения — стоят обе, на первом кадре
+  // Играет только видимая сфера; без движения — стоят обе, на первом кадре.
+  // «Видимая» — ещё и буквально: кнопок на странице две (шапка и пульт),
+  // и ролик той, что сейчас скрыта или не в кадре, крутить незачем.
   useEffect(() => {
-    const films = ball.current?.querySelectorAll('video');
-    if (!films || !theme) return;
+    const el = ball.current;
+    const films = el?.querySelectorAll('video');
+    if (!el || !films || !theme) return;
     const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    films.forEach((v) => {
-      // на тёмной странице видна светлая сфера, и наоборот
-      const shown = v.dataset.orb !== theme;
-      if (shown && !still) v.play().catch(() => {});
-      else v.pause();
+    // «видна» сфера или нет, скажет наблюдатель — сразу после подключения;
+    // до его ответа ролик не трогаем, иначе скрытая кнопка успевала начать загрузку
+    let seen = false;
+    const apply = () =>
+      films.forEach((v) => {
+        // на тёмной странице видна светлая сфера, и наоборот
+        const shown = v.dataset.orb !== theme;
+        if (shown && !still && seen) v.play().catch(() => {});
+        else v.pause();
+      });
+    const watch = new IntersectionObserver(([entry]) => {
+      seen = entry?.isIntersecting ?? true;
+      apply();
     });
+    watch.observe(el);
+    apply();
+    return () => watch.disconnect();
   }, [theme]);
 
   /** Под курсором переливы идут быстрее — кнопка отвечает раньше, чем её нажали. */
@@ -54,8 +71,13 @@ export default function ThemeToggle({ className = '' }: { className?: string }) 
         const r = ball.current?.getBoundingClientRect();
         switchTheme(readTheme() === 'light' ? 'dark' : 'light', r && { x: r.left + r.width / 2, y: r.top + r.height / 2 });
       }}
-      onPointerEnter={() => pace(2.2)}
+      onPointerEnter={() => {
+        pace(2.2);
+        warmTheme();
+      }}
       onPointerLeave={() => pace(1)}
+      onFocus={warmTheme}
+      onTouchStart={warmTheme}
       aria-pressed={lit}
       aria-label={lit ? 'Свет включён. Выключить — тёмная тема' : 'Свет выключен. Включить — светлая тема'}
       className={`orb pointer-events-auto ${className}`}
@@ -71,7 +93,10 @@ export default function ThemeToggle({ className = '' }: { className?: string }) 
             muted
             loop
             playsInline
-            preload="auto"
+            // Ролик качается, когда сфера на экране и начинает играть (эффект
+            // выше). Кнопок на странице несколько — в шапке, в пульте,
+            // в карточке «Ещё» на телефоне, — и скрытые не должны тянуть свои.
+            preload="none"
             disablePictureInPicture
             disableRemotePlayback
             tabIndex={-1}

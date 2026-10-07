@@ -1,10 +1,29 @@
 # Адреса CoreThree. Сертификаты Caddy получает сам, как только записи
 # домена у регистратора указывают на этот сервер.
 
+{
+	# HTTP/3 выключен намеренно. Браузер, узнав о нём, уходит с HTTP/2
+	# на QUIC, а тот по пути до российского сервера идёт с большими
+	# потерями: замер 05.10.2026 — 6–12 с на страницу против 2–2,5 с
+	# по HTTP/2. Совсем QUIC не отваливается, поэтому сам браузер назад
+	# не возвращается.
+	servers {
+		protocols h1 h2
+	}
+}
+
 corethree.ru {
 	encode zstd gzip
 	# браузер запоминает на год, что сюда — только по HTTPS
 	header Strict-Transport-Security "max-age=31536000"
+	# HTTP/3 здесь работал полчаса 05.10.2026, и браузеры тех, кто успел
+	# зайти, запомнили его на месяц. «clear» велит забыть: иначе каждое
+	# новое соединение сперва стучится в закрытую дверь.
+	header Alt-Svc "clear"
+	# заявка — килобайты; тело крупнее не принимаем вовсе
+	request_body {
+		max_size 256KB
+	}
 	reverse_proxy site:3000 {
 		# Адрес посетителя для лимита заявок ставит Caddy. Без этой строки
 		# заголовок доходил до сайта таким, каким его прислал сам посетитель:
@@ -21,5 +40,12 @@ www.corethree.ru {
 bot.corethree.ru {
 	encode zstd gzip
 	header Strict-Transport-Security "max-age=31536000"
+	header Alt-Svc "clear"
+	header X-Content-Type-Options "nosniff"
+	header Referrer-Policy "no-referrer"
+	# запросы мини-приложения и заявки с сайта — килобайты
+	request_body {
+		max_size 1MB
+	}
 	reverse_proxy bot:8787
 }

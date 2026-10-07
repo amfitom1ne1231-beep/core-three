@@ -14,6 +14,10 @@
  * Пересъёмка — после любой правки первого экрана демо. Демо — все папки
  * в app/(demo)/concepts, где есть page.tsx; результат — public/demos/<демо>.webp
  * (1920×1200) и <демо>-960.webp.
+ *
+ * Для телефона (MOBILE.md) рядом кладётся <демо>-phone.webp — первый экран
+ * телефонной версии демо, 390×700 в двойной плотности: его показывает плитка
+ * «Демо» на главной. Только телефонные: node brand/demo-shots.mjs <адрес> phone
  */
 
 import fs from 'node:fs';
@@ -32,6 +36,26 @@ const slugs = fs
   .map((d) => d.name);
 
 const browser = await chromium.launch({ channel: 'chrome' });
+const only = process.argv[3];
+
+// телефонный экран: без служебной полосы «Демо · К витрине» — она не часть сайта клиента
+const phone = await browser.newPage({ viewport: { width: 390, height: 700 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+for (const slug of slugs) {
+  await phone.goto(`${base}/concepts/${slug}`, { waitUntil: 'networkidle' });
+  await phone.evaluate(() => document.fonts.ready);
+  // служебная полоса «Демо · К витрине» и отступ под неё убираются: в плитке
+  // стоит сайт клиента, каким его видит посетитель
+  await phone.addStyleTag({ content: 'nextjs-portal, div.fixed.top-0[class*="demo-bar"] { display: none !important; } :root { --demo-bar: 0px !important; }' });
+  await phone.waitForTimeout(2500);
+  await sharp(await phone.screenshot()).webp({ quality: 80 }).toFile(path.join(out, `${slug}-phone.webp`));
+  console.log(slug, 'phone');
+}
+await phone.close();
+if (only === 'phone') {
+  await browser.close();
+  process.exit(0);
+}
+
 // те же координаты, что у кадра в DemoView; плотность 1,5 — запас на экраны планшетов
 const page = await browser.newPage({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1.5 });
 

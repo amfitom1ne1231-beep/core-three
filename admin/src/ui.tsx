@@ -14,7 +14,7 @@ export function useMeData(): Me {
 
 /* ---------- значки: один набор, одна толщина линии ---------- */
 
-type IconName = 'plus' | 'search' | 'back' | 'chevron' | 'copy' | 'check' | 'close' | 'inbox' | 'layers' | 'bars' | 'link' | 'file' | 'lock';
+type IconName = 'plus' | 'search' | 'back' | 'chevron' | 'copy' | 'check' | 'close' | 'inbox' | 'layers' | 'bars' | 'link' | 'file' | 'lock' | 'today' | 'gear' | 'book';
 
 const PATHS: Record<IconName, ReactNode> = {
   plus: <path d="M12 5v14M5 12h14" />,
@@ -64,6 +64,26 @@ const PATHS: Record<IconName, ReactNode> = {
       <rect x="5" y="10.5" width="14" height="10" rx="2.5" />
       <path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" />
     </>
+  ),
+  // «сегодня» — лист календаря с отмеченным днём
+  today: (
+    <>
+      <rect x="4.5" y="5.5" width="15" height="14" rx="1.5" />
+      <path d="M4.5 10h15M8.5 3.5v3.5M15.5 3.5v3.5" />
+      <path d="M11 14.5h2" />
+    </>
+  ),
+  gear: (
+    <>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6 6l1.6 1.6M16.4 16.4 18 18M18 6l-1.6 1.6M7.6 16.4 6 18" />
+    </>
+  ),
+  book: (
+    <>
+      <path d="M5 5.5A1.5 1.5 0 0 1 6.5 4H19v14H6.5A1.5 1.5 0 0 0 5 19.5z" />
+      <path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3M9 8.5h6" />
+    </>
   )
 };
 
@@ -73,6 +93,48 @@ export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
       {PATHS[name]}
     </svg>
+  );
+}
+
+/* ---------- знак и шапка ---------- */
+
+/** Знак CoreThree одним цветом — те же грани, что в `brand/mark-solid.svg`. */
+export function Mark({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" fill="currentColor" aria-hidden="true" focusable="false">
+      <path d="M67.00 24.36 L90.39 64.88 L75.40 56.23 L59.50 28.69 Z" />
+      <path d="M78.44 57.32 L73.28 54.35 L61.25 33.50 L61.25 27.55 Z" />
+      <path d="M63.81 14.22 L63.81 23.84 L58.78 26.75 L58.78 32.92 L73.31 58.09 L57.66 49.05 Q51.30 45.39 51.30 38.32 L51.30 21.44 Z" />
+      <path d="M49.37 21.11 L49.37 58.58 L36.58 65.97 L36.58 13.73 Z" />
+      <path d="M50.47 4.51 L63.56 12.07 L50.34 19.70 L37.25 12.14 Z" />
+      <path d="M66.58 82.04 L72.77 85.61 L72.77 90.97 L27.90 90.97 L43.38 82.04 Z" />
+      <path d="M58.16 70.10 L65.35 70.10 L84.11 80.93 L84.11 95.45 L75.08 90.24 L75.08 83.89 L68.00 79.80 L41.36 79.80 Z" />
+      <path d="M84.68 78.89 L51.35 59.64 L51.35 44.62 L97.69 71.37 Z" />
+      <path d="M98.00 87.58 L85.60 94.74 L85.60 80.67 L98.00 73.51 Z" />
+      <path d="M10.84 63.85 L34.62 22.67 L34.62 39.96 L18.33 68.17 Z" />
+      <path d="M34.09 36.48 L34.09 41.85 L21.21 64.16 L16.56 66.85 Z" />
+      <path d="M3.39 71.48 L11.73 66.66 L17.11 69.76 L22.22 66.81 L36.68 41.78 L36.68 59.33 Q36.68 67.02 30.99 70.31 L16.17 78.86 Z" />
+      <path d="M16.89 80.91 L49.54 62.05 L62.09 69.30 L16.89 95.39 Z" />
+      <path d="M2.00 88.12 L2.00 73.14 L14.77 80.51 L14.77 95.49 Z" />
+    </svg>
+  );
+}
+
+/**
+ * Шапка корневого экрана: знак и имя студии слева, справа — то, что
+ * экран считает нужным (день, действие). По ней приложение узнаётся
+ * как продолжение сайта, а не как ещё один экран Telegram: цвета здесь
+ * от темы Telegram, своя у приложения только форма.
+ */
+export function Brand({ children }: { children?: ReactNode }) {
+  return (
+    <div className="brand">
+      <span className="brand__name">
+        <Mark />
+        CoreThree
+      </span>
+      {children && <span className="brand__side">{children}</span>}
+    </div>
   );
 }
 
@@ -226,7 +288,8 @@ export function Check({ done, label, disabled, onToggle }: { done: boolean; labe
 
 /* ---------- вкладки внизу: разделы приложения ---------- */
 
-const TABS: { route: Route; label: string; icon: 'inbox' | 'layers' | 'bars' }[] = [
+const TABS: { route: Route; label: string; icon: 'today' | 'inbox' | 'layers' | 'bars' }[] = [
+  { route: { name: 'today' }, label: 'Сегодня', icon: 'today' },
   { route: { name: 'leads' }, label: 'Заявки', icon: 'inbox' },
   { route: { name: 'projects' }, label: 'Проекты', icon: 'layers' },
   { route: { name: 'metrics' }, label: 'Метрики', icon: 'bars' }
@@ -247,7 +310,7 @@ export function TabBar({ current }: { current: Route['name'] }) {
             navigate(t.route, { replace: true });
           }}
         >
-          <Icon name={t.icon} size={24} />
+          <Icon name={t.icon} size={22} />
           <span>{t.label}</span>
         </button>
       ))}

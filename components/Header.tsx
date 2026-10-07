@@ -93,7 +93,8 @@ export default function Header() {
   return (
     <header
       ref={ref}
-      className="pointer-events-none fixed inset-x-0 top-0 z-[100] flex items-center justify-between px-4 py-4 sm:px-8 lg:px-[72px]"
+      // на телефоне шапки нет: её заменяют строка сверху и остров внизу (components/phone)
+      className="pointer-events-none fixed inset-x-0 top-0 z-[100] flex items-center justify-between px-4 py-4 max-sm:hidden sm:px-8 lg:px-[72px]"
     >
       {/* завеса: растворяется книзу, поэтому кромки у неё не видно */}
       <div
@@ -125,12 +126,12 @@ export default function Header() {
 
       {/* Где ты — видно и в шапке: текущий раздел светлее и с тем же
           штрихом, что у выбранной темы. «Услуги» горят на всех четырёх
-          страницах направлений — ссылка ведёт на первую из них. */}
+          страницах направлений — ссылка ведёт на их обзор. */}
       {/* С «Помощью» пунктов четыре: на планшете при прежнем шаге имя
           студии упиралось в «Услуги», поэтому до lg шаг короче */}
       <nav aria-label="Разделы" className="pointer-events-auto hidden items-center gap-4 md:flex lg:gap-7">
         {SITE.nav.map((item) => {
-          const here = item.href === '/sites' ? SERVICE_PATHS.includes(pathname) : pathname.startsWith(item.href);
+          const here = pathname.startsWith(item.href) || (item.href === '/services' && SERVICE_PATHS.includes(pathname));
           return (
             <Link
               key={item.href}

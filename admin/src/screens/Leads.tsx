@@ -3,7 +3,7 @@ import { useLeads, type LeadRow, type Stage } from '../api';
 import { age, shortDay } from '../format';
 import { navigate } from '../router';
 import { haptic } from '../tg';
-import { Icon, Notice, RowsPlaceholder, useMeData } from '../ui';
+import { Brand, Icon, Notice, RowsPlaceholder, useMeData } from '../ui';
 
 /**
  * Список заявок. Открытые сгруппированы по этапам воронки — видно, где
@@ -76,6 +76,7 @@ export function Leads() {
 
   return (
     <main className="screen screen--tabbed">
+      <Brand />
       <header className="top">
         <h1 className="top__title">Заявки</h1>
         <button type="button" className="btn btn--tinted btn--small" onClick={() => navigate({ name: 'new' })}>

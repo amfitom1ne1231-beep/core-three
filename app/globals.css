@@ -35,7 +35,6 @@
   --danger: #e48a78;
 
   --grain-opacity: 0.022;
-  --grain-blend: screen;
 
   /* Кромка стекла над материалом. Отдельно от --line: тот держит
      разделители на плоском фоне и намеренно тихий, а панель поверх
@@ -63,7 +62,6 @@
   --danger: #b2412c;
 
   --grain-opacity: 0.030;
-  --grain-blend: multiply;
 
   /* В светлой теме белая кромка исчезает: тот же приём, но чернилами. */
   --edge: rgba(11, 12, 14, 0.30);
@@ -240,7 +238,7 @@ body {
 /* Акцент в заголовке — тем же гротеском, жирным начертанием.
    Контраст веса вместо смены гарнитуры: на сайте один шрифт и ни одного
    курсива. Тот же приём уже держит заголовок первого экрана —
-   «От идеи» светлым, «до запуска.» жирным, — и теперь он один на весь
+   «От идеи» светлым, «до запуска» жирным, — и теперь он один на весь
    сайт, а не спорит с антиквой через строку. */
 .title-accent {
   font-weight: 700;
@@ -257,6 +255,15 @@ body {
    ============================================================ */
 .section-y { padding-block: clamp(72px, 12vh, 148px); }
 .section-y-tight { padding-block: clamp(52px, 9vh, 112px); }
+
+/* Телефон. Отступ считается от высоты экрана, а она у телефона большая:
+   выходило по 100 px пустоты сверху и снизу у каждого блока, и страница
+   читалась полупустой. Здесь шаг постоянный. Граница та же, что у
+   `max-sm:` в разметке, — первые экраны и манифест подстроены ею же. */
+@media (max-width: 639.98px) {
+  .section-y { padding-block: 56px; }
+  .section-y-tight { padding-block: 44px; }
+}
 
 /* Линия времени: колонок ровно столько, сколько шагов. Классом
    это не задать — Tailwind собирает утилиты статически, а шагов
@@ -1222,13 +1229,34 @@ body {
    оказывалась под всем содержимым и зернила один канвас первого экрана.
    Поднято над контентом, но под шапку (100), курсор (150) и прелоадер
    (200): интерфейсной хроме размытие ни к чему. */
+/* Парение пульта навигации: четыре пикселя вверх и обратно. Только
+   трансформ — идёт на видеокарте, главный поток не трогает. */
+@keyframes pod-float {
+  from { transform: translateY(0); }
+  to { transform: translateY(-4px); }
+}
+.pod-float { animation: pod-float 3.4s ease-in-out infinite alternate; }
+@media (prefers-reduced-motion: reduce) {
+  .pod-float { animation: none; }
+}
+
+/* На сенсорных устройствах плёнки нет: на плотном экране зерно не видно,
+   а слой со смешением во весь экран телефон пересчитывает на каждом кадре. */
+@media (pointer: coarse) {
+  .grain { display: none; }
+}
+
 .grain {
   position: fixed;
   inset: 0;
   z-index: 90;
   pointer-events: none;
   opacity: var(--grain-opacity);
-  mix-blend-mode: var(--grain-blend);
+  /* Режима смешения здесь больше нет (были screen и multiply). Слой
+     во весь экран со смешением заставлял браузер собирать под собой
+     всю страницу отдельным проходом на каждом кадре — около 4% кадров
+     при прокрутке не успевали в срок. При такой прозрачности обычное
+     наложение даёт на фоне то же зерно. */
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
@@ -1719,9 +1747,18 @@ body {
   }
 }
 
+/* Живой экран пульта, поднятый по наведению, проявляется, а не выскакивает:
+   у только что вставленного элемента переходу не от чего считать. */
+@keyframes pod-live-in {
+  from { opacity: 0; }
+}
+.pod-live-in { animation: pod-live-in 0.3s ease both; }
+
 /* ============================================================
-   Курсор. Позицию ведёт GSAP через transform, поэтому размер
-   меняется отдельным свойством scale — они не спорят.
+   Курсор. Положение ведёт GSAP — transform на внешнем элементе
+   нулевого размера. Размер меняет вложенный круг свойством scale.
+   Держать оба на одном элементе нельзя: GSAP вместе с transform
+   пишет `scale: none`, и размеры режимов переставали действовать.
    ============================================================ */
 html.has-cursor,
 html.has-cursor * {
@@ -1737,91 +1774,109 @@ html.has-cursor :is(input:not([type='checkbox']):not([type='radio']):not([type='
   left: 0;
   top: 0;
   z-index: 250;
+  width: 0;
+  height: 0;
   pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.cursor-dot i,
+.cursor-ring i {
+  position: absolute;
   border-radius: 50%;
   --s: 1;
   scale: calc(var(--s) * var(--p, 1));
   transition:
-    opacity 0.3s ease,
     scale 0.4s cubic-bezier(0.2, 0.7, 0.2, 1),
     background-color 0.3s ease,
-    border-color 0.3s ease;
+    box-shadow 0.3s ease;
 }
 
-.cursor-dot {
-  width: 10px;
-  height: 10px;
-  background: #fff;
-  mix-blend-mode: difference;
+/* Точка — цвет текста, кромка — цвет фона. Раньше она была белой
+   в режиме difference: на чёрном и молочном видна, а на сером кадре
+   схемы, на синем знаке и на кнопке давала тот же тон, что под ней,
+   и пропадала. Пара «тёмное рядом со светлым» видна на чём угодно. */
+.cursor-dot i {
+  left: -6px;
+  top: -6px;
+  width: 12px;
+  height: 12px;
+  background: var(--fg);
+  box-shadow: 0 0 0 1.5px rgb(var(--bg-rgb) / 0.8);
 }
 
-/* Кольцо и подпись — через токен: режимы `ring` и `drag` идут без
-   смешения, и белым по молочному фону курсор бы просто пропал.
-   Режимы `hover` остаются белыми намеренно: там difference инвертирует
-   подложку, и цвет источника роли не играет. */
-.cursor-ring {
+/* Кольцо: линия цвета текста и волосяная кромка цвета фона с обеих
+   сторон — по той же причине, что у точки. Толщина делится на масштаб,
+   иначе маленькое кольцо выходило бы волосяным, а большое — жирным.
+   Линия нарисована тенью, а не рамкой: дробную рамку браузеры округляют
+   до целого пикселя каждый по-своему, и в Chrome большое кольцо было
+   вдвое толще, чем в Safari. */
+.cursor-ring { opacity: 0; }
+.cursor-ring i {
+  left: -22px;
+  top: -22px;
   width: 44px;
   height: 44px;
-  border: 1px solid rgb(var(--fg-rgb) / 0.5);
-  opacity: 0;
   --s: 0.4;
+  box-shadow:
+    inset 0 0 0 calc(1.5px / var(--s)) rgb(var(--fg-rgb) / 0.92),
+    inset 0 0 0 calc(2.5px / var(--s)) rgb(var(--bg-rgb) / 0.4),
+    0 0 0 calc(1px / var(--s)) rgb(var(--bg-rgb) / 0.4);
 }
-/* на молочном материале волосяное полупрозрачное кольцо терялось */
-:root[data-theme='light'] .cursor-ring {
-  border-width: 1.5px;
-  border-color: rgb(var(--fg-rgb) / 0.75);
-}
-.cursor-ring.is-down { --p: 0.82; }
+.cursor-ring.is-down i { --p: 0.82; }
 
-/* над кнопкой и ссылкой — сплошной круг, инвертирующий то, что под ним */
-.cursor-ring[data-mode='hover'] {
-  opacity: 1;
-  --s: 1;
-  background: #fff;
-  border-color: transparent;
-  mix-blend-mode: difference;
+/* Над кнопкой и ссылкой кольцо вырастает и слегка заливается, точка
+   уходит — подпись под ним читается целиком.
+   Раньше здесь был белый круг в режиме difference («инверсия»). Из-за
+   ошибки с размером его никто не видел крупнее 18 px, а в полном размере
+   он красил синие кнопки и шар темы в оранжево-коричневый: инверсия
+   акцента — цвет, которого в палитре нет. Смешения в курсоре больше нет. */
+.cursor-ring:is([data-mode='hover'], [data-mode='ring-hover']) { opacity: 1; }
+.cursor-ring:is([data-mode='hover'], [data-mode='ring-hover']) i {
+  --s: 1.2;
+  background: rgb(var(--fg-rgb) / 0.14);
 }
-.cursor-dot[data-mode='hover'] { --s: 0; }
+.cursor-dot:is([data-mode='hover'], [data-mode='ring-hover']) i { --s: 0; }
 
-/* над материалом — тонкое кольцо без смешения: difference на синем даёт кислоту */
-.cursor-ring[data-mode='ring'] { opacity: 1; --s: 0.7; }
-.cursor-dot[data-mode='ring'] { opacity: 0; }
-.cursor-ring[data-mode='ring-hover'] { opacity: 1; --s: 1.2; border-color: rgb(var(--fg-rgb) / 0.85); }
-.cursor-dot[data-mode='ring-hover'] { opacity: 0; }
+/* над материалом — кольцо с точкой в центре: на живом фоне и на знаке
+   одна точка терялась бы, а у одного кольца нет острия */
+.cursor-ring[data-mode='ring'] { opacity: 1; }
+.cursor-ring[data-mode='ring'] i { --s: 0.75; }
+.cursor-dot[data-mode='ring'] i { --s: 0.5; }
 
-/* над сценой атласа: большое кольцо с подписью жеста */
-.cursor-ring {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+/* Над сценой направлений: большое кольцо с подписью жеста. Подпись не
+   масштабируется вместе с кругом — у неё свой размер. Круг залит цветом
+   фона: подпись цвета текста читается на нём при любом кадре под ним
+   (в светлой теме объект сцены тёмный — тёмная подпись на нём пропадала). */
 .cursor-ring span {
+  position: absolute;
+  left: 0;
+  top: 0;
+  translate: -50% -50%;
+  padding-left: 0.16em;
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 5.5px;
+  font-size: 10.5px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
+  white-space: nowrap;
   color: var(--fg);
   opacity: 0;
   transition: opacity 0.25s ease;
 }
-.cursor-ring[data-mode='drag'] {
-  opacity: 1;
+.cursor-ring[data-mode='drag'] { opacity: 1; }
+.cursor-ring[data-mode='drag'] i {
   --s: 1.9;
-  background: rgb(var(--fg-rgb) / 0.1);
-  border-color: rgb(var(--fg-rgb) / 0.55);
-  backdrop-filter: blur(3px);
+  background: rgb(var(--bg-rgb) / 0.58);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
 }
 .cursor-ring[data-mode='drag'] span { opacity: 1; }
-.cursor-dot[data-mode='drag'] { opacity: 0; }
-.cursor-ring.is-down[data-mode='drag'] { --p: 0.85; }
+.cursor-dot[data-mode='drag'] i { --s: 0; }
+.cursor-ring.is-down[data-mode='drag'] i { --p: 0.85; }
 
 .cursor-dot[data-mode='gone'],
 .cursor-ring[data-mode='gone'],
 .cursor-dot[data-mode='field'],
 .cursor-ring[data-mode='field'] { opacity: 0; }
-
-/* Цели скоса по скорости: свой слой заранее, чтобы скос не перерисовывал страницу */
-[data-skew] { will-change: transform; }
 
 /* ============================================================
    Схема «Анатомия проекта» — плотность и глубина делают её прибором,
@@ -2084,6 +2139,15 @@ html.has-cursor :is(input:not([type='checkbox']):not([type='radio']):not([type='
    Страница в новой теме проявляется кругом от переключателя:
    кромка мягкая, по фронту идёт полоса света.
    ============================================================ */
+/* Пока тема меняется, у элементов нет своих цветовых переходов:
+   новая тема приходит волной (или наплывом на телефоне) целым снимком,
+   и переходы под ним только нагружают страницу (lib/theme.ts). */
+html[data-theme-switching] *,
+html[data-theme-switching] *::before,
+html[data-theme-switching] *::after {
+  transition: none !important;
+}
+
 @property --wave {
   syntax: '<length>';
   inherits: false;
@@ -2520,3 +2584,93 @@ html[data-theme-wave]::view-transition-new(root) {
     animation: none;
   }
 }
+
+/* ============================================================
+   Телефонная оболочка (components/phone, MOBILE.md)
+   ============================================================ */
+
+/* Переходы между экранами (lib/phone). Строка сверху и остров стоят
+   на месте: у них свои имена, и в снимок страницы они не попадают. */
+html[data-nav] .phone-bar { view-transition-name: phone-bar; }
+html[data-nav] .phone-dock { view-transition-name: phone-dock; }
+::view-transition-old(phone-bar),
+::view-transition-old(phone-dock) { display: none; }
+::view-transition-new(phone-bar),
+::view-transition-new(phone-dock) { animation: none; }
+
+/* вкладка: уходящий экран гаснет, новый проявляется и чуть поднимается */
+html[data-nav]::view-transition-old(root) { animation: ct-nav-out 0.2s ease both; }
+html[data-nav]::view-transition-new(root) { animation: ct-nav-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* плитка: новый экран вырастает из её рамки до всего окна */
+html[data-nav='grow']::view-transition-old(root) { animation: ct-nav-under 0.5s ease both; }
+html[data-nav='grow']::view-transition-new(root) { animation: ct-nav-grow 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@keyframes ct-nav-out { to { opacity: 0; } }
+@keyframes ct-nav-in { from { opacity: 0; transform: translateY(12px); } }
+@keyframes ct-nav-under { to { opacity: 0.35; transform: scale(0.97); } }
+@keyframes ct-nav-grow {
+  from { clip-path: inset(var(--grow-t) var(--grow-r) var(--grow-b) var(--grow-l) round 22px); }
+  to { clip-path: inset(0 0 0 0 round 0px); }
+}
+
+/* приглашение листать на первом экране телефона: стрелка чуть уходит вверх и возвращается */
+.phone-cue svg { animation: ct-cue-up 2.4s cubic-bezier(0.65, 0, 0.35, 1) infinite; }
+@keyframes ct-cue-up {
+  0%, 100% { transform: translateY(2px); }
+  50% { transform: translateY(-3px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .phone-cue svg { animation: none; }
+}
+
+/* Финал главной на телефоне (components/phone/PhoneFinale). Сцену ведёт
+   прокрутка: --p идёт от 0 до 1, пока экран въезжает, и обратно, когда
+   палец ведут назад. У каждой строки свой порог --a — они всплывают
+   одна за другой и уходят в обратном порядке. */
+.phone-finale { --p: 0; }
+.pf-rise {
+  --k: clamp(0, calc((var(--p) - var(--a, 0)) / 0.2), 1);
+  opacity: var(--k);
+  transform: translateY(calc((1 - var(--k)) * 34px));
+  will-change: opacity, transform;
+}
+/* знак центрируется сам, поэтому всплывает масштабом, а не сдвигом */
+.pf-rise.absolute { transform: translate(-50%, -50%) scale(calc(0.86 + var(--k) * 0.14)); }
+/* на низком экране строке фактов места нет — оно нужнее знаку */
+@media (max-height: 700px) {
+  .pf-facts { display: none; }
+}
+
+/* картинка только для своей темы: снятый знак в тёмной студии и в светлой */
+:root[data-theme='light'] .only-dark,
+:root:not([data-theme='light']) .only-light { display: none; }
+
+/* схема-истории: на экране ниже 610 px карточка кадра без пояснения */
+@container (max-height: 610px) {
+  .pj-you { display: none; }
+}
+
+@media (max-width: 639.98px) {
+  /* экскурсию на телефоне заменяет плитка «С чего начать» на главной */
+  .tour-offer { display: none; }
+}
+
+/* «Услуги» на невысоком экране: место нужнее блоку, стек есть на экране направления */
+@media (max-height: 760px) {
+  .ps-stack { display: none; }
+}
+
+/* касание отвечает самим элементом (сжатие, цвет), серая вспышка браузера лишняя */
+.phone-dock a,
+.phone-dock button,
+.phone-home a,
+.phone-sheet a,
+.phone-bar button,
+.phone-services a,
+.phone-services button,
+.phone-seg button,
+.phone-demos a,
+.phone-brief a,
+.phone-brief button { -webkit-tap-highlight-color: transparent; }
+

@@ -34,7 +34,10 @@ export default function HeroMark() {
   const scene = useRef<HTMLDivElement>(null);
   const tilt = useRef<HTMLDivElement>(null);
   const layers = useRef<HTMLDivElement[]>([]);
-  const halos = useRef<HTMLDivElement[]>([]);
+  const halos = useRef<HTMLImageElement[]>([]);
+  /** Резкий луч и его заранее размытая копия: в разлёте одна сменяет другую. */
+  const sharps = useRef<SVGSVGElement[]>([]);
+  const softs = useRef<HTMLDivElement[]>([]);
   const bloom = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -45,6 +48,7 @@ export default function HeroMark() {
 
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
+    let sway: gsap.core.Tween | null = null;
     const cleanups: Array<() => void> = [];
 
     // Лучи стоят на разной глубине, но в покое совпадают пиксель в пиксель:
@@ -95,8 +99,8 @@ export default function HeroMark() {
         addEventListener('pointermove', onMove, { passive: true });
         cleanups.push(() => removeEventListener('pointermove', onMove));
       } else {
-        // без мыши знак медленно покачивается сам
-        gsap.to(tl, { rotationY: 16, rotationX: -6, duration: 5, ease: 'sine.inOut', yoyo: true, repeat: -1 });
+        // без мыши знак медленно покачивается сам (пока первый экран на виду — см. `watch` ниже)
+        sway = gsap.to(tl, { rotationY: 16, rotationX: -6, duration: 5, ease: 'sine.inOut', yoyo: true, repeat: -1 });
       }
 
       // 3. Скролл: лучи разлетаются, камера проходит сквозь центр
@@ -129,9 +133,16 @@ export default function HeroMark() {
         layers.current.forEach((el, i) => {
           st.to(el, { x: () => OUT[i][0] * size() * 0.5, y: () => OUT[i][1] * size() * 0.5, ease: 'none' }, 0);
         });
-        // смаз в полёте: лучи уходят на скорости — смаз идёт за ней,
-        // поэтому и он потерял разгон вместе с движением
-        st.fromTo(layers.current, { filter: 'blur(0px)' }, { filter: 'blur(6px)', ease: 'power1.in' }, 0);
+        // Смаз в полёте был анимацией `filter: blur` на каждом луче: радиус
+        // менялся с каждым кадром прокрутки, и браузер заново отрисовывал
+        // три больших слоя вместе со свечением внутри — на уходе с первого
+        // экрана заметная часть кадров не успевала в срок (замер по
+        // трассировке, BRIEF.md, раздел 50). Теперь у каждого луча лежит
+        // заранее размытая копия: размытие считается один раз, а в полёте
+        // резкий луч гаснет и проявляется мягкий — меняется только
+        // прозрачность, это работа видеокарты.
+        st.fromTo(softs.current, { opacity: 0 }, { opacity: 1, ease: 'power1.in' }, 0);
+        st.fromTo(sharps.current, { opacity: 1 }, { opacity: 0, ease: 'power1.in' }, 0);
         // вспышка ядер в момент прохода сквозь центр
         if (bloom.current) {
           st.fromTo(
@@ -170,10 +181,28 @@ export default function HeroMark() {
         h.style.opacity = Math.max(0, Math.min(1, (b - 0.56) * 2.2 * wgt)).toFixed(3);
       });
     };
-    if (!reduced) gsap.ticker.add(breathe);
-    else breathe();
+    // Дышит, только пока первый экран на виду. Раньше такт шёл всегда:
+    // три размытых слоя получали новую прозрачность 60 раз в секунду, даже
+    // когда человек был внизу страницы, — и браузер на каждом кадре
+    // пересчитывал стили и перерисовывал страницу ради того, чего не видно.
+    let breathing = false;
+    const watch = new IntersectionObserver(([entry]) => {
+      const on = entry?.isIntersecting ?? false;
+      if (on === breathing) return;
+      breathing = on;
+      if (on) gsap.ticker.add(breathe);
+      else gsap.ticker.remove(breathe);
+      // бесконечное покачивание тоже стоит, пока знака не видно: иначе
+      // тикер анимаций не засыпает ни на одной странице ниже первого экрана
+      if (on) sway?.resume();
+      else sway?.pause();
+    });
+    const stage = wrap.current?.closest('section') ?? wrap.current;
+    if (reduced || !stage) breathe();
+    else watch.observe(stage);
 
     return () => {
+      watch.disconnect();
       gsap.ticker.remove(breathe);
       cleanups.forEach((f) => f());
       ctx.revert();
@@ -188,7 +217,10 @@ export default function HeroMark() {
       // центр по вертикали через top, а не translate: трансформы здесь ведёт GSAP.
       // На планшете в портрете знак стоит целиком под текстом и занимает
       // остаток экрана: 620 — высота шапки и текста над ним
-      className="pointer-events-none absolute bottom-[-9svh] right-[-12vw] z-0 w-[84vw] max-w-[460px] sm:right-[-4vw] lg:bottom-auto lg:right-[clamp(24px,6vw,120px)] lg:top-[calc(50%-min(32vh,20vw))] lg:w-[min(64vh,40vw)] lg:max-w-none tp:bottom-[4svh] tp:right-[7vw] tp:top-auto tp:w-[clamp(300px,calc(100svh-620px),540px)] tp:max-w-none"
+      // На телефоне знак стоит от верха своей строки сетки (под кнопками)
+      // и берёт размер от её высоты (cqh) плюс те же 9svh захода за край
+      // экрана — на низком экране он меньше, но на кнопки не наезжает.
+      className="pointer-events-none absolute right-[-12vw] top-6 z-0 w-[max(190px,min(84vw,460px,calc(100cqh+9svh-24px)))] sm:bottom-[-9svh] sm:right-[-4vw] sm:top-auto sm:w-[84vw] sm:max-w-[460px] lg:bottom-auto lg:right-[clamp(24px,6vw,120px)] lg:top-[calc(50%-min(32vh,20vw))] lg:w-[min(64vh,40vw)] lg:max-w-none tp:bottom-[4svh] tp:right-[7vw] tp:top-auto tp:w-[clamp(300px,calc(100svh-620px),540px)] tp:max-w-none"
     >
       <div
         ref={scene}
@@ -214,24 +246,37 @@ export default function HeroMark() {
               ref={(el) => {
                 if (el) layers.current[i] = el;
               }}
-              className="absolute inset-0"
+              className="absolute inset-0 will-change-transform"
               style={{ transformOrigin: ORIGIN }}
             >
-              {/* свечение ядра: размытый силуэт луча, дышит прозрачностью */}
-              <div
+              {/* Свечение ядра: размытый силуэт луча, дышит прозрачностью.
+                  Размытие запечено в картинку (brand/halos.mjs). Раньше это был
+                  `filter: blur(28px)` на каждом луче, и под наплывом смены темы
+                  Safari пересчитывал все три на каждом кадре — наплыв на главной
+                  шёл рывками. Вынос на 30% — поле под хвост размытия, то же,
+                  что у картинки; на телефоне знак меньше, а радиус размытия
+                  тот же, поэтому там своя картинка. */}
+              <picture>
+                <source media="(max-width: 639.98px)" srcSet={`/mark/halo-${i + 1}-s.webp`} />
+                <img
+                  ref={(el) => {
+                    if (el) halos.current[i] = el;
+                  }}
+                  src={`/mark/halo-${i + 1}.webp`}
+                  alt=""
+                  decoding="async"
+                  draggable={false}
+                  className="absolute left-[-30%] top-[-30%] h-[160%] w-[160%] max-w-none will-change-[opacity]"
+                  style={{ opacity: 0.5 }}
+                />
+              </picture>
+              <svg
                 ref={(el) => {
-                  if (el) halos.current[i] = el;
+                  if (el) sharps.current[i] = el;
                 }}
-                className="absolute inset-0 will-change-[opacity]"
-                style={{ filter: 'blur(28px)', opacity: 0.5 }}
+                viewBox="0 0 100 100"
+                className="relative h-full w-full overflow-visible will-change-[opacity]"
               >
-                <svg viewBox="0 0 100 100" className="h-full w-full overflow-visible">
-                  {arm.facets.map((f) => (
-                    <path key={f.facet} d={f.d} fill="#6e9bcc" />
-                  ))}
-                </svg>
-              </div>
-              <svg viewBox="0 0 100 100" className="relative h-full w-full overflow-visible">
                 <defs>
                   {arm.facets.map((f) => {
                     const [a, b] = FACET_FILL[f.facet] ?? FACET_FILL.column;
@@ -253,6 +298,20 @@ export default function HeroMark() {
                   <path key={f.facet} d={f.d} fill={`url(#hm-${arm.arm}-${f.facet})`} />
                 ))}
               </svg>
+              {/* мягкая копия для разлёта: те же грани, размытие постоянное */}
+              <div
+                ref={(el) => {
+                  if (el) softs.current[i] = el;
+                }}
+                className="absolute inset-0 opacity-0 will-change-[opacity]"
+                style={{ filter: 'blur(6px)' }}
+              >
+                <svg viewBox="0 0 100 100" className="h-full w-full overflow-visible">
+                  {arm.facets.map((f) => (
+                    <path key={f.facet} d={f.d} fill={`url(#hm-${arm.arm}-${f.facet})`} />
+                  ))}
+                </svg>
+              </div>
             </div>
           ))}
         </div>

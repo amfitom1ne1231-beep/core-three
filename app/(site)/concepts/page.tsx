@@ -3,6 +3,7 @@ import ConceptCards from '@/components/ConceptCards';
 import DemoBand from '@/components/concepts/DemoBand';
 import Cta from '@/components/Cta';
 import Footer from '@/components/Footer';
+import PhoneDemos from '@/components/phone/PhoneDemos';
 import RevealText from '@/components/RevealText';
 import ScrollScenes from '@/components/ScrollScenes';
 import Process from '@/components/service/Process';
@@ -35,9 +36,13 @@ export default function ConceptsPage() {
   return (
     <>
       <main id="content" className="relative z-10 w-full">
+        {/* На телефоне «Демо» — карточки с записями (MOBILE.md). Прежняя
+            витрина — всё, что в этой обёртке, — остаётся шире 640 px. */}
+        <PhoneDemos />
+        <div className="max-sm:hidden">
         {/* ---------- первый экран ---------- */}
         <section data-chapter="hero" className="relative overflow-hidden" aria-label="Начало">
-          <div data-hero className="px-4 pb-[clamp(48px,9vh,110px)] pt-[clamp(120px,19vh,200px)] sm:px-8 lg:px-[72px] tp:pb-10 tp:pt-[136px]">
+          <div data-hero className="px-4 pb-[clamp(48px,9vh,110px)] pt-[clamp(120px,19vh,200px)] max-sm:pt-[108px] sm:px-8 lg:px-[72px] tp:pb-10 tp:pt-[136px]">
             <span className="rail-label">{PAGE.label}</span>
             <div className="mt-6 grid items-end gap-[clamp(28px,5vh,56px)] lg:grid-cols-[1.6fr_1fr] lg:gap-[clamp(40px,5vw,96px)] tp:grid-cols-1">
               <h1
@@ -114,7 +119,7 @@ export default function ConceptsPage() {
           <div className="px-4 section-y sm:px-8 lg:px-[72px]">
             <div className="grid gap-[clamp(24px,4vh,48px)] lg:grid-cols-[1.6fr_1fr] lg:items-end lg:gap-[clamp(40px,5vw,96px)]">
               <h2 className="display m-0 text-[clamp(26px,4.2vw,64px)]">
-                {PAGE.cta.title.replace('?', '')} <span className="title-accent">— соберём.</span>
+                {PAGE.cta.title.replace('?', '')} <span className="title-accent">— соберём</span>
               </h2>
               <p className="m-0 max-w-[44ch] text-[clamp(13px,1.1vw,16px)] leading-relaxed text-dim">{PAGE.cta.text}</p>
             </div>
@@ -123,8 +128,11 @@ export default function ConceptsPage() {
             </Cta>
           </div>
         </section>
+        </div>
       </main>
-      <Footer />
+      <div className="max-sm:hidden">
+        <Footer />
+      </div>
       <ScrollScenes />
     </>
   );
