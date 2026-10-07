@@ -1,13 +1,11 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
-import MessengerMark from '@/components/MessengerMark';
 import PhoneEntries from './PhoneEntries';
+import PhoneFinale from './PhoneFinale';
 import PhoneJourney from './PhoneJourney';
 import PhoneMark from './PhoneMark';
 import { revealReady } from '@/lib/boot';
-import { OPERATOR } from '@/content/legal';
 import { SITE } from '@/content/site';
 
 const SCENES = ['Знак', 'Путь одного заказа', 'Разделы', 'Связь'];
@@ -66,7 +64,6 @@ export default function PhoneHome() {
     transform: shown ? 'none' : 'translateY(14px)',
     transition: `opacity 0.7s ease ${delay}s, transform 0.9s cubic-bezier(0.16, 1, 0.3, 1) ${delay}s`
   });
-  const contact = 'flex min-h-[56px] items-center justify-between gap-4 border-b border-line py-3 text-[17px] text-fg';
 
   return (
     <div
@@ -99,40 +96,8 @@ export default function PhoneHome() {
         <PhoneEntries active={scene === 2} near={scene >= 1} />
       </section>
 
-      {/* 4. финал с контактами */}
-      <section data-chapter="contact" aria-label="Связь" className="relative flex h-full snap-start snap-always flex-col px-4" style={pad}>
-        <span className="rail-label">{SITE.footer.label}</span>
-        <h2 className="display m-0 mt-3 text-[clamp(36px,11vw,48px)]">
-          <span className="block">{SITE.footer.title}</span>
-          <span className="title-accent block">{SITE.footer.titleAccent}</span>
-        </h2>
-        <p className="mb-0 mt-4 max-w-[36ch] text-[15px] leading-[1.55] text-dim">{SITE.footer.lead}</p>
-
-        <div className="mt-6 border-t border-line">
-          <a href={`https://t.me/${SITE.telegram}`} target="_blank" rel="noreferrer noopener" className={contact}>
-            <span className="flex items-center gap-3">
-              <MessengerMark kind="telegram" size={20} />
-              Telegram <span className="text-dim">{SITE.telegramLabel}</span>
-            </span>
-          </a>
-          <a href={SITE.max} target="_blank" rel="noreferrer noopener" className={contact}>
-            <span className="flex items-center gap-3">
-              <MessengerMark kind="max" size={20} />
-              {SITE.maxLabel}
-            </span>
-          </a>
-          <a href={`mailto:${SITE.email}`} className={contact}>
-            {SITE.email}
-          </a>
-        </div>
-
-        <p className="mb-0 mt-auto font-mono text-[9px] uppercase leading-relaxed tracking-rail text-faint">
-          © 2026 {SITE.name} · Самозанятый {OPERATOR.name} · ИНН {OPERATOR.inn} ·{' '}
-          <Link href="/privacy" className="underline underline-offset-2">
-            Политика
-          </Link>
-        </p>
-      </section>
+      {/* 4. финал: знак собирается, контакты всплывают */}
+      <PhoneFinale scroller={scroller} />
 
       {/* где мы: четыре точки у правого края */}
       <div aria-hidden className="pointer-events-none fixed right-2 top-1/2 z-20 flex -translate-y-1/2 flex-col gap-2">

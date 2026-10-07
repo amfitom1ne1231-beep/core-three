@@ -2614,6 +2614,24 @@ html[data-nav='grow']::view-transition-new(root) { animation: ct-nav-grow 0.5s c
   to { clip-path: inset(0 0 0 0 round 0px); }
 }
 
+/* Финал главной на телефоне (components/phone/PhoneFinale). Сцену ведёт
+   прокрутка: --p идёт от 0 до 1, пока экран въезжает, и обратно, когда
+   палец ведут назад. У каждой строки свой порог --a — они всплывают
+   одна за другой и уходят в обратном порядке. */
+.phone-finale { --p: 0; }
+.pf-rise {
+  --k: clamp(0, calc((var(--p) - var(--a, 0)) / 0.2), 1);
+  opacity: var(--k);
+  transform: translateY(calc((1 - var(--k)) * 34px));
+  will-change: opacity, transform;
+}
+/* знак центрируется сам, поэтому всплывает масштабом, а не сдвигом */
+.pf-rise.absolute { transform: translate(-50%, -50%) scale(calc(0.86 + var(--k) * 0.14)); }
+/* на низком экране строке фактов места нет — оно нужнее знаку */
+@media (max-height: 700px) {
+  .pf-facts { display: none; }
+}
+
 /* картинка только для своей темы: снятый знак в тёмной студии и в светлой */
 :root[data-theme='light'] .only-dark,
 :root:not([data-theme='light']) .only-light { display: none; }

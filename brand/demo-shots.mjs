@@ -43,7 +43,9 @@ const phone = await browser.newPage({ viewport: { width: 390, height: 700 }, dev
 for (const slug of slugs) {
   await phone.goto(`${base}/concepts/${slug}`, { waitUntil: 'networkidle' });
   await phone.evaluate(() => document.fonts.ready);
-  await phone.addStyleTag({ content: 'nextjs-portal { display: none !important; }' });
+  // служебная полоса «Демо · К витрине» и отступ под неё убираются: в плитке
+  // стоит сайт клиента, каким его видит посетитель
+  await phone.addStyleTag({ content: 'nextjs-portal, div.fixed.top-0[class*="demo-bar"] { display: none !important; } :root { --demo-bar: 0px !important; }' });
   await phone.waitForTimeout(2500);
   await sharp(await phone.screenshot()).webp({ quality: 80 }).toFile(path.join(out, `${slug}-phone.webp`));
   console.log(slug, 'phone');

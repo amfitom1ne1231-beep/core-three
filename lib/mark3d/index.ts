@@ -236,6 +236,12 @@ export type Mark3D = {
   isOpen: () => boolean;
   /** Сменить свет: другой шар — другая студия (тёмная или светлая тема). */
   setMatcap: (url: string) => void;
+  /**
+   * Насколько лучи разведены: 0 — знак собран, 1 — разошлись на полный ход.
+   * Для сцен, где сборку ведёт прокрутка: знак идёт за числом с той же
+   * пружиной, что и по касанию.
+   */
+  setSpread: (v: number) => void;
 };
 
 export type Mark3DOptions = {
@@ -245,6 +251,12 @@ export type Mark3DOptions = {
   onReady?: () => void;
   /** Зовётся раз в полсекунды со средней частотой кадров. */
   onFps?: (fps: number) => void;
+  /** Касание разводит и собирает лучи. По умолчанию — да. */
+  tap?: boolean;
+  /** С чего начать: 0 — собран (по умолчанию), 1 — лучи разведены. */
+  spread?: number;
+  /** Во сколько раз дальше обычного расходятся лучи: издалека они «прилетают». */
+  reach?: number;
 };
 
 const loadImage = (src: string) =>
@@ -337,9 +349,10 @@ export async function createMark3D(canvas: HTMLCanvasElement, opts: Mark3DOption
   let pitch = 0;
   let vyaw = 0;
   let vpitch = 0;
-  let open = 0;
+  let open = opts.spread ?? 0;
   let vopen = 0;
-  let openTarget = 0;
+  let openTarget = open;
+  const reach = opts.reach ?? 1;
   let held = false;
   let idle = 0;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -384,7 +397,7 @@ export async function createMark3D(canvas: HTMLCanvasElement, opts: Mark3DOption
     if (!held) return;
     held = false;
     // короткое касание без движения — развести или собрать лучи
-    if (travelled < 8 && e.timeStamp - downAt < 320) openTarget = openTarget ? 0 : 1;
+    if (opts.tap !== false && travelled < 8 && e.timeStamp - downAt < 320) openTarget = openTarget >= 0.5 ? 0 : 1;
     // палец остановился раньше, чем отпустил, — инерции нет
     if (last && e.timeStamp - last.t > 90) vyaw = vpitch = 0;
     last = null;
@@ -443,7 +456,7 @@ export async function createMark3D(canvas: HTMLCanvasElement, opts: Mark3DOption
 
     const t = now / 1000;
     const sway = reduced || held ? 0 : Math.sin(t * 0.6) * 0.05;
-    const d = open * OUT;
+    const d = open * OUT * reach;
     const shift = d / 3;
     const target: Vec3 = [TARGET[0] + shift, TARGET[1] + shift, TARGET[2] + shift];
     const dir: Vec3 = [Math.cos(EL) * Math.cos(AZ), Math.cos(EL) * Math.sin(AZ), Math.sin(EL)];
@@ -465,7 +478,7 @@ export async function createMark3D(canvas: HTMLCanvasElement, opts: Mark3DOption
     for (let i = 0; i < 3; i++) {
       const a = AXES[i];
       const p = PIVOTS[i];
-      const spin = turn(a, open * SPIN * (i === 1 ? -1 : 1));
+      const spin = turn(a, open * SPIN * reach * (i === 1 ? -1 : 1));
       const out = move([a[0] * d, a[1] * d, a[2] * d]);
       gl.uniformMatrix4fv(uArm[i], false, mul(out, mul(move(p), mul(spin, move([-p[0], -p[1], -p[2]])))));
     }
@@ -503,7 +516,10 @@ export async function createMark3D(canvas: HTMLCanvasElement, opts: Mark3DOption
     setOpen(next) {
       openTarget = next ? 1 : 0;
     },
-    isOpen: () => openTarget === 1,
+    isOpen: () => openTarget >= 0.5,
+    setSpread(v) {
+      openTarget = v;
+    },
     setMatcap(url) {
       // текстура одна и привязана с самого начала — новая картинка ложится в неё же
       loadImage(url)
