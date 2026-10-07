@@ -20,6 +20,10 @@ corethree.ru {
 	# зайти, запомнили его на месяц. «clear» велит забыть: иначе каждое
 	# новое соединение сперва стучится в закрытую дверь.
 	header Alt-Svc "clear"
+	# заявка — килобайты; тело крупнее не принимаем вовсе
+	request_body {
+		max_size 256KB
+	}
 	reverse_proxy site:3000 {
 		# Адрес посетителя для лимита заявок ставит Caddy. Без этой строки
 		# заголовок доходил до сайта таким, каким его прислал сам посетитель:
@@ -37,5 +41,11 @@ bot.corethree.ru {
 	encode zstd gzip
 	header Strict-Transport-Security "max-age=31536000"
 	header Alt-Svc "clear"
+	header X-Content-Type-Options "nosniff"
+	header Referrer-Policy "no-referrer"
+	# запросы мини-приложения и заявки с сайта — килобайты
+	request_body {
+		max_size 1MB
+	}
 	reverse_proxy bot:8787
 }

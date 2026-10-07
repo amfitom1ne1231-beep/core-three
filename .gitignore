@@ -13,3 +13,6 @@ next-env.d.ts
 .env
 deploy/*.env
 backups/
+
+# заметки, которым не место в открытом репозитории
+private/

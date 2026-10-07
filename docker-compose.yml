@@ -108,11 +108,19 @@ services:
       - sh
       - -c
       - |
+        umask 077
         while true; do
           f=/backups/corethree-$$(date +%F).sql.gz
-          pg_dump -h db -U corethree corethree | gzip > "$$f.part" && mv "$$f.part" "$$f"
+          if pg_dump -h db -U corethree corethree > /tmp/dump.sql && [ -s /tmp/dump.sql ]; then
+            gzip -c /tmp/dump.sql > "$$f.part" && mv "$$f.part" "$$f"
+            wait=86400
+          else
+            echo "копия не снята: pg_dump не отработал — повтор через 10 минут" >&2
+            wait=600
+          fi
+          rm -f /tmp/dump.sql "$$f.part"
           find /backups -name 'corethree-*.sql.gz' -mtime +14 -delete
-          sleep 86400
+          sleep $$wait
         done
 
 volumes:

@@ -18,6 +18,9 @@ const MAX_LEADS = 5;
 /** Обращений любого вида — чтобы мусором нельзя было забить процесс. */
 const MAX_HITS = 30;
 
+/** Заявка — несколько килобайт. Крупнее не читаем: тело читается в память целиком. */
+const MAX_BODY = 32_000;
+
 const hits = new Map<string, number[]>();
 
 /**
@@ -109,9 +112,33 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'rate_limited' }, { status: 429 });
   }
 
+  // Форма шлёт JSON со своей страницы. Чужая страница может заставить
+  // браузер посетителя отправить сюда запрос — но только «простой», без
+  // типа JSON, и с чужим Origin: такие не принимаем. Тому, кто шлёт запросы
+  // сам, мимо браузера, это не помеха — от него лимиты и ловушки ниже.
+  if (!(req.headers.get('content-type') ?? '').toLowerCase().startsWith('application/json')) {
+    return NextResponse.json({ error: 'bad_request' }, { status: 415 });
+  }
+  const origin = req.headers.get('origin');
+  if (origin) {
+    let host = '';
+    try {
+      host = new URL(origin).host;
+    } catch {
+      /* не адрес — значит, чужой */
+    }
+    if (host !== req.headers.get('host')) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+  }
+
+  // размер — до разбора: без этого тело любого размера читалось в память целиком
+  if (Number(req.headers.get('content-length')) > MAX_BODY) {
+    return NextResponse.json({ error: 'too_large' }, { status: 413 });
+  }
   let body: unknown;
   try {
-    body = await req.json();
+    const text = await req.text();
+    if (text.length > MAX_BODY) return NextResponse.json({ error: 'too_large' }, { status: 413 });
+    body = JSON.parse(text);
   } catch {
     return NextResponse.json({ error: 'bad_request' }, { status: 400 });
   }
