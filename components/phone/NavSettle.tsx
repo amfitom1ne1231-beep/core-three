@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { navSettled } from '@/lib/phone';
+import { settleSoon } from '@/lib/phone';
 
 /**
  * Отпускает переход между экранами (lib/phone) там, где нет оболочки
@@ -9,15 +9,6 @@ import { navSettled } from '@/lib/phone';
  * ждало бы отведённые 0,7 с: сообщить, что экран нарисован, было некому.
  */
 export default function NavSettle() {
-  useEffect(() => {
-    let b = 0;
-    const a = requestAnimationFrame(() => {
-      b = requestAnimationFrame(navSettled);
-    });
-    return () => {
-      cancelAnimationFrame(a);
-      cancelAnimationFrame(b);
-    };
-  }, []);
+  useEffect(() => settleSoon(), []);
   return null;
 }

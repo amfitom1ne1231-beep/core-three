@@ -43,16 +43,36 @@ export default function PhoneHome() {
   useEffect(() => {
     const el = scroller.current;
     if (!el) return;
-    if (left) {
-      el.scrollTop = left * el.clientHeight;
-      setScene(left);
+    /**
+     * Вернулись на главную — встаём на сцену, с которой ушли. Экран при этом
+     * появляется переходом (lib/phone), и Safari на его старте может сбросить
+     * прокрутку рамки в ноль: так было на превью, где страница после сбоя
+     * гидратации дорисовывается в браузере. Пока человек сам не тронул экран,
+     * первые полторы секунды сцену держим: сброс возвращаем на место.
+     */
+    const want = left;
+    let held = want > 0;
+    const release = () => {
+      held = false;
+    };
+    const until = performance.now() + 1500;
+    if (want) {
+      el.scrollTop = want * el.clientHeight;
+      setScene(want);
       setMoved(true);
+      el.addEventListener('pointerdown', release, { once: true, passive: true });
+      el.addEventListener('wheel', release, { once: true, passive: true });
     }
     setHomeScene(left);
     let raf = 0;
     const read = () => {
       raf = 0;
-      left = Math.round(el.scrollTop / Math.max(el.clientHeight, 1));
+      const at = Math.round(el.scrollTop / Math.max(el.clientHeight, 1));
+      if (held && performance.now() < until && at !== want) {
+        el.scrollTop = want * el.clientHeight;
+        return;
+      }
+      left = at;
       setScene(left);
       setHomeScene(left);
       if (left > 0) setMoved(true);
@@ -64,6 +84,8 @@ export default function PhoneHome() {
     el.addEventListener('scroll', onScroll, { passive: true });
     return () => {
       el.removeEventListener('scroll', onScroll);
+      el.removeEventListener('pointerdown', release);
+      el.removeEventListener('wheel', release);
       cancelAnimationFrame(raf);
     };
   }, []);

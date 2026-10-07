@@ -6,7 +6,7 @@ import Bar from './Bar';
 import Dock from './Dock';
 import HelpSheet from './HelpSheet';
 import MoreSheet from './MoreSheet';
-import { navSettled, noteScreen } from '@/lib/phone';
+import { noteScreen, settleSoon } from '@/lib/phone';
 
 /**
  * Оболочка телефона (MOBILE.md): строка сверху, остров внизу, карточки
@@ -20,19 +20,11 @@ export default function PhoneShell() {
   const [sheet, setSheet] = useState<'more' | 'help' | null>(null);
   const close = useCallback(() => setSheet(null), []);
 
-  // Новый экран нарисован — отпускаем переход (lib/phone). Два кадра:
-  // первый — раскладка нового экрана, второй — его картинка.
+  // новый экран нарисован — отпускаем переход (lib/phone)
   useEffect(() => {
     setSheet(null);
     noteScreen(pathname);
-    let b = 0;
-    const a = requestAnimationFrame(() => {
-      b = requestAnimationFrame(navSettled);
-    });
-    return () => {
-      cancelAnimationFrame(a);
-      cancelAnimationFrame(b);
-    };
+    return settleSoon();
   }, [pathname]);
 
   return (

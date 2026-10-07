@@ -48,6 +48,25 @@ export function navSettled() {
 }
 
 /**
+ * Новый экран в разметке — отпускаем переход. Два кадра: первый — раскладка
+ * нового экрана, второй — его картинка. В Safari кадры не идут, пока переход
+ * ждёт, — там отпускает таймер: иначе каждый экран стоял бы отведённые 0,7 с,
+ * прежде чем начать появляться. Возвращает отмену.
+ */
+export function settleSoon() {
+  let b = 0;
+  const a = requestAnimationFrame(() => {
+    b = requestAnimationFrame(navSettled);
+  });
+  const t = window.setTimeout(navSettled, 60);
+  return () => {
+    cancelAnimationFrame(a);
+    cancelAnimationFrame(b);
+    clearTimeout(t);
+  };
+}
+
+/**
  * Сменить экран с переходом. `push` — сама навигация; `from` — плитка,
  * из которой вырастает новый экран (для `grow`).
  *
