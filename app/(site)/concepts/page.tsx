@@ -3,6 +3,7 @@ import ConceptCards from '@/components/ConceptCards';
 import DemoBand from '@/components/concepts/DemoBand';
 import Cta from '@/components/Cta';
 import Footer from '@/components/Footer';
+import PhoneDemos from '@/components/phone/PhoneDemos';
 import RevealText from '@/components/RevealText';
 import ScrollScenes from '@/components/ScrollScenes';
 import Process from '@/components/service/Process';
@@ -35,6 +36,10 @@ export default function ConceptsPage() {
   return (
     <>
       <main id="content" className="relative z-10 w-full">
+        {/* На телефоне «Демо» — карточки с записями (MOBILE.md). Прежняя
+            витрина — всё, что в этой обёртке, — остаётся шире 640 px. */}
+        <PhoneDemos />
+        <div className="max-sm:hidden">
         {/* ---------- первый экран ---------- */}
         <section data-chapter="hero" className="relative overflow-hidden" aria-label="Начало">
           <div data-hero className="px-4 pb-[clamp(48px,9vh,110px)] pt-[clamp(120px,19vh,200px)] max-sm:pt-[108px] sm:px-8 lg:px-[72px] tp:pb-10 tp:pt-[136px]">
@@ -123,8 +128,11 @@ export default function ConceptsPage() {
             </Cta>
           </div>
         </section>
+        </div>
       </main>
-      <Footer />
+      <div className="max-sm:hidden">
+        <Footer />
+      </div>
       <ScrollScenes />
     </>
   );

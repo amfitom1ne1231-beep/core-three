@@ -291,7 +291,7 @@ export const SITE = {
   },
 
   nav: [
-    { label: 'Услуги', href: '/sites' },
+    { label: 'Услуги', href: '/services' },
     { label: 'Концепты', href: '/concepts' },
     { label: 'О нас', href: '/about' },
     { label: 'Помощь', href: '/help' }

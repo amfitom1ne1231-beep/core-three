@@ -2656,9 +2656,21 @@ html[data-nav='grow']::view-transition-new(root) { animation: ct-nav-grow 0.5s c
   .tour-offer { display: none; }
 }
 
+/* «Услуги» на невысоком экране: место нужнее блоку, стек есть на экране направления */
+@media (max-height: 760px) {
+  .ps-stack { display: none; }
+}
+
 /* касание отвечает самим элементом (сжатие, цвет), серая вспышка браузера лишняя */
 .phone-dock a,
 .phone-dock button,
 .phone-home a,
-.phone-sheet a { -webkit-tap-highlight-color: transparent; }
+.phone-sheet a,
+.phone-bar button,
+.phone-services a,
+.phone-services button,
+.phone-seg button,
+.phone-demos a,
+.phone-brief a,
+.phone-brief button { -webkit-tap-highlight-color: transparent; }
 

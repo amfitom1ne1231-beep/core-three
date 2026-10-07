@@ -116,8 +116,7 @@ export default function PhoneEntries({ active, near }: { active: boolean; near: 
       </h2>
 
       <div className="mt-5 grid min-h-0 flex-1 grid-cols-2 grid-rows-[minmax(0,1fr)_auto] gap-3">
-        {/* у «Услуг» появится свой экран-обзор; пока плитка ведёт на первое направление */}
-        <Link href="/sites" onClick={grow('/sites')} className={tile}>
+        <Link href="/services" onClick={grow('/services')} className={tile}>
           {/* Шестигранник стоит по центру свободной части плитки. Сам предмет
               в кадре съёмки выше середины (под ним отражение и луч), поэтому
               по центру встаёт не середина кадра, а точка на 42% его высоты. */}

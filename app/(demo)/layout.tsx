@@ -1,4 +1,5 @@
 import CookieConsent from '@/components/CookieConsent';
+import NavSettle from '@/components/phone/NavSettle';
 
 /**
  * Демо концептов: сайт клиента, а не наш раздел. Ни шапки, ни курсора,
@@ -13,6 +14,7 @@ export default function DemoLayout({ children }: { children: React.ReactNode }) 
       </a>
       {children}
       <CookieConsent />
+      <NavSettle />
     </>
   );
 }

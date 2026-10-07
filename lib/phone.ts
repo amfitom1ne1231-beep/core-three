@@ -22,6 +22,20 @@ export const setHomeScene = (n: number) => {
 };
 export const getHomeScene = () => homeScene;
 
+/**
+ * Какие экраны человек открыл в этой вкладке, по порядку. Стрелке «назад»
+ * в верхней строке нужно знать, есть ли куда возвращаться: пришедшего
+ * по прямой ссылке она ведёт на экран выше, а не прочь с сайта.
+ */
+const trail: string[] = [];
+export function noteScreen(path: string) {
+  if (trail[trail.length - 1] === path) return;
+  // вернулись на предыдущий — это шаг назад, а не новый экран
+  if (trail[trail.length - 2] === path) trail.pop();
+  else trail.push(path);
+}
+export const hasBack = () => trail.length > 1;
+
 type Kind = 'tab' | 'grow';
 type Transition = { finished: Promise<void> };
 

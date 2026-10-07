@@ -6,12 +6,13 @@ import Bar from './Bar';
 import Dock from './Dock';
 import HelpSheet from './HelpSheet';
 import MoreSheet from './MoreSheet';
-import { navSettled } from '@/lib/phone';
+import { navSettled, noteScreen } from '@/lib/phone';
 
 /**
  * Оболочка телефона (MOBILE.md): строка сверху, остров внизу, карточки
  * «Ещё» и помощи. Заменяет шапку с меню-гамбургером на экранах уже 640 px; шире
- * её не видно. В демо концептов её нет — это сайты клиентов.
+ * её не видно. В демо концептов её нет — это сайты клиентов. На заявке
+ * нет острова: экран занят брифом целиком, закрывает его крестик сверху.
  */
 export default function PhoneShell() {
   const pathname = usePathname() ?? '';
@@ -23,6 +24,7 @@ export default function PhoneShell() {
   // первый — раскладка нового экрана, второй — его картинка.
   useEffect(() => {
     setSheet(null);
+    noteScreen(pathname);
     let b = 0;
     const a = requestAnimationFrame(() => {
       b = requestAnimationFrame(navSettled);
@@ -36,7 +38,7 @@ export default function PhoneShell() {
   return (
     <>
       <Bar onHelp={() => setSheet((v) => (v === 'help' ? null : 'help'))} helpOpen={sheet === 'help'} />
-      <Dock onMore={() => setSheet((v) => (v === 'more' ? null : 'more'))} moreOpen={sheet === 'more'} />
+      {!pathname.startsWith('/contact') && <Dock onMore={() => setSheet((v) => (v === 'more' ? null : 'more'))} moreOpen={sheet === 'more'} />}
       <MoreSheet open={sheet === 'more'} onClose={close} />
       <HelpSheet open={sheet === 'help'} onClose={close} />
     </>

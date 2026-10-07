@@ -12,7 +12,7 @@ import Tour from './tour/Tour';
 import TourOffer from './tour/TourOffer';
 
 /** Страницы, под которыми лежит материал. У документов и у 404 фон плоский. */
-const MATERIAL = new Set(['/', '/contact', '/about', '/concepts', '/help', ...SITE.pages.map((p) => p.href)]);
+const MATERIAL = new Set(['/', '/contact', '/about', '/concepts', '/help', '/services', ...SITE.pages.map((p) => p.href)]);
 
 /**
  * Наша хрома: материал, прелоадер, шапка, пульт, курсор, зерно.

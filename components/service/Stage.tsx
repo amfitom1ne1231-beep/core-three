@@ -29,7 +29,16 @@ import { LIVE_W, LIVE_H, type LiveProps } from '../live/kit';
  * Один текст на оба экрана: человек, пришедший с главной, узнаёт кадр
  * вместе с его задачей, а не читает про него второе объяснение.
  */
-export default function Stage({ live: Live, task }: { live: ComponentType<LiveProps>; task?: string }) {
+export default function Stage({
+  live: Live,
+  task,
+  tour = true
+}: {
+  live: ComponentType<LiveProps>;
+  task?: string;
+  /** Якорь экскурсии. У кадра в телефонной раскладке его нет: экскурсия ищет первый на странице. */
+  tour?: boolean;
+}) {
   const stage = useRef<HTMLDivElement>(null);
   const frame = useRef<HTMLDivElement>(null);
   const [playing, setPlaying] = useState(false);
@@ -86,7 +95,7 @@ export default function Stage({ live: Live, task }: { live: ComponentType<LivePr
   }, []);
 
   return (
-    <div className="relative" data-tour="stage">
+    <div className="relative" data-tour={tour ? 'stage' : undefined}>
       {/* Рамка не уходит за край экрана, хотя приём напрашивался: вставка —
           законченная композиция 560×380, и срез двенадцати процентов
           съедает её правую колонку с цифрами. Кадр держит размер

@@ -7,6 +7,7 @@ const base = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 /** Только существующие страницы. Разделы волны 2 добавляются по мере сборки. */
 const routes: Array<{ path: string; priority: number }> = [
   { path: '/', priority: 1 },
+  { path: '/services', priority: 0.9 },
   // направления берутся из того же списка, что и сами страницы:
   // добавили направление — оно в карте сайта, забыть нечего
   ...SERVICES.map((s) => ({ path: `/${s.slug}`, priority: 0.9 })),

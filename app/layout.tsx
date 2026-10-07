@@ -33,6 +33,9 @@ export const metadata: Metadata = {
     description: SITE.hero.lead
   },
   twitter: { card: 'summary_large_image' },
+  // Значок на домашнем экране телефона открывает сайт во весь экран, без
+  // строки браузера (MOBILE.md); имя и значки — в app/manifest.ts
+  appleWebApp: { capable: true, title: SITE.name, statusBarStyle: 'black' },
   // Канонический адрес здесь не задаётся: из корня он наследовался всем,
   // у кого нет своего, и 404 объявляла себя главной. Каждая страница
   // называет свой адрес сама (lib/meta.ts).

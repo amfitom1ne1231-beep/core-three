@@ -38,7 +38,8 @@ export default function HelpSheet({ open, onClose }: { open: boolean; onClose: (
       <span className="rail-label">Что на этом экране</span>
       <h2 className="m-0 mt-2 text-[22px] font-medium leading-tight text-fg">{help.title}</h2>
       <ul className="m-0 mt-4 flex list-none flex-col gap-3 p-0">
-        {[...help.lines, PHONE_HELP_DOCK].map((line) => (
+        {/* на заявке острова нет — и строки про него тоже */}
+        {(pathname.startsWith('/contact') ? help.lines : [...help.lines, PHONE_HELP_DOCK]).map((line) => (
           <li key={line} className="flex gap-3 text-[15px] leading-[1.5] text-dim">
             <span className="mt-[9px] h-1 w-1 shrink-0 rounded-full bg-accent" />
             {line}

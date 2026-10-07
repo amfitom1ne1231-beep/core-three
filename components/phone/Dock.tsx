@@ -26,7 +26,7 @@ const kept = new Map<string, number>();
 const tabOf = (pathname: string): Tab | null =>
   pathname === '/'
     ? 'home'
-    : SERVICE_PATHS.includes(pathname)
+    : pathname === '/services' || SERVICE_PATHS.includes(pathname)
       ? 'services'
       : pathname.startsWith('/concepts')
         ? 'demo'
@@ -149,8 +149,7 @@ export default function Dock({ onMore, moreOpen }: { onMore: () => void; moreOpe
         >
           <div className="flex flex-1">
             {tab('home', '/', 'Главная')}
-            {/* у «Услуг» появится свой экран-обзор; пока вкладка ведёт на первое направление */}
-            {tab('services', '/sites', 'Услуги')}
+            {tab('services', '/services', 'Услуги')}
           </div>
           <span className="flex w-[84px] shrink-0 items-end justify-center pb-[13px] text-[10px] font-medium leading-none text-faint">Заявка</span>
           <div className="flex flex-1">
