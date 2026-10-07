@@ -20,6 +20,13 @@
 Петля 240 кадров (8 с на 30 fps): знак собран → лучи расходятся вдоль своих
 осей, каждый проворачивается, камера уходит с изометрии и открывает объём →
 возвращаются → знак снова собран, кадр в кадр с началом.
+
+Три режима для живого знака на телефоне (собирает brand/mark-live.mjs):
+  --mesh <файл.bin>     сетка трёх лучей для отрисовки на странице, без рендера
+  --matcap <префикс>    шар под теми же лампами в синем и серебряном металле:
+                        по нему страница красит знак, чтобы живой выглядел как снятый
+  --turn <префикс> [--turn-n 48]
+                        знак на поворотном столе: N кадров полного оборота
 """
 
 import math
@@ -46,6 +53,10 @@ FRAMES = arg('--frames', '1-240')
 STILL = arg('--still', None)
 SAMPLES = int(arg('--samples', '48'))
 ENGINE = arg('--engine', 'cycles')
+MESH = arg('--mesh', None)
+MATCAP = arg('--matcap', None)
+TURN = arg('--turn', None)
+TURN_N = int(arg('--turn-n', '48'))
 
 S = 14.6
 L = 55.0
@@ -379,6 +390,97 @@ def ease_all():
 
 
 ease_all()
+
+# ---------------------------------------------------------------- живой знак
+
+
+def dump_mesh(path):
+    """Сетка для страницы: углы треугольников с нормалями, в единицах логотипа.
+
+    Формат: uint32 — число вершин n; int16[3n] — позиции × 256; int8[3n] —
+    нормали × 127; uint8[n] — луч × 2 + материал (0 синий, 1 серебро).
+    Без индексов: фаски гранёные, почти у каждого угла своя нормаль.
+    """
+    import struct
+    scene.frame_set(1)
+    deps = bpy.context.evaluated_depsgraph_get()
+    inv = ROOT.matrix_world.inverted()
+    pos, nor, ids = [], [], []
+    for i, (pivot, axis, spinner) in enumerate(ARMS):
+        for obj in spinner.children:
+            ev = obj.evaluated_get(deps)
+            me = ev.to_mesh()
+            me.calc_loop_triangles()
+            m = inv @ ev.matrix_world
+            n3 = m.to_3x3().inverted().transposed()
+            mat = 0 if obj.data.materials[0].name == 'blue' else 1
+            for tri in me.loop_triangles:
+                for li in tri.loops:
+                    v = m @ me.vertices[me.loops[li].vertex_index].co
+                    n = (n3 @ Vector(me.corner_normals[li].vector)).normalized()
+                    pos.extend(round(c * 256) for c in v)
+                    nor.extend(max(-127, min(127, round(c * 127))) for c in n)
+                    ids.append(i * 2 + mat)
+            ev.to_mesh_clear()
+    n = len(ids)
+    with open(path, 'wb') as f:
+        f.write(struct.pack('<I', n))
+        f.write(struct.pack(f'<{3 * n}h', *pos))
+        f.write(struct.pack(f'<{3 * n}b', *nor))
+        f.write(struct.pack(f'<{n}B', *ids))
+    print(f'сетка: {n} вершин, {n // 3} треугольников → {path}')
+
+
+if MESH:
+    dump_mesh(MESH)
+    sys.exit(0)
+
+if MATCAP:
+    # Шар на месте знака, камера смотрит с той же стороны, но без перспективы:
+    # цвет шара в точке с данной нормалью = цвет грани знака с той же нормалью.
+    for o in [o for o in bpy.data.objects if o.type == 'MESH']:
+        o.hide_render = True
+    bpy.ops.mesh.primitive_uv_sphere_add(segments=96, ring_count=48, radius=0.5, location=TARGET)
+    ball = bpy.context.active_object
+    bpy.ops.object.shade_smooth()
+    key_rig(1, ISO_AZ, ISO_EL)
+    scene.frame_set(1)
+    cam_data.type = 'ORTHO'
+    cam_data.ortho_scale = 1.0
+    scene.render.resolution_x = scene.render.resolution_y = SIZE
+    for mat in (BLUE, SILVER):
+        ball.data.materials.clear()
+        ball.data.materials.append(mat)
+        scene.render.filepath = f'{MATCAP}{mat.name}.png'
+        bpy.ops.render.render(write_still=True)
+    sys.exit(0)
+
+if TURN:
+    # Поворотный стол: крутится знак, камера и лампы стоят — так же, как
+    # на странице, где знак вертят пальцем под неподвижным светом.
+    table = bpy.data.objects.new('table', None)
+    scene.collection.objects.link(table)
+    table.location = TARGET
+    bpy.context.view_layer.update()
+    ROOT.parent = table
+    ROOT.matrix_parent_inverse = table.matrix_world.inverted()
+    for obj in bpy.data.objects:
+        if obj.animation_data:
+            obj.animation_data_clear()
+    for pivot, axis, spinner in ARMS:
+        pivot.location = (0, 0, 0)
+        spinner.rotation_mode = 'AXIS_ANGLE'
+        spinner.rotation_axis_angle = (0, *axis)
+    core_light.energy = 0
+    target.location = TARGET
+    rig.location = TARGET
+    rig.rotation_euler = (0, -ISO_EL, ISO_AZ)
+    for k in range(TURN_N):
+        table.rotation_euler = (0, 0, 2 * math.pi * k / TURN_N)
+        bpy.context.view_layer.update()
+        scene.render.filepath = f'{TURN}{k:03d}.png'
+        bpy.ops.render.render(write_still=True)
+    sys.exit(0)
 
 # ---------------------------------------------------------------- рендер
 
