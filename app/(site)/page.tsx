@@ -3,6 +3,7 @@ import Assembly from '@/components/Assembly';
 import Cta from '@/components/Cta';
 import Footer from '@/components/Footer';
 import HeroMark from '@/components/HeroMark';
+import HeroPick from '@/components/HeroPick';
 import Journey from '@/components/Journey';
 import Manifesto from '@/components/Manifesto';
 import PhoneHome from '@/components/phone/PhoneHome';
@@ -123,6 +124,9 @@ export default function Home() {
                 {SITE.hero.secondary.label}
               </Cta>
             </div>
+
+            {/* вход в подбор с первого экрана — как на телефоне */}
+            <HeroPick className="mt-[clamp(16px,2.4vh,26px)]" />
 
             {/* Подсказка прокрутки без слов: штрих уходит вниз и возвращается.
                 Фраза «прокрутите — дальше устройство работы» объясняла то,

@@ -111,7 +111,7 @@ export default function PhoneHome() {
   const pick = (e: React.MouseEvent) => {
     if (e.metaKey || e.ctrlKey || e.shiftKey) return;
     e.preventDefault();
-    navigate(() => router.push('/help#start'));
+    navigate(() => router.push(SITE.hero.pick.href));
   };
 
   const pad = { paddingTop: 'calc(env(safe-area-inset-top, 0px) + 68px)', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 108px)' };
@@ -143,18 +143,18 @@ export default function PhoneHome() {
           </p>
           {/* тому, кто не знает, что ему нужно, — сразу в подбор, не дожидаясь третьей сцены */}
           <p className="mb-0 mt-3 text-[14px] leading-[1.5] text-dim" style={rise(0.28)}>
-            Не знаете, что вам нужно?
+            {SITE.hero.pick.ask}
           </p>
           <div className="mt-1 flex items-center justify-between gap-3" style={rise(0.34)}>
-            <Link href="/help#start" onClick={pick} className="text-[14px] leading-[1.5] text-fg underline decoration-line-strong underline-offset-4">
-              Подберём за четыре вопроса
+            <Link href={SITE.hero.pick.href} onClick={pick} className="text-[14px] leading-[1.5] text-fg underline decoration-line-strong underline-offset-4">
+              {SITE.hero.pick.label}
             </Link>
             {/* приглашение листать: видно, пока человек не листал */}
             <span className={`phone-cue flex shrink-0 items-center gap-1.5 transition-opacity duration-500 ${moved ? 'opacity-0' : 'opacity-100'}`} aria-hidden>
               <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M8 13V3 M3.5 7.5 8 3l4.5 4.5" />
               </svg>
-              <span className="rail-label !text-fg">Листайте</span>
+              <span className="rail-label !text-fg">{SITE.hero.cue}</span>
             </span>
           </div>
         </div>
