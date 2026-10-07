@@ -36,6 +36,11 @@ shots.json — участки вставок и место станции в п�
 он встаёт между двумя неподвижными кадрами без шва. Из тех же кадров
 собирается и обратный ролик (fly-<куда>-<откуда>.mp4) — шаг назад.
 60 кадров в секунду: на 24 пролёт рядом с интерфейсом шёл рывками.
+
+Портрет для телефона (MOBILE.md): --portrait. Кадр вдвое выше ширины,
+станция стоит по центру в верхней части, низ остаётся под карточку
+с подписью. Всё то же самое ложится в подпапку <тема>/p — горизонтальные
+кадры не трогаются. Ширина по умолчанию: 1080 у кадров, 720 у пролётов.
 """
 
 import json
@@ -59,8 +64,12 @@ def arg(name, default):
 
 
 THEME = arg('--theme', 'dark')
-OUT = os.path.join(arg('--out', 'public/scheme'), THEME)
-WIDTH = int(arg('--width', '1280' if '--fly' in argv else '1920'))
+PORTRAIT = '--portrait' in argv
+OUT = os.path.join(arg('--out', 'public/scheme'), THEME, *(['p'] if PORTRAIT else []))
+if PORTRAIT:
+    WIDTH = int(arg('--width', '720' if '--fly' in argv else '1080'))
+else:
+    WIDTH = int(arg('--width', '1280' if '--fly' in argv else '1920'))
 SAMPLES = int(arg('--samples', '24' if '--fly' in argv else '256'))
 STILL = arg('--still', None)  # один кадр «как будет» — для поиска образа
 ONLY = arg('--shot', None)    # один кадр из пяти; остальные в shots.json не трогаются
@@ -157,8 +166,8 @@ scene.cycles.caustics_refractive = False
 scene.view_settings.view_transform = 'AgX'
 scene.view_settings.look = 'AgX - Medium High Contrast'
 scene.render.resolution_x = WIDTH
-scene.render.resolution_y = WIDTH // 2
-W, HH = WIDTH, WIDTH // 2
+scene.render.resolution_y = WIDTH * 2 if PORTRAIT else WIDTH // 2
+W, HH = WIDTH, scene.render.resolution_y
 
 
 def srgb(hexstr):
@@ -432,11 +441,24 @@ DIRV = Vector((math.cos(EL) / math.sqrt(2), -math.cos(EL) / math.sqrt(2), math.s
 RIGHT = Vector((1, 1, 0)).normalized()
 
 
+# «вверх» на экране — для портрета: станцию поднимают над серединой кадра
+UPV = RIGHT.cross(-DIRV).normalized()
+# Портрет: дистанция и на сколько метров станция поднята над серединой.
+# Объектив тот же, но длинная сторона кадра теперь высота: по ширине
+# в кадр входит вдвое меньше, и станция занимает почти его половину.
+PSHOT = {'site': (14.5, 0.74), 'catalog': (14.5, 0.74), 'bot': (14.5, 0.74), 'money': (14.5, 0.74), 'watch': (19.0, 0.96)}
+
+
 def frame(sid, dist, shift):
-    """Камера и свет — к станции: она слева, справа место под живой экран."""
+    """Камера и свет — к станции: она слева, справа место под живой экран.
+    В портрете — по центру и выше середины: низ кадра уходит под подпись."""
     cx, cy = next(c for s, c, _ in STATIONS if s == sid)
     top = TOPS[sid]
-    target = Vector((cx, cy, top * 0.45)) + RIGHT * shift
+    if PORTRAIT:
+        dist, drop = PSHOT[sid]
+        target = Vector((cx, cy, top * 0.45)) - UPV * drop
+    else:
+        target = Vector((cx, cy, top * 0.45)) + RIGHT * shift
     cam.location = target + DIRV * dist
     aim(cam, target)
     focus.location = (cx, cy, top)
@@ -618,7 +640,7 @@ if FLY:
         print('пролёт', name, n, 'кадров')
     sys.exit(0)
 
-path_json = os.path.join(os.path.dirname(OUT), THEME, 'shots.json')
+path_json = os.path.join(OUT, 'shots.json') if PORTRAIT else os.path.join(os.path.dirname(OUT), THEME, 'shots.json')
 data = {'theme': THEME, 'size': [W, HH], 'shots': {}}
 if ONLY and os.path.exists(path_json):
     with open(path_json) as f:

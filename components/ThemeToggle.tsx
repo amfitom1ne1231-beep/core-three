@@ -40,7 +40,9 @@ export default function ThemeToggle({ className = '' }: { className?: string }) 
     const films = el?.querySelectorAll('video');
     if (!el || !films || !theme) return;
     const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let seen = true;
+    // «видна» сфера или нет, скажет наблюдатель — сразу после подключения;
+    // до его ответа ролик не трогаем, иначе скрытая кнопка успевала начать загрузку
+    let seen = false;
     const apply = () =>
       films.forEach((v) => {
         // на тёмной странице видна светлая сфера, и наоборот
@@ -91,7 +93,10 @@ export default function ThemeToggle({ className = '' }: { className?: string }) 
             muted
             loop
             playsInline
-            preload="auto"
+            // Ролик качается, когда сфера на экране и начинает играть (эффект
+            // выше). Кнопок на странице несколько — в шапке, в пульте,
+            // в карточке «Ещё» на телефоне, — и скрытые не должны тянуть свои.
+            preload="none"
             disablePictureInPicture
             disableRemotePlayback
             tabIndex={-1}

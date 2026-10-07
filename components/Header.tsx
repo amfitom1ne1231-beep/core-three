@@ -93,7 +93,8 @@ export default function Header() {
   return (
     <header
       ref={ref}
-      className="pointer-events-none fixed inset-x-0 top-0 z-[100] flex items-center justify-between px-4 py-4 sm:px-8 lg:px-[72px]"
+      // на телефоне шапки нет: её заменяют строка сверху и остров внизу (components/phone)
+      className="pointer-events-none fixed inset-x-0 top-0 z-[100] flex items-center justify-between px-4 py-4 max-sm:hidden sm:px-8 lg:px-[72px]"
     >
       {/* завеса: растворяется книзу, поэтому кромки у неё не видно */}
       <div

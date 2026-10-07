@@ -5,6 +5,7 @@ import Footer from '@/components/Footer';
 import HeroMark from '@/components/HeroMark';
 import Journey from '@/components/Journey';
 import Manifesto from '@/components/Manifesto';
+import PhoneHome from '@/components/phone/PhoneHome';
 import RevealText from '@/components/RevealText';
 import ScrollScenes from '@/components/ScrollScenes';
 import { SITE } from '@/content/site';
@@ -51,6 +52,10 @@ export default function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
       />
       <main id="content" className="relative z-10 w-full">
+        {/* На телефоне главная своя: четыре сцены по экрану (MOBILE.md).
+            Прежняя — всё, что в этой обёртке, — остаётся шире 640 px. */}
+        <PhoneHome />
+        <div className="max-sm:hidden">
         {/* overflow-x-clip: знак выходит за край и на скролле растёт — страница
             не должна от этого становиться шире экрана, а по вертикали лучи
             разлетаются свободно */}
@@ -133,8 +138,12 @@ export default function Home() {
         <Manifesto />
         <Journey />
         <Assembly />
+        </div>
       </main>
-      <Footer />
+      {/* на телефоне финал и контакты — четвёртая сцена */}
+      <div className="max-sm:hidden">
+        <Footer />
+      </div>
       <ScrollScenes />
     </>
   );

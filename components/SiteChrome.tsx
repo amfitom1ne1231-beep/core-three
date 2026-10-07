@@ -5,6 +5,7 @@ import Cursor from './Cursor';
 import Header from './Header';
 import HeroSilk from './HeroSilk';
 import NavPod from './NavPod';
+import PhoneShell from './phone/PhoneShell';
 import Preloader from './Preloader';
 import { SITE } from '@/content/site';
 import Tour from './tour/Tour';
@@ -41,6 +42,7 @@ export default function SiteChrome() {
       {MATERIAL.has(pathname) && <HeroSilk />}
       <Preloader />
       <Header />
+      <PhoneShell />
       <NavPod />
       <Tour />
       <TourOffer />

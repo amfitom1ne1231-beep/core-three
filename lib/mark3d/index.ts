@@ -234,6 +234,8 @@ export type Mark3D = {
   /** Собрать (false) или развести лучи (true). */
   setOpen: (open: boolean) => void;
   isOpen: () => boolean;
+  /** Сменить свет: другой шар — другая студия (тёмная или светлая тема). */
+  setMatcap: (url: string) => void;
 };
 
 export type Mark3DOptions = {
@@ -501,6 +503,12 @@ export async function createMark3D(canvas: HTMLCanvasElement, opts: Mark3DOption
     setOpen(next) {
       openTarget = next ? 1 : 0;
     },
-    isOpen: () => openTarget === 1
+    isOpen: () => openTarget === 1,
+    setMatcap(url) {
+      // текстура одна и привязана с самого начала — новая картинка ложится в неё же
+      loadImage(url)
+        .then((img) => gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img))
+        .catch(() => {});
+    }
   };
 }

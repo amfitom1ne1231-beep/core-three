@@ -22,7 +22,8 @@ export default function Footer({ cta = true }: { cta?: boolean }) {
   const [directions, ...rest] = footer.columns;
 
   return (
-    <footer data-chapter={cta ? 'finale' : undefined} className="relative z-10 w-full text-fg">
+    // на телефоне внизу стоит остров — под него оставлено место
+    <footer data-chapter={cta ? 'finale' : undefined} className="relative z-10 w-full text-fg max-sm:pb-[calc(env(safe-area-inset-bottom,0px)+96px)]">
       <div className="border-t border-line" style={{ background: 'linear-gradient(180deg, rgb(var(--bg-rgb) / 0.72), var(--bg) 60%)' }}>
         {cta && <Finale />}
 

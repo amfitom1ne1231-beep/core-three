@@ -117,6 +117,14 @@ export default function OrderScheme({
   const [hub, setHub] = useState<string | null>(null);
 
   const root = useRef<HTMLDivElement>(null);
+  /**
+   * Сцена на экране есть? На телефоне этот блок скрыт — там схема идёт
+   * историями (components/phone), — но разметка в странице та же, и её
+   * кадры с роликом телефон качал бы зря. Пока блок скрыт, картинки ждут
+   * своей очереди, а ролик не подгружается.
+   */
+  const [armed, setArmed] = useState(false);
+  useEffect(() => setArmed(root.current?.offsetParent != null), []);
   const videos = useRef(new Map<string, HTMLVideoElement>());
   const stage = useRef({ cur, next });
   stage.current = { cur, next };
@@ -341,7 +349,7 @@ export default function OrderScheme({
                 {/* кадр дышит: за время показа камера чуть подходит к станции */}
                 <div className="os-cam" style={{ transformOrigin: `${pct(shot.focus[0], W)} ${pct(shot.focus[1], H)}` }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={src(`${s}.webp`)} alt="" decoding="async" draggable={false} className="absolute inset-0 h-full w-full" />
+                  <img src={src(`${s}.webp`)} alt="" loading={armed ? 'eager' : 'lazy'} decoding="async" draggable={false} className="absolute inset-0 h-full w-full" />
                   {(['a', 'b', 'c'] as const).map((k) => {
                     const layer = shot[k];
                     return (
@@ -351,6 +359,7 @@ export default function OrderScheme({
                           key={k}
                           src={src(`${s}-${k}.webp`)}
                           alt=""
+                          loading={armed ? 'eager' : 'lazy'}
                           decoding="async"
                           draggable={false}
                           className={`os-lit os-${k}`}
@@ -379,7 +388,7 @@ export default function OrderScheme({
               playsInline
               // вперёд показ идёт сам — этот ролик нужен всегда; назад — только
               // тому, кто взялся за управление
-              preload={way === 'fwd' || eager ? 'auto' : 'none'}
+              preload={armed && (way === 'fwd' || eager) ? 'auto' : 'none'}
               disablePictureInPicture
               disableRemotePlayback
               tabIndex={-1}

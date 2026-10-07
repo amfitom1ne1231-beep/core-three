@@ -2584,3 +2584,53 @@ html[data-theme-wave]::view-transition-new(root) {
     animation: none;
   }
 }
+
+/* ============================================================
+   Телефонная оболочка (components/phone, MOBILE.md)
+   ============================================================ */
+
+/* Переходы между экранами (lib/phone). Строка сверху и остров стоят
+   на месте: у них свои имена, и в снимок страницы они не попадают. */
+html[data-nav] .phone-bar { view-transition-name: phone-bar; }
+html[data-nav] .phone-dock { view-transition-name: phone-dock; }
+::view-transition-old(phone-bar),
+::view-transition-old(phone-dock) { display: none; }
+::view-transition-new(phone-bar),
+::view-transition-new(phone-dock) { animation: none; }
+
+/* вкладка: уходящий экран гаснет, новый проявляется и чуть поднимается */
+html[data-nav]::view-transition-old(root) { animation: ct-nav-out 0.2s ease both; }
+html[data-nav]::view-transition-new(root) { animation: ct-nav-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* плитка: новый экран вырастает из её рамки до всего окна */
+html[data-nav='grow']::view-transition-old(root) { animation: ct-nav-under 0.5s ease both; }
+html[data-nav='grow']::view-transition-new(root) { animation: ct-nav-grow 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@keyframes ct-nav-out { to { opacity: 0; } }
+@keyframes ct-nav-in { from { opacity: 0; transform: translateY(12px); } }
+@keyframes ct-nav-under { to { opacity: 0.35; transform: scale(0.97); } }
+@keyframes ct-nav-grow {
+  from { clip-path: inset(var(--grow-t) var(--grow-r) var(--grow-b) var(--grow-l) round 22px); }
+  to { clip-path: inset(0 0 0 0 round 0px); }
+}
+
+/* картинка только для своей темы: снятый знак в тёмной студии и в светлой */
+:root[data-theme='light'] .only-dark,
+:root:not([data-theme='light']) .only-light { display: none; }
+
+/* схема-истории: на экране ниже 610 px карточка кадра без пояснения */
+@container (max-height: 610px) {
+  .pj-you { display: none; }
+}
+
+@media (max-width: 639.98px) {
+  /* экскурсию на телефоне заменяет плитка «С чего начать» на главной */
+  .tour-offer { display: none; }
+}
+
+/* касание отвечает самим элементом (сжатие, цвет), серая вспышка браузера лишняя */
+.phone-dock a,
+.phone-dock button,
+.phone-home a,
+.phone-sheet a { -webkit-tap-highlight-color: transparent; }
+

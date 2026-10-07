@@ -132,7 +132,8 @@ export default function HeroSilk({ params }: { params?: Partial<SilkParams> }) {
 
       // Вспышка на переходе с первого экрана: когда камера проходит сквозь
       // знак, материал на мгновение ловит свет — блик и все три ядра.
-      const hero = document.querySelector<HTMLElement>('[data-chapter="hero"]');
+      // первых экранов в разметке два — прежний и телефонный; на экране всегда один
+      const hero = Array.from(document.querySelectorAll<HTMLElement>('[data-chapter="hero"]')).find((el) => el.offsetParent !== null);
       if (hero) {
         const r = hero.getBoundingClientRect();
         const p = -r.top / Math.max(r.height, 1);

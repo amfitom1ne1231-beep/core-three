@@ -5,6 +5,7 @@ import gsap from 'gsap';
 import Mark from './Mark';
 import { MARK_CENTER } from './mark-geometry';
 import { fontsReady, markLeaving, markRevealed, markSeen, silkReady, withTimeout } from '@/lib/boot';
+import { isPhone } from '@/lib/phone';
 
 /**
  * Прелоадер. Знак собирается из трёх лучей — ровно из тех, что составляют
@@ -39,7 +40,9 @@ export default function Preloader() {
     // Материал есть не на всех страницах (политика, согласие, 404 — без
     // него). Там его кадр не придёт никогда, и прелоадер простоял бы
     // до таймаута, поэтому ждём его, только если канвас на месте.
-    const silk = document.querySelector('canvas[data-silk]') ? silkReady : Promise.resolve();
+    // На телефоне ждём только шрифты — так решил заказчик (MOBILE.md): материал
+    // и модель знака догружаются под уже открытым экраном.
+    const silk = document.querySelector('canvas[data-silk]') && !isPhone() ? silkReady : Promise.resolve();
     const arms = box.querySelectorAll<SVGGElement>('[data-arm]');
     const shown = { value: 0 };
 
@@ -85,6 +88,11 @@ export default function Preloader() {
       };
     }
 
+    // На телефоне прелоадер тот же, но короче: ждать ему там только шрифты,
+    // и собственные полторы секунды сборки и ухода стали бы самой долгой
+    // его частью. Движения те же, темп — в полтора раза быстрее.
+    const pace = isPhone() ? 0.64 : 1;
+
     const ctx = gsap.context(() => {
       // сборка знака: лучи приходят на место поворотом вокруг общего центра
       gsap.set(arms, { opacity: 0, scale: 0.86, rotate: -42, svgOrigin: `${MARK_CENTER.x} ${MARK_CENTER.y}` });
@@ -92,9 +100,9 @@ export default function Preloader() {
         opacity: 1,
         scale: 1,
         rotate: 0,
-        duration: 1.05,
+        duration: 1.05 * pace,
         ease: 'power3.out',
-        stagger: 0.13
+        stagger: 0.13 * pace
       });
     }, box);
 
@@ -114,7 +122,7 @@ export default function Preloader() {
       });
     };
 
-    const minTime = new Promise<void>((r) => setTimeout(r, 900));
+    const minTime = new Promise<void>((r) => setTimeout(r, 900 * pace));
     const steps: Array<Promise<unknown>> = [
       withTimeout(fontsReady(), 4000).then(() => bump(0.4)),
       withTimeout(silk, 4000).then(() => bump(0.4)),
@@ -131,7 +139,8 @@ export default function Preloader() {
      * он сам улетает в шапку и садится ровно на её знак: это один и тот же
      * предмет, который просто встал на своё место.
      */
-    const headerMark = document.querySelector<HTMLElement>('[data-header-mark]');
+    // знаков шапки два — в шапке и в верхней строке телефона; садимся на тот, что на экране
+    const headerMark = Array.from(document.querySelectorAll<HTMLElement>('[data-header-mark]')).find((m) => m.getBoundingClientRect().width > 0);
     const flyToHeader = !document.querySelector('[data-hero-mark]') && headerMark;
     if (flyToHeader) document.documentElement.dataset.booting = '';
 
@@ -160,8 +169,8 @@ export default function Preloader() {
       }
       gsap
         .timeline({ onComplete: finish })
-        .to(box, { scale: 1.06, duration: 0.5, ease: 'power2.inOut' })
-        .to(el, { opacity: 0, duration: 0.6, ease: 'power2.inOut' }, '-=0.25')
+        .to(box, { scale: 1.06, duration: 0.5 * pace, ease: 'power2.inOut' })
+        .to(el, { opacity: 0, duration: 0.6 * pace, ease: 'power2.inOut' }, `-=${0.25 * pace}`)
         // вместе с началом затухания: знак первого экрана подхватывает полёт из этой точки
         .call(() => markLeaving(box.getBoundingClientRect()), undefined, '<');
     });

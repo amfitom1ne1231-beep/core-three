@@ -11,7 +11,9 @@
  * Геометрия и лампы — в brand/blender/mark3d.py, здесь только запуск
  * и упаковка:
  *   public/mark/live/mesh.bin     сетка трёх лучей (формат — в mark3d.py)
- *   public/mark/live/matcap.webp  два шара рядом: синий | серебро
+ *   public/mark/live/matcap.webp  два шара рядом: синий | серебро;
+ *                                 matcap-light.webp — то же в светлой студии,
+ *                                 poster-light.webp — снятый знак для светлой темы
  *   public/mark/live/turn-NNN.webp  знак на поворотном столе — запасной
  *                                 «снятый» вид для слабых телефонов
  *
@@ -50,21 +52,28 @@ if (on('mesh')) {
 }
 
 if (on('matcap')) {
-  // прозрачный фон шара заливается его же краем: при выборке у самого
-  // силуэта сглаживание иначе подмешивало бы чёрное
-  blender('--matcap', path.join(tmp, 'ball-'), '--size', String(BALL), '--samples', '160');
-  const balls = await Promise.all(
-    ['blue', 'silver'].map(async (name) => {
-      const src = sharp(path.join(tmp, `ball-${name}.png`));
-      const edge = await src.clone().resize(BALL + 12, BALL + 12).blur(6).resize(BALL, BALL).removeAlpha().toBuffer();
-      return sharp(edge).composite([{ input: await src.toBuffer() }]).removeAlpha().toBuffer();
-    })
-  );
-  await sharp({ create: { width: BALL * 2, height: BALL, channels: 3, background: '#000' } })
-    .composite(balls.map((input, i) => ({ input, left: i * BALL, top: 0 })))
-    .webp({ quality: 92 })
-    .toFile(path.join(out, 'matcap.webp'));
-  console.log(`matcap.webp — ${(fs.statSync(path.join(out, 'matcap.webp')).size / 1024).toFixed(1)} КБ`);
+  // Два света: тёмная студия и светлая — по теме сайта. Прозрачный фон шара
+  // заливается его же краем: при выборке у самого силуэта сглаживание иначе
+  // подмешивало бы чёрное.
+  for (const [world, file] of [['dark', 'matcap.webp'], ['light', 'matcap-light.webp']]) {
+    blender('--matcap', path.join(tmp, `ball-${world}-`), '--world', world, '--size', String(BALL), '--samples', '160');
+    const balls = await Promise.all(
+      ['blue', 'silver'].map(async (name) => {
+        const src = sharp(path.join(tmp, `ball-${world}-${name}.png`));
+        const edge = await src.clone().resize(BALL + 12, BALL + 12).blur(6).resize(BALL, BALL).removeAlpha().toBuffer();
+        return sharp(edge).composite([{ input: await src.toBuffer() }]).removeAlpha().toBuffer();
+      })
+    );
+    await sharp({ create: { width: BALL * 2, height: BALL, channels: 3, background: '#000' } })
+      .composite(balls.map((input, i) => ({ input, left: i * BALL, top: 0 })))
+      .webp({ quality: 92 })
+      .toFile(path.join(out, file));
+    console.log(`${file} — ${(fs.statSync(path.join(out, file)).size / 1024).toFixed(1)} КБ`);
+  }
+  // снятый знак в светлой студии — один кадр: он стоит, пока грузится модель
+  blender('--turn', path.join(tmp, 'light-'), '--turn-n', '1', '--world', 'light', '--size', String(TURN_SIZE * 2), '--samples', '40');
+  await sharp(path.join(tmp, 'light-000.png')).resize(TURN_SIZE, TURN_SIZE).webp({ quality: 80, alphaQuality: 80 }).toFile(path.join(out, 'poster-light.webp'));
+  console.log('poster-light.webp');
 }
 
 if (on('turn')) {

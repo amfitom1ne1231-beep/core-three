@@ -27,6 +27,7 @@
                         по нему страница красит знак, чтобы живой выглядел как снятый
   --turn <префикс> [--turn-n 48]
                         знак на поворотном столе: N кадров полного оборота
+  --world light         светлая студия вместо тёмной — для светлой темы сайта
 """
 
 import math
@@ -57,6 +58,8 @@ MESH = arg('--mesh', None)
 MATCAP = arg('--matcap', None)
 TURN = arg('--turn', None)
 TURN_N = int(arg('--turn-n', '48'))
+# студия: тёмная (по умолчанию) или светлая — для знака на светлой теме сайта
+WORLD = arg('--world', 'dark')
 
 S = 14.6
 L = 55.0
@@ -271,6 +274,12 @@ wl.new(sep.outputs['Z'], mp.inputs['Value'])
 wl.new(mp.outputs['Result'], ramp.inputs['Fac'])
 wl.new(ramp.outputs['Color'], bg.inputs['Color'])
 bg.inputs['Strength'].default_value = 0.9
+if WORLD == 'light':
+    # На светлой странице знак, отражающий чёрную студию, выглядит чужим:
+    # тени у него проваливаются в чёрное. Здесь он отражает светлое.
+    ramp.color_ramp.elements[0].color = (0.40, 0.43, 0.48, 1)
+    ramp.color_ramp.elements[1].color = (0.92, 0.94, 0.97, 1)
+    bg.inputs['Strength'].default_value = 1.0
 
 
 def area(name, loc, size, energy, color='#ffffff', target=(0.4, 0.4, 0.5)):
