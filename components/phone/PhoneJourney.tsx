@@ -7,6 +7,8 @@ import { plain } from '@/content/glossary';
 import { SITE } from '@/content/site';
 
 type Box = { x: number; y: number; w: number; h: number };
+/** Ролик пролёта в памяти: пока качается — обещание, потом готовый адрес. */
+type Clip = { url: string | null; ready: Promise<string | null> };
 type Shots = { size: [number, number]; shots: Record<string, { focus: [number, number]; a?: { box: Box }; b?: { box: Box }; c?: { box: Box } }> };
 
 /** Сколько стоит кадр, прежде чем камера полетит дальше. */
@@ -98,6 +100,45 @@ export default function PhoneJourney({ active }: { active: boolean }) {
     return () => clearTimeout(t);
   }, [active, hintOff]);
 
+  // Ролики пролётов лежат в памяти и играют оттуда. Просто скачать ролик
+  // «в кэш браузера» мало: Chrome потом берёт его из кэша, а Safari за тем
+  // же файлом идёт в сеть заново — и пролёт начинается через секунду после
+  // касания, а то и не успевает начаться вовсе (на живом сайте вдали
+  // от сервера: 0,7–1,3 с против 0,03 с в Chrome). Из памяти ролик стартует
+  // сразу в любом браузере и качается один раз, а не два.
+  const clips = useRef(new Map<string, Clip>());
+  const gone = useRef(false);
+  // ролик из памяти не открылся — дальше играем по адресу, как обычный файл
+  const memory = useRef(true);
+  const load = useCallback((src: string) => {
+    let clip = clips.current.get(src);
+    if (!clip) {
+      const made: Clip = {
+        url: null,
+        ready: fetch(src)
+          .then((r) => (r.ok ? r.blob() : Promise.reject(new Error(String(r.status)))))
+          .then((blob) => (gone.current ? null : (made.url = URL.createObjectURL(blob))))
+          .catch(() => {
+            // не скачался — в следующий раз попробуем снова
+            clips.current.delete(src);
+            return null;
+          })
+      };
+      clips.current.set(src, made);
+      clip = made;
+    }
+    return clip;
+  }, []);
+  useEffect(() => {
+    const map = clips.current;
+    gone.current = false;
+    return () => {
+      gone.current = true;
+      map.forEach((c) => c.url && URL.revokeObjectURL(c.url));
+      map.clear();
+    };
+  }, []);
+
   const land = useCallback((to: number, floor: number) => {
     const s = st.current;
     s.idx = to;
@@ -142,14 +183,43 @@ export default function PhoneJourney({ active }: { active: boolean }) {
           finish();
         }
       }, FLY_WAIT);
+      const src = `/scheme/${theme}/p/fly-${IDS[from]}-${IDS[to]}.mp4`;
+      let tried = '';
+      const play = (url: string) => {
+        tried = url;
+        v.src = url;
+        v.currentTime = 0;
+        v.play().catch(() => fail(url));
+      };
+      const fail = (url: string) => {
+        // отказ приходит дважды, событием и обещанием, — отвечаем на первый
+        if (done || url !== tried) return;
+        if (url !== src && v.error) {
+          memory.current = false;
+          play(src);
+        } else finish();
+      };
       v.onplaying = () => setFlying(true);
       v.onended = finish;
-      v.onerror = finish;
-      v.src = `/scheme/${theme}/p/fly-${IDS[from]}-${IDS[to]}.mp4`;
-      v.currentTime = 0;
-      v.play().catch(finish);
+      v.onerror = () => {
+        if (v.error) fail(tried);
+      };
+      if (memory.current) {
+        const clip = load(src);
+        if (clip.url) play(clip.url);
+        // ещё качается: ждём его, а не тянем тот же файл второй раз;
+        // не успеет за FLY_WAIT — кадр сменится без пролёта
+        else
+          clip.ready.then((url) => {
+            if (done) return;
+            if (url) play(url);
+            else finish();
+          });
+        // следующий в ту же сторону качается, пока летит этот
+        load(`/scheme/${theme}/p/fly-${IDS[to]}-${IDS[(to + dir + N) % N]}.mp4`);
+      } else play(src);
     },
-    [land, theme]
+    [land, load, theme]
   );
 
   // ход времени: полоска, свет на кадре, дыхание кадра, шаг дальше
@@ -184,30 +254,22 @@ export default function PhoneJourney({ active }: { active: boolean }) {
     return () => cancelAnimationFrame(raf);
   }, [step]);
 
-  // Соседние ролики подгружаются, пока кадр стоит: запрос кладёт ролик в кэш
-  // браузера, и к пролёту он уже на месте. Сначала тот, что вперёд, — он
-  // нужен всегда; следом тот, что назад: без него первый шаг назад по сети
-  // не успевал начаться и кадр менялся наплывом. (`<link rel="preload"
-  // as="video">` для этого не годится — Chrome его не понимает и пишет
-  // в консоль.)
-  const warmed = useRef(new Set<string>());
+  // Соседние ролики подгружаются, пока кадр стоит, — к пролёту они уже
+  // в памяти. Сначала тот, что вперёд, — он нужен всегда; следом тот, что
+  // назад: без него первый шаг назад по сети не успевал начаться и кадр
+  // менялся наплывом. (`<link rel="preload" as="video">` для этого
+  // не годится — Chrome его не понимает и пишет в консоль.)
   useEffect(() => {
-    if (!active || st.current.still) return;
+    if (!active || st.current.still || !memory.current) return;
     let off = false;
-    const warm = (to: number) => {
-      const url = `/scheme/${theme}/p/fly-${IDS[idx]}-${IDS[to]}.mp4`;
-      if (off || warmed.current.has(url)) return Promise.resolve();
-      warmed.current.add(url);
-      return fetch(url)
-        .then((r) => r.blob())
-        .then(() => {})
-        .catch(() => {});
-    };
-    warm((idx + 1) % N).then(() => warm((idx - 1 + N) % N));
+    const clip = (to: number) => load(`/scheme/${theme}/p/fly-${IDS[idx]}-${IDS[to]}.mp4`);
+    clip((idx + 1) % N).ready.then(() => {
+      if (!off) clip((idx - 1 + N) % N);
+    });
     return () => {
       off = true;
     };
-  }, [active, idx, theme]);
+  }, [active, idx, theme, load]);
 
   /* --- палец: касание — шаг, удержание — пауза; вертикальный свайп листает сцены --- */
   const press = useRef<{ x: number; t: number; timer: number } | null>(null);
