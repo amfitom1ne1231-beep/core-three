@@ -160,16 +160,29 @@ export default function PhoneJourney({ active }: { active: boolean }) {
     return () => cancelAnimationFrame(raf);
   }, [step]);
 
-  // Следующий ролик подгружается, пока кадр стоит: запрос кладёт его в кэш
-  // браузера, и к пролёту он уже на месте. (`<link rel="preload" as="video">`
-  // для этого не годится — Chrome его не понимает и пишет в консоль.)
+  // Соседние ролики подгружаются, пока кадр стоит: запрос кладёт ролик в кэш
+  // браузера, и к пролёту он уже на месте. Сначала тот, что вперёд, — он
+  // нужен всегда; следом тот, что назад: без него первый шаг назад по сети
+  // не успевал начаться и кадр менялся наплывом. (`<link rel="preload"
+  // as="video">` для этого не годится — Chrome его не понимает и пишет
+  // в консоль.)
   const warmed = useRef(new Set<string>());
   useEffect(() => {
     if (!active || st.current.still) return;
-    const url = `/scheme/${theme}/p/fly-${IDS[idx]}-${IDS[(idx + 1) % N]}.mp4`;
-    if (warmed.current.has(url)) return;
-    warmed.current.add(url);
-    fetch(url).catch(() => {});
+    let off = false;
+    const warm = (to: number) => {
+      const url = `/scheme/${theme}/p/fly-${IDS[idx]}-${IDS[to]}.mp4`;
+      if (off || warmed.current.has(url)) return Promise.resolve();
+      warmed.current.add(url);
+      return fetch(url)
+        .then((r) => r.blob())
+        .then(() => {})
+        .catch(() => {});
+    };
+    warm((idx + 1) % N).then(() => warm((idx - 1 + N) % N));
+    return () => {
+      off = true;
+    };
   }, [active, idx, theme]);
 
   /* --- палец: касание — шаг, удержание — пауза; вертикальный свайп листает сцены --- */
